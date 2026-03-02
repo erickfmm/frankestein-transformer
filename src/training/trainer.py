@@ -1168,6 +1168,25 @@ class TitanTrainer:
                 
             except RuntimeError as e:
                 if isinstance(e, GPUTelemetryError):
+                    telemetry = self._merge_guard_temperature(self._get_default_gpu_telemetry())
+                    self._log_step_to_csv(
+                        epoch=epoch,
+                        step=batch_idx,
+                        loss=float("nan"),
+                        accuracy=0.0,
+                        lr=self.scheduler.get_last_lr()[0],
+                        grad_norm=0.0,
+                        has_nan=False,
+                        has_inf=True,
+                        has_zero=False,
+                        repair_action="telemetry_fatal_stop",
+                        gpu_telemetry=telemetry,
+                        block_grad_norms=self._get_default_block_grad_norms(),
+                        step_time_ms=0.0,
+                        tokens_per_sec=0.0,
+                        clip_ratio=0.0,
+                        effective_batch_size=0,
+                    )
                     logging.error(
                         "Fatal GPU telemetry error at batch %s: %s. Stopping training immediately.",
                         batch_idx,
@@ -1175,6 +1194,25 @@ class TitanTrainer:
                     )
                     raise
                 if "out of memory" in str(e):
+                    telemetry = self._merge_guard_temperature(self._get_default_gpu_telemetry())
+                    self._log_step_to_csv(
+                        epoch=epoch,
+                        step=batch_idx,
+                        loss=float("nan"),
+                        accuracy=0.0,
+                        lr=self.scheduler.get_last_lr()[0],
+                        grad_norm=0.0,
+                        has_nan=False,
+                        has_inf=False,
+                        has_zero=False,
+                        repair_action="oom_skip_batch",
+                        gpu_telemetry=telemetry,
+                        block_grad_norms=self._get_default_block_grad_norms(),
+                        step_time_ms=0.0,
+                        tokens_per_sec=0.0,
+                        clip_ratio=0.0,
+                        effective_batch_size=0,
+                    )
                     logging.error(f"OOM at batch {batch_idx}, clearing cache and continuing...")
                     if torch.cuda.is_available():
                         torch.cuda.empty_cache()
