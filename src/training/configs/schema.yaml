@@ -669,6 +669,10 @@ properties:
           resample_balanced:
             type: boolean
             examples: [true]
+          standardize_scores:
+            type: boolean
+            description: "Standardize paired similarity scores to mean 0 and target std instead of undersampling."
+            examples: [false]
           resample_std:
             type: number
             minimum: 0.0

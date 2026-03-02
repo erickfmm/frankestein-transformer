@@ -19,5 +19,6 @@ training:
     max_seq_length: 8192
     pooling_mode: mean
     use_amp: true
-    resample_balanced: true
+    resample_balanced: false
     resample_std: 0.3
+    standardize_scores: true

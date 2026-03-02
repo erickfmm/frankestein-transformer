@@ -130,6 +130,7 @@ training:
     trust_remote_code: false
     use_amp: true
     resample_balanced: true
+    standardize_scores: false
     resample_std: 0.3
 ```
 
@@ -293,6 +294,7 @@ Examples:
 - Loss: `CosineSimilarityLoss`.
 - Evaluator: `EmbeddingSimilarityEvaluator`.
 - Resampling: supported (`resample_balanced` and `resample_std`).
+- Score standardization: optional via `standardize_scores: true` (keeps all rows, rescales score mean/std).
 
 - `triplets`:
 - Required columns: `query`, `positive`, `negatives`.

@@ -6,6 +6,13 @@ Dataset: erickfmm/agentlans__multilingual-sentences__paired_10_sts
 """
 
 import os
+
+# Tesla P40 (sm_61) and other legacy GPUs are often unstable with Triton/Inductor paths.
+# Set FRANKENSTEIN_DISABLE_TRITON=0 to re-enable explicitly.
+if os.environ.get("FRANKENSTEIN_DISABLE_TRITON", "1").strip().lower() in {"1", "true", "yes", "on"}:
+    os.environ.setdefault("TORCHINDUCTOR_DISABLE", "1")
+    os.environ.setdefault("USE_TRITON", "0")
+
 import torch
 import logging
 from datetime import datetime
@@ -56,6 +63,39 @@ DEFAULT_SBERT_COLUMNS = {
         "answer": "Answer",
     },
 }
+
+
+def _extract_primary_score(score: Any) -> Optional[float]:
+    """Extract a representative scalar score from evaluator outputs."""
+    if score is None:
+        return None
+    if isinstance(score, (int, float)):
+        return float(score)
+    if isinstance(score, dict):
+        preferred_keys = (
+            "cosine_spearman",
+            "spearman_cosine",
+            "spearman",
+            "eval_spearman",
+            "score",
+        )
+        for key in preferred_keys:
+            value = score.get(key)
+            if isinstance(value, (int, float)):
+                return float(value)
+        for value in score.values():
+            if isinstance(value, (int, float)):
+                return float(value)
+    return None
+
+
+def _format_score_for_log(score: Any) -> str:
+    primary = _extract_primary_score(score)
+    if primary is not None:
+        return f"{primary:.4f}"
+    if isinstance(score, dict):
+        return str({k: v for k, v in score.items() if isinstance(v, (int, float))})
+    return str(score)
 
 
 class TormentedBertSentenceTransformer:
@@ -320,6 +360,7 @@ class SBERTTrainer:
         max_train_samples: Optional[int] = None,
         max_eval_samples: Optional[int] = 10000,
         resample_balanced: bool = True,
+        standardize_scores: bool = False,
         target_std: float = 0.3
     ):
         """
@@ -339,6 +380,7 @@ class SBERTTrainer:
             max_train_samples: Maximum training samples
             max_eval_samples: Maximum evaluation samples
             resample_balanced: Resample to get normal distribution centered at 0
+            standardize_scores: Standardize score column instead of undersampling
             target_std: Target standard deviation for normal distribution (default: 0.3)
         """
         dataset_type = str(dataset_type).strip().lower()
@@ -368,11 +410,19 @@ class SBERTTrainer:
         self._validate_required_columns(dataset)
         
         # Resample to balance distribution (avoid imbalance as recommended)
-        if resample_balanced and self.dataset_type != "paired_similarity":
+        if (resample_balanced or standardize_scores) and self.dataset_type != "paired_similarity":
             logger.warning(
-                "resample_balanced is only supported for paired_similarity datasets; disabling for dataset_type='%s'",
+                "Score balancing options are only supported for paired_similarity datasets; disabling for dataset_type='%s'",
                 self.dataset_type,
             )
+        elif standardize_scores:
+            similarity_column = self.dataset_columns["similarity"]
+            dataset = self._standardize_scores(
+                dataset,
+                score_column=similarity_column,
+                target_std=target_std,
+            )
+            logger.info(f"After score standardization: {len(dataset)} samples")
         elif resample_balanced:
             similarity_column = self.dataset_columns["similarity"]
             dataset = self._resample_balanced(
@@ -519,6 +569,56 @@ class SBERTTrainer:
         logger.info(f"Final sample count: {len(resampled)}")
         
         return resampled
+
+    def _standardize_scores(
+        self,
+        dataset,
+        score_column: str,
+        target_std: float = 0.3,
+    ):
+        """
+        Standardize score magnitudes while preserving original sign and keeping all rows.
+        """
+        scores = np.array(dataset[score_column], dtype=np.float32)
+        source_mean = float(scores.mean())
+        source_std = float(scores.std())
+        logger.info(
+            "Standardizing scores from mean=%.4f, std=%.4f to target std=%.4f with sign preservation",
+            source_mean,
+            source_std,
+            float(target_std),
+        )
+        if source_std < 1e-8:
+            logger.warning(
+                "Score standard deviation is near zero (%.8f); skipping standardization.",
+                source_std,
+            )
+            return dataset
+
+        eps = 1e-12
+
+        def _map_batch(batch):
+            values = np.array(batch[score_column], dtype=np.float32)
+            standardized = ((values - source_mean) / (source_std + eps)) * float(target_std)
+            # Preserve original sign after standardization.
+            signed = np.where(values == 0.0, 0.0, np.sign(values) * np.abs(standardized))
+            clipped = np.clip(signed, -1.0, 1.0)
+            return {score_column: clipped.tolist()}
+
+        standardized = dataset.map(
+            _map_batch,
+            batched=True,
+            desc=f"Standardizing '{score_column}'",
+        )
+        standardized_scores = np.array(standardized[score_column], dtype=np.float32)
+        logger.info(
+            "Standardized distribution: mean=%.4f, std=%.4f, range=[%.4f, %.4f]",
+            float(standardized_scores.mean()),
+            float(standardized_scores.std()),
+            float(standardized_scores.min()),
+            float(standardized_scores.max()),
+        )
+        return standardized
     
     def _dataset_to_examples(self, dataset, split_name: str):
         """
@@ -630,7 +730,9 @@ class SBERTTrainer:
         train_dataloader = DataLoader(
             self.train_examples,
             shuffle=True,
-            batch_size=self.batch_size
+            batch_size=self.batch_size,
+            # sentence-transformers fit() in this environment expects list[InputExample].
+            collate_fn=lambda batch: batch,
         )
         train_dataloader = _ThermalGuardedDataLoader(
             dataloader=train_dataloader,
@@ -671,12 +773,13 @@ class SBERTTrainer:
             # Final evaluation
             logger.info("Running final evaluation...")
             final_score = self.evaluator(self.model)
-            logger.info(f"Final Spearman correlation: {final_score:.4f}")
+            logger.info("Final Spearman correlation: %s", _format_score_for_log(final_score))
         else:
             logger.info("Skipping final evaluator for dataset type '%s'", self.dataset_type)
         
         self.training_metadata['end_time'] = datetime.now().isoformat()
         self.training_metadata['final_score'] = final_score
+        self.training_metadata['final_score_value'] = _extract_primary_score(final_score)
         
         return final_score
 
@@ -752,6 +855,11 @@ def main(argv=None):
     parser.add_argument("--no_amp", action="store_true", help="Disable automatic mixed precision")
     parser.add_argument("--no_resample", action="store_true", 
                        help="Don't resample dataset (default: undersample to normal distribution centered at 0)")
+    parser.add_argument(
+        "--standardize_scores",
+        action="store_true",
+        help="Standardize similarity scores (mean=0, target std via --resample_std) without undersampling",
+    )
     parser.add_argument("--resample_std", type=float, default=0.3,
                        help="Target std for resampled normal distribution (default: 0.3)")
     parser.add_argument(
@@ -887,6 +995,7 @@ def main(argv=None):
         max_train_samples=args.max_train_samples,
         max_eval_samples=args.max_eval_samples,
         resample_balanced=not args.no_resample,
+        standardize_scores=bool(args.standardize_scores),
         target_std=args.resample_std
     )
     
@@ -895,7 +1004,7 @@ def main(argv=None):
     
     logger.info("=" * 80)
     if final_score is not None:
-        logger.info(f"Training complete! Final score: {final_score:.4f}")
+        logger.info("Training complete! Final score: %s", _format_score_for_log(final_score))
     else:
         logger.info("Training complete! Final score: n/a (no evaluator configured for this dataset type)")
     logger.info(f"Model saved to: {args.output_dir}")

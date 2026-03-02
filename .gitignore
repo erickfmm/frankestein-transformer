@@ -1,5 +1,7 @@
 .venv/
 uv.lock
+wandb/
+output/
 **/__pycache__/
 **/*.pyc
 **/temp_data/

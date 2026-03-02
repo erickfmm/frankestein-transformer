@@ -8,6 +8,12 @@ import logging
 import os
 from typing import Any, Dict, Optional, Tuple
 
+# Tesla P40 (sm_61) and other legacy GPUs are often unstable with Triton/Inductor paths.
+# Set FRANKENSTEIN_DISABLE_TRITON=0 to re-enable explicitly.
+if os.environ.get("FRANKENSTEIN_DISABLE_TRITON", "1").strip().lower() in {"1", "true", "yes", "on"}:
+    os.environ.setdefault("TORCHINDUCTOR_DISABLE", "1")
+    os.environ.setdefault("USE_TRITON", "0")
+
 import torch
 from torch.utils.data import DataLoader
 
@@ -344,6 +350,8 @@ def _run_sbert_task(
         argv.append("--no_amp")
     if not bool(sbert_cfg.get("resample_balanced", True)):
         argv.append("--no_resample")
+    if bool(sbert_cfg.get("standardize_scores", False)):
+        argv.append("--standardize_scores")
     if bool(sbert_cfg.get("trust_remote_code", False)):
         argv.append("--trust_remote_code")
 
