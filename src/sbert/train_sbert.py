@@ -6,6 +6,8 @@ Dataset: erickfmm/agentlans__multilingual-sentences__paired_10_sts
 """
 
 import os
+import json
+import re
 
 # Tesla P40 (sm_61) and other legacy GPUs are often unstable with Triton/Inductor paths.
 # Set FRANKENSTEIN_DISABLE_TRITON=0 to re-enable explicitly.
@@ -725,6 +727,48 @@ class SBERTTrainer:
         )
         
         return evaluator
+
+    def _read_checkpoint_global_step(self, checkpoint_dir: str) -> Optional[int]:
+        trainer_state_path = os.path.join(checkpoint_dir, "trainer_state.json")
+        if not os.path.exists(trainer_state_path):
+            return None
+        try:
+            with open(trainer_state_path, "r", encoding="utf-8") as handle:
+                state = json.load(handle)
+            value = state.get("global_step")
+            if isinstance(value, (int, float)):
+                return int(value)
+        except Exception as exc:
+            logger.warning("Failed reading global_step from %s: %s", trainer_state_path, exc)
+        return None
+
+    def _find_latest_rolling_checkpoint(self) -> Optional[Dict[str, Any]]:
+        checkpoint_root = os.path.join(self.output_dir, "checkpoints")
+        if not os.path.isdir(checkpoint_root):
+            return None
+
+        latest_step = -1
+        latest_path = None
+        for entry in os.listdir(checkpoint_root):
+            full_path = os.path.join(checkpoint_root, entry)
+            if not os.path.isdir(full_path):
+                continue
+            match = re.fullmatch(r"checkpoint-(\d+)", entry)
+            if match is None:
+                continue
+            step_from_name = int(match.group(1))
+            step_from_state = self._read_checkpoint_global_step(full_path)
+            step = step_from_state if step_from_state is not None else step_from_name
+            if step > latest_step:
+                latest_step = step
+                latest_path = full_path
+
+        if latest_path is None:
+            return None
+        return {
+            "path": latest_path,
+            "global_step": latest_step,
+        }
     
     def train(self):
         """Run training loop"""
@@ -737,15 +781,44 @@ class SBERTTrainer:
         # Create data loader
         train_dataloader = DataLoader(
             self.train_examples,
-            shuffle=True,
+            # Keep order deterministic for resume line skipping. We already shuffled the dataset split once.
+            shuffle=False,
             batch_size=self.batch_size,
             # sentence-transformers fit() in this environment expects list[InputExample].
             collate_fn=lambda batch: batch,
         )
+
+        resume_checkpoint_path = None
+        resume_skip_batches = 0
+        if self.resume_from_checkpoint:
+            latest = self._find_latest_rolling_checkpoint()
+            if latest is None:
+                logger.warning(
+                    "resume_from_checkpoint is enabled but no rolling checkpoint was found under %s",
+                    os.path.join(self.output_dir, "checkpoints"),
+                )
+            else:
+                resume_checkpoint_path = str(latest["path"])
+                resume_global_step = int(latest["global_step"])
+                steps_per_epoch = max(len(train_dataloader), 1)
+                resume_skip_batches = resume_global_step % steps_per_epoch
+                approx_skipped_lines = min(
+                    len(self.train_examples),
+                    resume_skip_batches * self.batch_size,
+                )
+                logger.info(
+                    "Resuming from rolling checkpoint %s (global_step=%d); skipping %d batches (~%d lines) already processed in current epoch",
+                    resume_checkpoint_path,
+                    resume_global_step,
+                    resume_skip_batches,
+                    approx_skipped_lines,
+                )
+
         train_dataloader = _ThermalGuardedDataLoader(
             dataloader=train_dataloader,
             guard=self.gpu_temp_guard,
             context_prefix="sbert.fit",
+            skip_batches_once=resume_skip_batches,
         )
         
         # Define loss function according to dataset type.
@@ -756,7 +829,12 @@ class SBERTTrainer:
         
         # Calculate total steps
         num_train_steps = len(train_dataloader) * self.epochs
-        logger.info(f"Total training steps: {num_train_steps}")
+        effective_remaining_steps = max(num_train_steps - resume_skip_batches, 0)
+        logger.info(
+            "Total training steps: %d (effective remaining after resume skip: %d)",
+            num_train_steps,
+            effective_remaining_steps,
+        )
         
         # Train
         fit_kwargs = dict(
@@ -776,7 +854,9 @@ class SBERTTrainer:
             fit_kwargs["checkpoint_save_steps"] = self.checkpoint_save_steps
             fit_kwargs["checkpoint_save_total_limit"] = 3
         if self.resume_from_checkpoint:
-            fit_kwargs["resume_from_checkpoint"] = True
+            fit_kwargs["resume_from_checkpoint"] = (
+                resume_checkpoint_path if resume_checkpoint_path else True
+            )
         if self.evaluator is not None:
             fit_kwargs["evaluator"] = self.evaluator
         self.model.fit(**fit_kwargs)
@@ -802,16 +882,42 @@ class SBERTTrainer:
 class _ThermalGuardedDataLoader:
     """Dataloader wrapper that blocks when the GPU is too hot."""
 
-    def __init__(self, dataloader: DataLoader, guard: GPUTemperatureGuard, context_prefix: str):
+    def __init__(
+        self,
+        dataloader: DataLoader,
+        guard: GPUTemperatureGuard,
+        context_prefix: str,
+        skip_batches_once: int = 0,
+    ):
         self._dataloader = dataloader
         self._guard = guard
         self._context_prefix = context_prefix
+        self._skip_batches_once = max(int(skip_batches_once), 0)
+        self._skip_batches_applied = False
 
     def __len__(self):
         return len(self._dataloader)
 
     def __iter__(self):
-        for batch_idx, batch in enumerate(self._dataloader):
+        batch_iter = iter(self._dataloader)
+        start_batch_idx = 0
+
+        if (not self._skip_batches_applied) and self._skip_batches_once > 0:
+            skipped = 0
+            while skipped < self._skip_batches_once:
+                try:
+                    next(batch_iter)
+                    skipped += 1
+                except StopIteration:
+                    break
+            self._skip_batches_applied = True
+            start_batch_idx = skipped
+            logger.info(
+                "Skipped %d already-processed batches before resuming SBERT dataloader iteration",
+                skipped,
+            )
+
+        for batch_idx, batch in enumerate(batch_iter, start=start_batch_idx):
             result = self._guard.wait_until_safe(
                 context=f"{self._context_prefix} batch={batch_idx + 1}"
             )
