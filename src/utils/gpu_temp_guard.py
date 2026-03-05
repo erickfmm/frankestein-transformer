@@ -89,6 +89,22 @@ class GPUTemperatureGuard:
     def is_active(self) -> bool:
         return self._active
 
+    @property
+    def pause_threshold_c(self) -> float:
+        return self._pause_threshold_c
+
+    @property
+    def resume_threshold_c(self) -> float:
+        return self._resume_threshold_c
+
+    @property
+    def critical_threshold_c(self) -> Optional[float]:
+        return self._critical_threshold_c
+
+    @property
+    def poll_interval_seconds(self) -> float:
+        return self._poll_interval_seconds
+
     def _init_nvml(self):
         try:
             import pynvml  # type: ignore

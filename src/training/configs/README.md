@@ -97,6 +97,7 @@ training:
   enable_block_grad_norms: true
   telemetry_log_interval: 1
   gpu_temp_guard_enabled: true
+  switch_on_thermal: false
   gpu_temp_pause_threshold_c: 90.0
   gpu_temp_resume_threshold_c: 80.0
   gpu_temp_critical_threshold_c: null
@@ -276,9 +277,10 @@ Examples:
 - `enable_block_grad_norms`: include fixed per-block grad norm columns.
 - `telemetry_log_interval`: interval in optimizer steps for heavy telemetry fields.
 - `gpu_temp_guard_enabled`: enable strict thermal guard for CUDA training.
+- `switch_on_thermal`: when `true`, critical thermal events move training to CPU and resume on GPU after cooldown.
 - `gpu_temp_pause_threshold_c`: pause when GPU temp exceeds this threshold.
 - `gpu_temp_resume_threshold_c`: resume when GPU temp is at/below this threshold.
-- `gpu_temp_critical_threshold_c`: optional critical marker for logging (pause/retry policy still applies).
+- `gpu_temp_critical_threshold_c`: optional critical threshold used by `switch_on_thermal` for GPU->CPU fallback.
 - `gpu_temp_poll_interval_seconds`: cooldown polling interval while paused.
 - `use_galore`: enable GaLore.
 - `galore_rank`: low-rank projection rank.
@@ -374,3 +376,4 @@ This is a hard migration.
 - `standard_attn` and `sigmoid_attn` are compatible with `use_hope=false`.
 - Full GPU power/utilization/memory telemetry uses `pynvml` when available; non-guard telemetry may fall back to zeros.
 - When `gpu_temp_guard_enabled: true`, temperature reads are strict (`NVML` then `nvidia-smi`), and telemetry failure stops training immediately.
+- When `switch_on_thermal: true`, critical temperature can switch training GPU->CPU and return CPU->GPU at resume temperature; CUDA/NVIDIA runtime failures may force CPU-only mode.

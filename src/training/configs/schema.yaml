@@ -516,6 +516,10 @@ properties:
         type: boolean
         description: "Enable strict GPU temperature guard (CUDA only)."
         examples: [true]
+      switch_on_thermal:
+        type: boolean
+        description: "When true, critical temperature triggers GPU->CPU training fallback with resume to GPU when cooled down."
+        examples: [false, true]
       gpu_temp_pause_threshold_c:
         type: number
         exclusiveMinimum: 0
@@ -1089,6 +1093,7 @@ examples:
       enable_block_grad_norms: true
       telemetry_log_interval: 1
       gpu_temp_guard_enabled: true
+      switch_on_thermal: false
       gpu_temp_pause_threshold_c: 90.0
       gpu_temp_resume_threshold_c: 80.0
       gpu_temp_critical_threshold_c: null

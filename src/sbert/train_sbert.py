@@ -8,6 +8,8 @@ Dataset: erickfmm/agentlans__multilingual-sentences__paired_10_sts
 import os
 import json
 import re
+import shutil
+import time
 
 # Tesla P40 (sm_61) and other legacy GPUs are often unstable with Triton/Inductor paths.
 # Set FRANKENSTEIN_DISABLE_TRITON=0 to re-enable explicitly.
@@ -18,7 +20,7 @@ if os.environ.get("FRANKENSTEIN_DISABLE_TRITON", "1").strip().lower() in {"1", "
 import torch
 import logging
 from datetime import datetime
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Callable
 
 from datasets import load_dataset
 from sentence_transformers import (
@@ -291,6 +293,7 @@ class SBERTTrainer:
         use_amp: bool = True,
         device: str = "auto",
         gpu_temp_guard_enabled: bool = True,
+        switch_on_thermal: bool = False,
         gpu_temp_pause_threshold_c: float = 90.0,
         gpu_temp_resume_threshold_c: float = 80.0,
         gpu_temp_critical_threshold_c: Optional[float] = None,
@@ -320,9 +323,17 @@ class SBERTTrainer:
         self.evaluation_steps = evaluation_steps
         self.checkpoint_save_steps = int(checkpoint_save_steps)
         self.resume_from_checkpoint = bool(resume_from_checkpoint)
+        self.checkpoint_save_total_limit = 3
         self.learning_rate = learning_rate
         self.use_amp = use_amp
         self.device = resolve_torch_device(device)
+        self._switch_on_thermal = bool(switch_on_thermal)
+        self._thermal_offload_active = False
+        self._thermal_offload_started_monotonic: Optional[float] = None
+        self._thermal_last_poll_monotonic = 0.0
+        self._thermal_last_model_snapshot: Optional[str] = None
+        self._thermal_last_resume_artifact: Optional[str] = None
+        self._force_cpu_only_after_gpu_error = False
         self.gpu_temp_guard = GPUTemperatureGuard(
             enabled=bool(gpu_temp_guard_enabled),
             device=self.device,
@@ -343,8 +354,12 @@ class SBERTTrainer:
             'epochs': epochs,
             'learning_rate': learning_rate,
             'checkpoint_save_steps': self.checkpoint_save_steps,
+            'checkpoint_save_total_limit': self.checkpoint_save_total_limit,
             'resume_from_checkpoint': self.resume_from_checkpoint,
+            'switch_on_thermal': self._switch_on_thermal,
         }
+        self.thermal_emergency_dir = os.path.join(self.output_dir, "thermal_emergency")
+        os.makedirs(self.thermal_emergency_dir, exist_ok=True)
         if self.gpu_temp_guard.is_active:
             logger.info(
                 "GPU thermal guard enabled for SBERT (pause>%.1fC, resume<=%.1fC, poll=%.1fs, critical=%s)",
@@ -357,8 +372,247 @@ class SBERTTrainer:
                     else "disabled"
                 ),
             )
+            if gpu_temp_critical_threshold_c is not None:
+                logger.info(
+                    "SBERT thermal critical offload enabled (critical>=%.1fC)",
+                    float(gpu_temp_critical_threshold_c),
+                )
+            else:
+                logger.info(
+                    "SBERT thermal critical offload disabled (gpu_temp_critical_threshold_c is not set)"
+                )
         else:
             logger.info("GPU thermal guard disabled for SBERT")
+        logger.info("SBERT switch_on_thermal=%s", self._switch_on_thermal)
+
+    def _save_thermal_model_snapshot(self, batch_idx: int, temp_c: float) -> str:
+        safe_temp = str(f"{float(temp_c):.1f}").replace(".", "p")
+        snapshot_dir = os.path.join(
+            self.thermal_emergency_dir,
+            f"batch_{batch_idx + 1}_temp_{safe_temp}c_model_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}",
+        )
+        self.model.save(snapshot_dir)
+        logger.warning("Saved SBERT thermal model snapshot: %s", snapshot_dir)
+        self._prune_thermal_emergency_artifacts()
+        return snapshot_dir
+
+    def _save_thermal_resume_artifact_if_available(self, batch_idx: int) -> Optional[str]:
+        latest = self._find_latest_rolling_checkpoint()
+        if latest is None:
+            logger.warning(
+                "No rolling SBERT checkpoint available to copy as thermal resume artifact."
+            )
+            return None
+
+        source_path = str(latest["path"])
+        global_step = int(latest["global_step"])
+        target_path = os.path.join(
+            self.thermal_emergency_dir,
+            f"batch_{batch_idx + 1}_resume_checkpoint_{global_step}_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}",
+        )
+        shutil.copytree(source_path, target_path)
+        logger.warning("Copied SBERT thermal resume artifact: %s", target_path)
+        self._prune_thermal_emergency_artifacts()
+        return target_path
+
+    def _prune_thermal_emergency_artifacts(self):
+        max_keep = max(int(self.checkpoint_save_total_limit), 1)
+        entries = []
+        for entry in os.listdir(self.thermal_emergency_dir):
+            full_path = os.path.join(self.thermal_emergency_dir, entry)
+            try:
+                mtime = os.path.getmtime(full_path)
+            except OSError:
+                continue
+            entries.append((mtime, full_path))
+
+        entries.sort(key=lambda item: item[0])
+        while len(entries) > max_keep:
+            _, old_path = entries.pop(0)
+            try:
+                if os.path.isdir(old_path):
+                    shutil.rmtree(old_path)
+                elif os.path.exists(old_path):
+                    os.remove(old_path)
+                logger.info("Removed old SBERT thermal artifact: %s", old_path)
+            except Exception as exc:
+                logger.warning("Failed removing old SBERT thermal artifact %s: %s", old_path, exc)
+
+    def _is_cuda_or_nvidia_runtime_error(self, exc: RuntimeError) -> bool:
+        message = str(exc).lower()
+        gpu_error_tokens = (
+            "cuda",
+            "cudnn",
+            "cublas",
+            "device-side assert",
+            "nvidia",
+            "driver",
+            "out of memory",
+        )
+        return any(token in message for token in gpu_error_tokens)
+
+    def _switch_to_cpu_only_after_gpu_error(self, exc: RuntimeError) -> bool:
+        if not self._switch_on_thermal:
+            return False
+        if self._force_cpu_only_after_gpu_error:
+            return False
+        if not self._is_cuda_or_nvidia_runtime_error(exc):
+            return False
+        if not str(self.device).startswith("cuda"):
+            return False
+
+        logger.error(
+            "[ThermalSwitch][SBERT] GPU runtime error detected; switching to CPU-only mode for remaining training: %s",
+            exc,
+        )
+        try:
+            self._thermal_last_model_snapshot = self._save_thermal_model_snapshot(batch_idx=0, temp_c=0.0)
+        except Exception as snapshot_exc:
+            logger.exception(
+                "[ThermalSwitch][SBERT] Failed saving CPU fallback model snapshot: %s",
+                snapshot_exc,
+            )
+        try:
+            self._thermal_last_resume_artifact = self._save_thermal_resume_artifact_if_available(batch_idx=0)
+        except Exception as resume_exc:
+            logger.exception(
+                "[ThermalSwitch][SBERT] Failed saving CPU fallback resume artifact: %s",
+                resume_exc,
+            )
+
+        self.model.to("cpu")
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        self._thermal_offload_active = False
+        self._thermal_offload_started_monotonic = None
+        self._thermal_last_poll_monotonic = 0.0
+        self._force_cpu_only_after_gpu_error = True
+        return True
+
+    def _offload_model_for_critical_thermal_event(self, batch_idx: int, temp_c: float) -> str:
+        if not self._switch_on_thermal:
+            return "none"
+        if self._force_cpu_only_after_gpu_error:
+            return "thermal_cpu_only_gpu_error"
+        if self._thermal_offload_active:
+            return self._monitor_thermal_offload_and_maybe_reload(batch_idx)
+
+        context = f"sbert.fit batch={batch_idx + 1}"
+        logger.warning(
+            "[ThermalOffload][SBERT] %s critical threshold reached at %.1fC; switching to CPU training mode",
+            context,
+            temp_c,
+        )
+
+        model_snapshot_path: Optional[str] = None
+        resume_artifact_path: Optional[str] = None
+        try:
+            model_snapshot_path = self._save_thermal_model_snapshot(batch_idx, temp_c)
+        except Exception as exc:
+            logger.exception(
+                "Failed to save SBERT thermal model snapshot before offload: %s",
+                exc,
+            )
+
+        try:
+            resume_artifact_path = self._save_thermal_resume_artifact_if_available(batch_idx)
+        except Exception as exc:
+            logger.exception(
+                "Failed to save SBERT thermal resume artifact before offload: %s",
+                exc,
+            )
+
+        self._thermal_last_model_snapshot = model_snapshot_path
+        self._thermal_last_resume_artifact = resume_artifact_path
+        self.model.to("cpu")
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        self._thermal_offload_active = True
+        self._thermal_offload_started_monotonic = time.perf_counter()
+        self._thermal_last_poll_monotonic = 0.0
+        return "thermal_offload_cpu_mode"
+
+    def _monitor_thermal_offload_and_maybe_reload(self, batch_idx: int) -> str:
+        if not self._thermal_offload_active:
+            return "none"
+        if self._force_cpu_only_after_gpu_error:
+            return "thermal_cpu_only_gpu_error"
+
+        now = time.perf_counter()
+        started = (
+            self._thermal_offload_started_monotonic
+            if self._thermal_offload_started_monotonic is not None
+            else now
+        )
+        elapsed_s = max(now - started, 0.0)
+        poll_interval = float(self.gpu_temp_guard.poll_interval_seconds)
+        if (now - self._thermal_last_poll_monotonic) < poll_interval:
+            return f"thermal_cpu_training_{int(round(elapsed_s))}s"
+
+        self._thermal_last_poll_monotonic = now
+        resume_threshold = float(self.gpu_temp_guard.resume_threshold_c)
+        current_temp = float(self.gpu_temp_guard.read_temperature_c())
+        context = f"sbert.fit batch={batch_idx + 1}"
+        if current_temp > resume_threshold:
+            logger.warning(
+                "[ThermalOffload][SBERT] %s continuing CPU training: GPU %.1fC (resume <= %.1fC)",
+                context,
+                current_temp,
+                resume_threshold,
+            )
+            return f"thermal_cpu_training_{int(round(elapsed_s))}s"
+
+        try:
+            self.model.to(self.device)
+        except Exception as exc:
+            logger.error(
+                "[ThermalSwitch][SBERT] Failed to reload to GPU after thermal CPU mode. "
+                "Switching to CPU-only mode. model_snapshot=%s resume_artifact=%s error=%s",
+                self._thermal_last_model_snapshot or "unavailable",
+                self._thermal_last_resume_artifact or "unavailable",
+                exc,
+            )
+            self._force_cpu_only_after_gpu_error = True
+            self._thermal_offload_active = False
+            self._thermal_offload_started_monotonic = None
+            self._thermal_last_poll_monotonic = 0.0
+            return "thermal_cpu_only_gpu_error"
+
+        self._thermal_offload_active = False
+        self._thermal_offload_started_monotonic = None
+        self._thermal_last_poll_monotonic = 0.0
+        logger.warning(
+            "[ThermalOffload][SBERT] %s resumed GPU training after %.1fs at %.1fC",
+            context,
+            elapsed_s,
+            current_temp,
+        )
+        return f"thermal_onload_gpu_{int(round(elapsed_s))}s"
+
+    def _handle_thermal_guard_for_batch(self, batch_idx: int) -> str:
+        if not self.gpu_temp_guard.is_active:
+            return "none"
+        if self._force_cpu_only_after_gpu_error:
+            return "thermal_cpu_only_gpu_error"
+        if not self._switch_on_thermal:
+            context = f"sbert.fit batch={batch_idx + 1}"
+            temp_c = float(self.gpu_temp_guard.read_temperature_c())
+            if temp_c > float(self.gpu_temp_guard.pause_threshold_c):
+                result = self.gpu_temp_guard.wait_until_safe(context=context)
+                return result.repair_action
+            return "none"
+        if self._thermal_offload_active:
+            return self._monitor_thermal_offload_and_maybe_reload(batch_idx)
+
+        context = f"sbert.fit batch={batch_idx + 1}"
+        temp_c = float(self.gpu_temp_guard.read_temperature_c())
+        critical_threshold = self.gpu_temp_guard.critical_threshold_c
+        if critical_threshold is not None and temp_c >= float(critical_threshold):
+            return self._offload_model_for_critical_thermal_event(batch_idx, temp_c)
+        if temp_c > float(self.gpu_temp_guard.pause_threshold_c):
+            result = self.gpu_temp_guard.wait_until_safe(context=context)
+            return result.repair_action
+        return "none"
     
     def load_dataset(
         self,
@@ -819,6 +1073,7 @@ class SBERTTrainer:
             guard=self.gpu_temp_guard,
             context_prefix="sbert.fit",
             skip_batches_once=resume_skip_batches,
+            on_thermal_check=self._handle_thermal_guard_for_batch,
         )
         
         # Define loss function according to dataset type.
@@ -852,14 +1107,35 @@ class SBERTTrainer:
             fit_kwargs["checkpoint_path"] = os.path.join(self.output_dir, "checkpoints")
         if self.checkpoint_save_steps > 0:
             fit_kwargs["checkpoint_save_steps"] = self.checkpoint_save_steps
-            fit_kwargs["checkpoint_save_total_limit"] = 3
+            fit_kwargs["checkpoint_save_total_limit"] = self.checkpoint_save_total_limit
         if self.resume_from_checkpoint:
             fit_kwargs["resume_from_checkpoint"] = (
                 resume_checkpoint_path if resume_checkpoint_path else True
             )
         if self.evaluator is not None:
             fit_kwargs["evaluator"] = self.evaluator
-        self.model.fit(**fit_kwargs)
+        try:
+            self.model.fit(**fit_kwargs)
+        except RuntimeError as exc:
+            if not self._switch_to_cpu_only_after_gpu_error(exc):
+                raise
+
+            logger.warning(
+                "[ThermalSwitch][SBERT] Retrying training in CPU-only mode after GPU runtime failure."
+            )
+            fit_kwargs_cpu = dict(fit_kwargs)
+            fit_kwargs_cpu["use_amp"] = False
+            checkpoint_root = fit_kwargs_cpu.get("checkpoint_path")
+            if not checkpoint_root:
+                checkpoint_root = os.path.join(self.output_dir, "checkpoints")
+                fit_kwargs_cpu["checkpoint_path"] = checkpoint_root
+
+            latest = self._find_latest_rolling_checkpoint()
+            if latest is not None:
+                fit_kwargs_cpu["resume_from_checkpoint"] = str(latest["path"])
+            else:
+                fit_kwargs_cpu.pop("resume_from_checkpoint", None)
+            self.model.fit(**fit_kwargs_cpu)
         
         logger.info(f"Training completed! Model saved to {self.output_dir}")
         
@@ -888,12 +1164,16 @@ class _ThermalGuardedDataLoader:
         guard: GPUTemperatureGuard,
         context_prefix: str,
         skip_batches_once: int = 0,
+        on_thermal_check: Optional[Callable[[int], str]] = None,
+        on_critical_temperature: Optional[Callable[[int, float], str]] = None,
     ):
         self._dataloader = dataloader
         self._guard = guard
         self._context_prefix = context_prefix
         self._skip_batches_once = max(int(skip_batches_once), 0)
         self._skip_batches_applied = False
+        self._on_thermal_check = on_thermal_check
+        self._on_critical_temperature = on_critical_temperature
 
     def __len__(self):
         return len(self._dataloader)
@@ -918,15 +1198,41 @@ class _ThermalGuardedDataLoader:
             )
 
         for batch_idx, batch in enumerate(batch_iter, start=start_batch_idx):
-            result = self._guard.wait_until_safe(
-                context=f"{self._context_prefix} batch={batch_idx + 1}"
-            )
-            if result.paused:
-                logger.warning(
-                    "[ThermalGuard][SBERT] pause event: %s (temp=%.1fC)",
-                    result.repair_action,
-                    result.temp_c,
-                )
+            if self._on_thermal_check is not None:
+                repair_action = self._on_thermal_check(batch_idx)
+                if repair_action != "none":
+                    logger.warning(
+                        "[ThermalGuard][SBERT] thermal action: %s",
+                        repair_action,
+                    )
+            elif self._guard.is_active:
+                context = f"{self._context_prefix} batch={batch_idx + 1}"
+                temp_c = float(self._guard.read_temperature_c())
+                critical_threshold = self._guard.critical_threshold_c
+                if critical_threshold is not None and temp_c >= float(critical_threshold):
+                    if self._on_critical_temperature is not None:
+                        repair_action = self._on_critical_temperature(batch_idx, temp_c)
+                        logger.warning(
+                            "[ThermalGuard][SBERT] critical offload event: %s (temp=%.1fC)",
+                            repair_action,
+                            temp_c,
+                        )
+                    else:
+                        result = self._guard.wait_until_safe(context=context)
+                        if result.paused:
+                            logger.warning(
+                                "[ThermalGuard][SBERT] pause event: %s (temp=%.1fC)",
+                                result.repair_action,
+                                result.temp_c,
+                            )
+                elif temp_c > float(self._guard.pause_threshold_c):
+                    result = self._guard.wait_until_safe(context=context)
+                    if result.paused:
+                        logger.warning(
+                            "[ThermalGuard][SBERT] pause event: %s (temp=%.1fC)",
+                            result.repair_action,
+                            result.temp_c,
+                        )
             yield batch
 
 
@@ -1015,6 +1321,20 @@ def main(argv=None):
         help="Disable GPU thermal guard.",
     )
     parser.set_defaults(gpu_temp_guard=None)
+    thermal_switch_group = parser.add_mutually_exclusive_group()
+    thermal_switch_group.add_argument(
+        "--switch-on-thermal",
+        dest="switch_on_thermal",
+        action="store_true",
+        help="Enable GPU->CPU thermal switching and resume to GPU when temperature recovers.",
+    )
+    thermal_switch_group.add_argument(
+        "--no-switch-on-thermal",
+        dest="switch_on_thermal",
+        action="store_false",
+        help="Disable thermal GPU->CPU switching and keep pause-only behavior.",
+    )
+    parser.set_defaults(switch_on_thermal=None)
     parser.add_argument("--gpu-temp-pause-threshold-c", type=float, default=90.0)
     parser.add_argument("--gpu-temp-resume-threshold-c", type=float, default=80.0)
     parser.add_argument("--gpu-temp-critical-threshold-c", type=float, default=None)
@@ -1025,8 +1345,10 @@ def main(argv=None):
     resolved_device = resolve_torch_device(args.device)
     logger.info(f"SBERT train device requested='{args.device}', resolved='{resolved_device}'")
     gpu_temp_guard_enabled = True if args.gpu_temp_guard is None else bool(args.gpu_temp_guard)
+    switch_on_thermal_enabled = False if args.switch_on_thermal is None else bool(args.switch_on_thermal)
     if not resolved_device.startswith("cuda"):
         gpu_temp_guard_enabled = False
+        switch_on_thermal_enabled = False
     if args.gpu_temp_pause_threshold_c <= 0:
         raise ValueError("gpu_temp_pause_threshold_c must be > 0")
     if args.gpu_temp_resume_threshold_c <= 0:
@@ -1100,6 +1422,7 @@ def main(argv=None):
         use_amp=not args.no_amp,
         device=resolved_device,
         gpu_temp_guard_enabled=gpu_temp_guard_enabled,
+        switch_on_thermal=switch_on_thermal_enabled,
         gpu_temp_pause_threshold_c=args.gpu_temp_pause_threshold_c,
         gpu_temp_resume_threshold_c=args.gpu_temp_resume_threshold_c,
         gpu_temp_critical_threshold_c=args.gpu_temp_critical_threshold_c,

@@ -273,6 +273,8 @@ def _apply_gpu_temp_guard_overrides(
         training_config.gpu_temp_critical_threshold_c = float(args.gpu_temp_critical_threshold_c)
     if args.gpu_temp_poll_interval_seconds is not None:
         training_config.gpu_temp_poll_interval_seconds = float(args.gpu_temp_poll_interval_seconds)
+    if args.switch_on_thermal is not None:
+        training_config.switch_on_thermal = bool(args.switch_on_thermal)
 
     if not str(resolved_device).startswith("cuda"):
         if training_config.gpu_temp_guard_enabled:
@@ -281,8 +283,29 @@ def _apply_gpu_temp_guard_overrides(
                 resolved_device,
             )
         training_config.gpu_temp_guard_enabled = False
+        if training_config.switch_on_thermal:
+            logging.info(
+                "Disabling switch_on_thermal because resolved device is '%s'",
+                resolved_device,
+            )
+        training_config.switch_on_thermal = False
 
     _validate_gpu_temp_guard_config(training_config)
+
+    if training_config.gpu_temp_guard_enabled and str(resolved_device).startswith("cuda"):
+        if training_config.gpu_temp_critical_threshold_c is None:
+            logging.info(
+                "GPU thermal critical offload disabled (gpu_temp_critical_threshold_c is null); pause-only thermal guard remains active."
+            )
+        else:
+            logging.info(
+                "GPU thermal critical offload enabled (critical>=%.1fC).",
+                float(training_config.gpu_temp_critical_threshold_c),
+            )
+        logging.info(
+            "GPU thermal switch_on_thermal=%s",
+            bool(training_config.switch_on_thermal),
+        )
 
 
 def _run_sbert_task(
@@ -393,6 +416,10 @@ def _run_sbert_task(
         argv.append("--gpu-temp-guard")
     else:
         argv.append("--no-gpu-temp-guard")
+    if bool(training_config.switch_on_thermal):
+        argv.append("--switch-on-thermal")
+    else:
+        argv.append("--no-switch-on-thermal")
     argv.extend(
         [
             "--gpu-temp-pause-threshold-c",
@@ -457,6 +484,20 @@ def main(argv=None):
         help="Disable GPU thermal guard.",
     )
     parser.set_defaults(gpu_temp_guard=None)
+    switch_on_thermal_group = parser.add_mutually_exclusive_group()
+    switch_on_thermal_group.add_argument(
+        "--switch-on-thermal",
+        dest="switch_on_thermal",
+        action="store_true",
+        help="Enable GPU->CPU thermal switching (critical threshold) with resume back to GPU.",
+    )
+    switch_on_thermal_group.add_argument(
+        "--no-switch-on-thermal",
+        dest="switch_on_thermal",
+        action="store_false",
+        help="Disable thermal GPU->CPU switching and keep pause-only guard behavior.",
+    )
+    parser.set_defaults(switch_on_thermal=None)
     parser.add_argument(
         "--gpu-temp-pause-threshold-c",
         type=float,
@@ -473,7 +514,7 @@ def main(argv=None):
         "--gpu-temp-critical-threshold-c",
         type=float,
         default=None,
-        help="Optional critical temperature marker (logs critical state but keeps pause/retry policy).",
+        help="Optional critical threshold used by switch_on_thermal to trigger GPU->CPU training fallback.",
     )
     parser.add_argument(
         "--gpu-temp-poll-interval-seconds",

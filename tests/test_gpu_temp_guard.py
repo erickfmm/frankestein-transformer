@@ -10,6 +10,20 @@ if TORCH_AVAILABLE:
 
 @unittest.skipUnless(TORCH_AVAILABLE, "torch is required for gpu temp guard tests")
 class GpuTempGuardTests(unittest.TestCase):
+    def test_public_threshold_properties(self):
+        guard = GPUTemperatureGuard(
+            enabled=False,
+            device="cpu",
+            pause_threshold_c=91.0,
+            resume_threshold_c=79.0,
+            critical_threshold_c=95.0,
+            poll_interval_seconds=12.5,
+        )
+        self.assertAlmostEqual(guard.pause_threshold_c, 91.0)
+        self.assertAlmostEqual(guard.resume_threshold_c, 79.0)
+        self.assertAlmostEqual(float(guard.critical_threshold_c), 95.0)
+        self.assertAlmostEqual(guard.poll_interval_seconds, 12.5)
+
     def test_wait_until_safe_pauses_and_resumes(self):
         guard = GPUTemperatureGuard(
             enabled=False,

@@ -32,6 +32,10 @@ def _run_train(args: argparse.Namespace) -> int:
         argv.extend(["--gpu-temp-critical-threshold-c", str(args.gpu_temp_critical_threshold_c)])
     if args.gpu_temp_poll_interval_seconds is not None:
         argv.extend(["--gpu-temp-poll-interval-seconds", str(args.gpu_temp_poll_interval_seconds)])
+    if args.switch_on_thermal is True:
+        argv.append("--switch-on-thermal")
+    elif args.switch_on_thermal is False:
+        argv.append("--no-switch-on-thermal")
     result = train_main(argv)
     return int(result) if isinstance(result, int) else 0
 
@@ -148,6 +152,10 @@ def _run_sbert_train(args: argparse.Namespace) -> int:
         argv.append("--no_resample")
     if args.trust_remote_code:
         argv.append("--trust_remote_code")
+    if args.switch_on_thermal is True:
+        argv.append("--switch-on-thermal")
+    elif args.switch_on_thermal is False:
+        argv.append("--no-switch-on-thermal")
     result = sbert_train_main(argv)
     return int(result) if isinstance(result, int) else 0
 
@@ -209,6 +217,10 @@ def build_parser() -> argparse.ArgumentParser:
     train_parser.add_argument("--gpu-temp-resume-threshold-c", type=float, default=None)
     train_parser.add_argument("--gpu-temp-critical-threshold-c", type=float, default=None)
     train_parser.add_argument("--gpu-temp-poll-interval-seconds", type=float, default=None)
+    switch_on_thermal_group = train_parser.add_mutually_exclusive_group()
+    switch_on_thermal_group.add_argument("--switch-on-thermal", dest="switch_on_thermal", action="store_true")
+    switch_on_thermal_group.add_argument("--no-switch-on-thermal", dest="switch_on_thermal", action="store_false")
+    train_parser.set_defaults(switch_on_thermal=None)
     train_parser.set_defaults(func=_run_train)
 
     deploy_parser = subparsers.add_parser("deploy", help="Convert checkpoint to deployment artifacts")
@@ -264,6 +276,10 @@ def build_parser() -> argparse.ArgumentParser:
     sbert_train_parser.add_argument("--no_resample", action="store_true")
     sbert_train_parser.add_argument("--resample_std", type=float, default=0.3)
     sbert_train_parser.add_argument("--device", choices=["auto", "cpu", "cuda", "mps"], default="auto")
+    switch_on_thermal_group = sbert_train_parser.add_mutually_exclusive_group()
+    switch_on_thermal_group.add_argument("--switch-on-thermal", dest="switch_on_thermal", action="store_true")
+    switch_on_thermal_group.add_argument("--no-switch-on-thermal", dest="switch_on_thermal", action="store_false")
+    sbert_train_parser.set_defaults(switch_on_thermal=None)
     sbert_train_parser.set_defaults(func=_run_sbert_train)
 
     sbert_infer_parser = subparsers.add_parser("sbert-infer", help="Run SBERT inference tasks")

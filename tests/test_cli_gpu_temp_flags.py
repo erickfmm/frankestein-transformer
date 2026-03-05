@@ -26,6 +26,7 @@ class TrainCliGpuTempFlagTests(unittest.TestCase):
                     "95",
                     "--gpu-temp-poll-interval-seconds",
                     "30",
+                    "--switch-on-thermal",
                 ]
             )
         self.assertEqual(exit_code, 0)
@@ -36,15 +37,17 @@ class TrainCliGpuTempFlagTests(unittest.TestCase):
         self.assertIn("--gpu-temp-resume-threshold-c", forwarded_argv)
         self.assertIn("--gpu-temp-critical-threshold-c", forwarded_argv)
         self.assertIn("--gpu-temp-poll-interval-seconds", forwarded_argv)
+        self.assertIn("--switch-on-thermal", forwarded_argv)
 
     def test_forward_no_gpu_temp_guard_flag(self):
         mocked_train_main = Mock(return_value=0)
         fake_training_main_module = SimpleNamespace(main=mocked_train_main)
         with patch.dict("sys.modules", {"src.training.main": fake_training_main_module}):
-            exit_code = cli.main(["train", "--no-gpu-temp-guard"])
+            exit_code = cli.main(["train", "--no-gpu-temp-guard", "--no-switch-on-thermal"])
         self.assertEqual(exit_code, 0)
         forwarded_argv = mocked_train_main.call_args[0][0]
         self.assertIn("--no-gpu-temp-guard", forwarded_argv)
+        self.assertIn("--no-switch-on-thermal", forwarded_argv)
 
 
 if __name__ == "__main__":
