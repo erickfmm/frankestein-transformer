@@ -12,9 +12,21 @@
 \usepackage{algorithm}
 \usepackage{algpseudocode}
 \usepackage{geometry}
+\usepackage{tikz}
+\usepackage{graphicx}
+\usetikzlibrary{arrows.meta,positioning,fit,calc,backgrounds,shapes.geometric,shapes.multipart}
 \geometry{margin=1in}
+\hypersetup{colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue}
 
-\title{Transformer Encoder Frankenstein: Library, CLI, and Research Grounded Design Notes}
+\tikzset{
+box/.style={draw, rounded corners, align=center, minimum height=1cm, inner sep=6pt},
+line/.style={-Latex, thick},
+group/.style={draw, dashed, rounded corners, inner sep=8pt}
+}
+
+\newcommand{\fitfigure}[1]{\resizebox{\linewidth}{!}{#1}}
+
+\title{Transformer Encoder Frankenstein:\\Library, CLI, and Research-Grounded Design Notes}
 \author{
 Erick F. Merino M. \\
 This work is not affiliated \\
@@ -27,8 +39,11 @@ This work is not affiliated \\
 \maketitle
 
 \begin{abstract}
-This document reframes Transformer Encoder Frankenstein as a configuration-driven software toolkit and research workbench. We present the CLI-first workflow, mathematical descriptions of supported attention and sequence-mixer families, optimizer families mapped to the training schema, deployment quantization mechanics, and SBERT downstream tasks. We also include pseudocode and summary tables to make design trade-offs explicit for implementation and experimentation.
+This document presents Transformer Encoder Frankenstein as a configuration-driven toolkit for experimentation with modern encoder blocks, optimizer families, quantized deployment, and sentence-embedding workflows. The paper is organized as a technical map: it first explains how the schema constrains the system, then compares the supported model families, optimizer families, deployment path, and SBERT workflows. To improve practical readability, the document includes architecture diagrams, execution-flow diagrams, decision tables, and appendices that condense the supporting literature on transformer variants, sparse attention, gated attention, and optimizers.
 \end{abstract}
+
+\tableofcontents
+\newpage
 
 \section{Introduction}
 
@@ -41,7 +56,39 @@ The project command surface is:
 with subcommands:
 \texttt{train}, \texttt{deploy}, \texttt{quantize}, \texttt{infer}, \texttt{sbert-train}, \texttt{sbert-infer}.
 
+This paper is written to answer four operational questions:
+\begin{enumerate}[leftmargin=*]
+    \item What is the software contract that defines a valid experiment?
+    \item Which mixer or attention family should be used for a given memory/latency regime?
+    \item How are optimizer choices exposed through the schema and training loop?
+    \item How do deployment and sentence-embedding workflows connect back to the same model definition?
+\end{enumerate}
+
+\subsection{Reading Guide}
+Sections 2 and 3 describe the configuration contract and the supported model families. Section 4 explains normalization options exposed by the current schema. Section 5 covers optimizer routing and training dynamics. Sections 6 and 7 describe deployment and SBERT workflows. Appendix A--D act as annexes summarizing the supporting literature files in \texttt{docs/bibliography/}.
+
+\begin{figure}[t]
+\centering
+\fitfigure{\begin{tikzpicture}[node distance=1.7cm and 0.9cm]
+\node[box, fill=blue!8] (cli) {\textbf{CLI Surface}\\\texttt{train}, \texttt{infer}, \texttt{deploy}\\\texttt{sbert-train}, \texttt{sbert-infer}};
+\node[box, fill=green!8, below=of cli] (schema) {\textbf{Schema Contract}\\\texttt{model\_class}, \texttt{model}, \texttt{training}};
+\node[box, fill=yellow!12, below left=of schema, xshift=-1.5cm] (mixers) {\textbf{Model Families}\\standard, sparse, gated,\\retentive, SSM, ODE, memory};
+\node[box, fill=orange!12, below=of schema] (optim) {\textbf{Optimizer Router}\\prefixed hyperparameters\\and safety controls};
+\node[box, fill=red!8, below right=of schema, xshift=1.5cm] (deploy) {\textbf{Outputs}\\quantized checkpoints,\\embeddings, inference artifacts};
+\draw[line] (cli) -- (schema);
+\draw[line] (schema) -- (mixers);
+\draw[line] (schema) -- (optim);
+\draw[line] (schema) -- (deploy);
+\draw[line] (mixers) -- (deploy);
+\draw[line] (optim) -- (deploy);
+\end{tikzpicture}}
+\caption{System view of the project: the CLI dispatches into a strict schema, which then controls architecture selection, optimizer behavior, and deploy/inference outputs.}
+\label{fig:system-overview}
+\end{figure}
+
 \section{Configuration-Centric Architecture}
+
+The core design choice in this repository is that experimentation is \emph{schema first}. Instead of exposing a large number of loosely checked flags, the project forces model topology, optimizer family, training limits, and telemetry options through a single validated configuration document. This reduces ambiguity when reproducing results and makes it possible to compare many architectures under a consistent operational interface.
 
 The authoritative contract is \texttt{src/training/configs/schema.yaml}. It enforces three top-level objects:
 \begin{itemize}[leftmargin=*]
@@ -77,6 +124,23 @@ which corresponds to current attention and sequence-mixer literature \citep{sun_
 
 The \texttt{training.optimizer.optimizer\_class} supports a broad optimizer family:
 \texttt{adamw}, \texttt{adafactor}, \texttt{radam}, \texttt{adan}, \texttt{adopt}, \texttt{ademamix}, \texttt{mars\_adamw}, \texttt{cautious\_adamw}, \texttt{schedulefree\_adamw}, \texttt{lion}, \texttt{sophia}, \texttt{prodigy}, \texttt{muon}, \texttt{turbo\_muon}, \texttt{shampoo}, \texttt{soap}, and others.
+
+\begin{figure}[t]
+\centering
+\fitfigure{\begin{tikzpicture}[node distance=1.4cm and 1.0cm]
+\node[box, fill=green!8] (cfg) {\textbf{YAML Config}};
+\node[box, fill=green!8, below=of cfg] (tops) {\texttt{model\_class}\\\texttt{model}\\\texttt{training}};
+\node[box, fill=blue!8, below left=of tops, xshift=-1.2cm] (model) {\textbf{Model Block}\\depth, heads, pattern,\\norms, FFN, MoE};
+\node[box, fill=orange!10, below=of tops] (train) {\textbf{Training Block}\\dataset, AMP, clipping,\\scheduler, telemetry};
+\node[box, fill=yellow!12, below right=of tops, xshift=1.2cm] (opt) {\textbf{Optimizer Block}\\class + prefixed\\parameter groups};
+\draw[line] (cfg) -- (tops);
+\draw[line] (tops) -- (model);
+\draw[line] (tops) -- (train);
+\draw[line] (tops) -- (opt);
+\end{tikzpicture}}
+\caption{The schema acts as the experiment contract. The three top-level objects partition model definition, training runtime, and optimizer parameterization.}
+\label{fig:schema-contract}
+\end{figure}
 
 \subsection{Schema Scope and Validation Rules}
 
@@ -246,7 +310,7 @@ then overflow guards use \texttt{inf\_post\_clip\_threshold} and retry logic bou
 
 \section{Normalization Variants: RMSNorm, Dynamic Tanh, and Dynamic Erf}
 
-Normalization and normalization-alternatives are central to training stability and throughput in transformer-like systems. Based on ArXiv sources, the three relevant formulations are:
+Normalization determines how activation scale is controlled across depth. In this repository, normalization is not only a modeling choice but also a schema compatibility question, because only certain values are currently accepted by \texttt{norm\_type}. The three formulations most relevant to this codebase are:
 
 \subsection{RMSNorm}
 RMSNorm removes mean-centering and only rescales by root mean square magnitude \citep{zhang_root_2019}:
@@ -291,6 +355,32 @@ Dynamic Erf (Derf) & $\mathrm{erf}(\alpha x+s)$ & none & Normalization-free alte
 \normalsize
 
 \section{Attention and Sequence-Mixer Families}
+
+This is the most heterogeneous part of the project. The supported blocks fall into five practical groups:
+\begin{enumerate}[leftmargin=*]
+    \item dense attention baselines,
+    \item linear-recurrent or retentive alternatives,
+    \item continuous-depth blocks,
+    \item sparse attention families for longer contexts,
+    \item gated mechanisms that control forgetting or memory writes.
+\end{enumerate}
+
+\begin{figure}[t]
+\centering
+\fitfigure{\begin{tikzpicture}[node distance=1.6cm and 0.7cm]
+\node[box, fill=blue!8] (root) {\textbf{Layer Pattern Registry}};
+\node[box, fill=blue!6, below left=of root, xshift=-2.4cm] (dense) {\textbf{Dense}\\standard\\sigmoid};
+\node[box, fill=green!8, below=of root] (recur) {\textbf{Recurrent / Retentive}\\RetNet, Mamba, ODE, Titans};
+\node[box, fill=yellow!10, below right=of root, xshift=2.4cm] (sparse) {\textbf{Sparse}\\Sparse Transformer, Longformer,\\BigBird, SparseK, NSA, SpargeAttn, FASA};
+\node[box, fill=red!8, below=of recur] (gated) {\textbf{Gated}\\GLA, DeltaNet, Gated DeltaNet,\\HGRN2, FoX, Gated Softmax};
+\draw[line] (root) -- (dense);
+\draw[line] (root) -- (recur);
+\draw[line] (root) -- (sparse);
+\draw[line] (recur) -- (gated);
+\end{tikzpicture}}
+\caption{Taxonomy of the supported sequence mixers and attention blocks. The registry mixes classical dense attention, recurrent alternatives, sparse approximations, and gated memory mechanisms.}
+\label{fig:mixer-taxonomy}
+\end{figure}
 
 \subsection{Standard Attention}
 Given projected matrices $(Q,K,V)$:
@@ -349,6 +439,22 @@ and gated blocks:
 
 The implementation enforces an explicit execution policy for training-free sparse methods:
 \texttt{fasa\_attn} and \texttt{sparge\_attn} are eval/inference-only and raise runtime errors if used while the model is in training mode.
+
+\begin{figure}[t]
+\centering
+\fitfigure{\begin{tikzpicture}[node distance=0.9cm and 0.9cm]
+\node[box, fill=gray!10] (tokens) {Token sequence};
+\node[box, fill=blue!8, below left=1.1cm and 2.5cm of tokens] (local) {Local / windowed\\Longformer};
+\node[box, fill=yellow!10, below=1.1cm of tokens] (hybrid) {Hybrid sparse graph\\BigBird / Sparse Transformer};
+\node[box, fill=orange!12, below right=1.1cm and 2.5cm of tokens] (select) {Selective pruning\\SparseK / NSA / FASA / SpargeAttn};
+\draw[line] (tokens) -- (local);
+\draw[line] (tokens) -- (hybrid);
+\draw[line] (tokens) -- (select);
+\node[group, fit=(local)(hybrid)(select), label=below:{\small Three sparse design strategies: locality, structured graph sparsity, and learned or predicted selection}] {};
+\end{tikzpicture}}
+\caption{Conceptual map of sparse attention design choices used in the codebase. Different methods reduce cost by restricting neighborhoods, constructing sparse graphs, or selecting only high-value tokens/blocks.}
+\label{fig:sparse-map}
+\end{figure}
 
 \subsection{Implemented Sparse Attention Blocks (Detailed)}
 This codebase includes seven sparse attention families aligned with the sparse attention survey notes in \texttt{docs/bibliography/SPARSE\_TRANSFORMER\_TYPES.md} \citep{child_sparse_transformer_2019,beltagy_longformer_2020,zaheer_bigbird_2020,lou_sparsek_2024,yuan_nsa_2025,zhang_spargeattn_2025,wang_fasa_2026}.
@@ -415,6 +521,24 @@ FASA & No (training-free) & selected-token dependent & dominant frequency chunks
 
 \subsection{Implemented Gated Attention Blocks (Detailed)}
 This codebase includes seven gated blocks aligned with \texttt{docs/bibliography/GATED\_TRANSFORMER\_TYPES.md} \citep{yang_gla_2023,yang_deltanet_2024,yang_gated_deltanet_2024,sun_retentive_2023,qin_hgrn2_2024,lin_forgetting_transformer_2025,qiu_gated_attention_2025}.
+
+The unifying idea is that gating controls \emph{what information survives}. Some gates act on recurrent state updates (GLA, DeltaNet variants, HGRN2), while others modify the full attention path itself (FoX and Gated Softmax). This makes gating especially useful when the model must trade off recall, recency, and bounded memory.
+
+\begin{figure}[t]
+\centering
+\fitfigure{\begin{tikzpicture}[node distance=1.2cm and 1.0cm]
+\node[box, fill=green!8] (state) {Previous state\\$S_{t-1}$};
+\node[box, fill=red!8, right=of state] (gate) {Gate(s)\\$\alpha_t,\beta_t,G_t,f_t$};
+\node[box, fill=blue!8, right=of gate] (write) {New key/value\\or SDPA output};
+\node[box, fill=yellow!12, below=of gate] (next) {Updated memory / output\\$S_t$ or $O_t$};
+\draw[line] (state) -- (gate);
+\draw[line] (gate) -- (write);
+\draw[line] (state) |- (next);
+\draw[line] (write) -- (next);
+\end{tikzpicture}}
+\caption{Generic gating template. A gate can decay existing memory, regulate write strength, or modulate dense attention outputs, depending on the block family.}
+\label{fig:gating-template}
+\end{figure}
 
 \paragraph{GLA (\texttt{gla\_attn}).}
 Gated Linear Attention applies data-dependent multiplicative decay in recurrent state updates:
@@ -515,6 +639,8 @@ Gated Softmax & full attention matrix & post-attention sigmoid gate & Yes & Sigm
 
 \section{Optimizer Families and Training Dynamics}
 
+Optimizer support is broad because the project is intended as a research workbench, not a single-model training script. The schema therefore separates two concerns: selecting an optimizer class and routing the right prefixed hyperparameters to the correct parameter groups.
+
 \subsection{Core Adaptive Form}
 Many supported optimizers share moment tracking:
 \[
@@ -538,6 +664,25 @@ followed by preconditioned updates (e.g., AdamW) \citep{loshchilov_decoupled_201
     \item \textbf{Muon/Turbo-Muon}: orthogonality-oriented updates with acceleration \citep{shen_convergence_2025,boissin_turbo-muon_2025}.
 \end{itemize}
 
+\begin{figure}[t]
+\centering
+\fitfigure{\begin{tikzpicture}[node distance=1.1cm and 1.0cm]
+\node[box, fill=blue!8] (start) {Choose optimizer objective};
+\node[box, fill=green!8, below left=of start, xshift=-1.5cm] (baseline) {Reliable baseline\\AdamW / RAdam};
+\node[box, fill=yellow!12, below=of start] (memory) {Lower optimizer memory\\Adafactor / GaLore / Lion};
+\node[box, fill=orange!12, below right=of start, xshift=1.5cm] (advanced) {Aggressive or structured\\Adan, ADOPT, Sophia,\\Shampoo, SOAP, Muon};
+\node[box, fill=red!8, below=of memory] (route) {Schema-prefixed groups\\LR, weight decay, betas, eps};
+\draw[line] (start) -- (baseline);
+\draw[line] (start) -- (memory);
+\draw[line] (start) -- (advanced);
+\draw[line] (baseline) -- (route);
+\draw[line] (memory) -- (route);
+\draw[line] (advanced) -- (route);
+\end{tikzpicture}}
+\caption{Optimizer selection in practice: the class determines the update rule, while the schema controls how hyperparameters are applied across embeddings, norms, recurrent blocks, attention blocks, and other parameters.}
+\label{fig:optimizer-routing}
+\end{figure}
+
 \begin{algorithm}[t]
 \caption{Schema-Routed Optimizer Step (Conceptual)}
 \begin{algorithmic}[1]
@@ -557,6 +702,21 @@ followed by preconditioned updates (e.g., AdamW) \citep{loshchilov_decoupled_201
 \section{Quantization and Deployment}
 
 The deploy stack uses ternary weight packing plus INT8 activation quantization for efficient artifacts.
+
+\begin{figure}[t]
+\centering
+\fitfigure{\begin{tikzpicture}[node distance=1.3cm and 0.9cm]
+\node[box, fill=blue!8] (ckpt) {Trained checkpoint};
+\node[box, fill=yellow!10, right=of ckpt] (quant) {Weight packing\\ternary / low-bit};
+\node[box, fill=orange!12, right=of quant] (act) {Activation scaling\\INT8 path};
+\node[box, fill=green!8, right=of act] (artifact) {Deployable artifact\\smaller storage footprint};
+\draw[line] (ckpt) -- (quant);
+\draw[line] (quant) -- (act);
+\draw[line] (act) -- (artifact);
+\end{tikzpicture}}
+\caption{Deployment path from a trained checkpoint to a compact artifact. The codebase treats quantization as a deploy-stage transformation rather than a separate model family.}
+\label{fig:deploy-flow}
+\end{figure}
 
 \subsection{Ternary Quantization}
 Given weight tensor $W$, a practical scaling is:
@@ -599,6 +759,21 @@ Supported downstream modes:
     \item \textbf{Cluster}: grouping embeddings (e.g., k-means).
     \item \textbf{Encode}: persistent embedding export for later retrieval.
 \end{itemize}
+
+\begin{figure}[t]
+\centering
+\fitfigure{\begin{tikzpicture}[node distance=1.1cm and 1.0cm]
+\node[box, fill=blue!8] (encoder) {Shared encoder};
+\node[box, fill=yellow!10, below left=of encoder, xshift=-1.2cm] (sim) {Similarity\\cosine score};
+\node[box, fill=green!8, below=of encoder] (search) {Search\\top-$k$ retrieval};
+\node[box, fill=orange!12, below right=of encoder, xshift=1.2cm] (cluster) {Cluster / encode\\offline analysis};
+\draw[line] (encoder) -- (sim);
+\draw[line] (encoder) -- (search);
+\draw[line] (encoder) -- (cluster);
+\end{tikzpicture}}
+\caption{SBERT workflow reuse. A single encoder supports online pair scoring, corpus retrieval, clustering, and persistent embedding export.}
+\label{fig:sbert-modes}
+\end{figure}
 
 \begin{algorithm}[t]
 \caption{SBERT Inference Mode Router}
@@ -679,6 +854,283 @@ The design also aligns with multilingual and compact-model directions in the lit
 \section{Conclusion}
 
 Transformer Encoder Frankenstein is positioned as a practical experimentation platform: a strict configuration schema, extensible optimizer and attention families, deploy-time quantization, and sentence embedding workflows in one CLI. This makes it suitable for both rapid iteration and reproducible model operations.
+
+\appendix
+
+\section{Annex A: Optimizer Families from \texttt{OPTIMIZERS.md}}
+
+\subsection{The Evolution of Optimization in Neural Networks}
+The optimizer survey frames transformer optimization as a response to three structural pressures: non-convex loss landscapes, severe curvature heterogeneity across parameter blocks, and the memory cost of storing optimizer state for very large models. The report argues that the field has diverged into several trajectories: adaptive first-order baselines, variance-reduction methods, memory-efficient methods, structured second-order preconditioners, schedule-free methods, and orthogonality-oriented updates.
+
+\subsection{Standard Baseline and Adaptive Optimizers}
+\paragraph{SGD with Momentum.}
+The classical update accumulates a momentum buffer and then applies a fixed learning rate. Its strengths are low memory overhead and strong generalization when tuned carefully. Its main weakness in transformer workloads is poor robustness to heterogeneous curvature and a high dependence on learning-rate schedules.
+
+\paragraph{Adam and AdamW.}
+Adam tracks first and second moments of the gradient; AdamW decouples weight decay from the adaptive step. The report treats AdamW as the practical baseline for transformer fine-tuning because it converges quickly and is relatively forgiving. The tradeoff is state cost, since both moment tensors must be stored for every parameter.
+
+\paragraph{RAdam.}
+RAdam introduces variance rectification in early training, motivated by the observation that Adam's adaptive denominator is unreliable during initial steps. It is positioned as a way to reduce warmup sensitivity without abandoning the Adam family.
+
+\subsection{Advanced Momentum and Variance Reduction (2024--2025)}
+\paragraph{Adan.}
+Adan reformulates Nesterov-style momentum so that it does not need the extra forward/backward pass of classical Nesterov acceleration. The survey emphasizes its fast convergence across CNNs, GANs, and transformers, but also notes the cost of keeping three momentum-like states.
+
+\paragraph{ADOPT.}
+ADOPT modifies Adam's update ordering to address theoretical non-convergence issues. In the report it is presented as a drop-in adaptive optimizer with stronger convergence guarantees and broad empirical performance, especially when one wants Adam-like behavior with fewer theoretical caveats.
+
+\paragraph{AdEMAMix.}
+AdEMAMix mixes short-horizon and long-horizon exponential moving averages. The key idea is to combine fast adaptation with slower historical smoothing so the optimizer can respond to sharp local changes without discarding longer-term signal.
+
+\paragraph{MARS.}
+MARS belongs to the variance-reduction line of work. The survey frames it as a way to make preconditioned adaptive optimization more stable by correcting momentum recursion and reducing gradient noise.
+
+\paragraph{Cautious Optimizers.}
+Cautious AdamW and related variants mask updates when the momentum direction and the current gradient disagree. The intended effect is to suppress harmful steps and keep only sign-consistent motion.
+
+\subsection{Large-Batch, Memory-Efficient, and Parameter-Free Optimizers}
+\paragraph{LAMB.}
+LAMB is included in the survey as a large-batch optimizer that scales updates layerwise. Its practical role is to keep optimization stable when batch sizes become very large.
+
+\paragraph{Schedule-Free AdamW.}
+Schedule-free methods remove explicit scheduler design from the optimization recipe. The markdown emphasizes operational simplicity: instead of investing effort in warmup and decay design, one can use an optimizer whose update dynamics absorb part of that responsibility.
+
+\paragraph{Adafactor.}
+Adafactor factorizes second-moment statistics for matrix-shaped parameters, dramatically reducing optimizer-state memory. It is most attractive when memory is the bottleneck and some loss in optimizer simplicity is acceptable.
+
+\paragraph{GaLore.}
+GaLore projects gradients into a low-rank subspace before optimization. The report treats it as a complementary memory-saving path that is especially relevant when the model is too large for full-rank optimizer state.
+
+\paragraph{Prodigy.}
+Prodigy is grouped under parameter-free or distance-adaptive methods. The core claim is that it estimates effective step sizes from optimization geometry, reducing the need for explicit learning-rate tuning.
+
+\subsection{Second-Order, Geometric, and Orthogonality Optimizers}
+\paragraph{Shampoo.}
+Shampoo computes matrix preconditioners from Kronecker-structured statistics. It is one of the most explicit second-order methods in the report and is motivated by conditioning improvements rather than minimal implementation complexity.
+
+\paragraph{SOAP.}
+SOAP keeps Adam-style tracking in the eigenbasis of a Shampoo-like preconditioner. The survey presents it as a hybrid between full matrix preconditioning and adaptive first-order behavior.
+
+\paragraph{Lion.}
+Lion uses sign momentum updates and therefore carries much smaller state than Adam-like methods. The markdown positions it as a low-memory, high-throughput alternative rather than a universally superior optimizer.
+
+\paragraph{Sophia.}
+Sophia uses approximate second-order information through diagonal Hessian estimates and clipped updates. It belongs to the family of curvature-aware methods that seek better conditioning without paying the full cost of dense second-order optimization.
+
+\paragraph{Muon and Turbo-Muon.}
+Muon and Turbo-Muon are described as orthogonality-oriented optimizers that explicitly reshape update geometry. Turbo-Muon adds faster Newton--Schulz-style orthogonalization, making the same basic idea more practical at scale.
+
+\small
+\begin{longtable}{p{2.5cm}p{3.5cm}p{2.0cm}p{5.3cm}}
+\toprule
+\textbf{Group} & \textbf{Methods} & \textbf{Primary Goal} & \textbf{Interpretation from the Survey} \\
+\midrule
+\endhead
+Classical baseline & SGD, AdamW, RAdam & stability and reference baselines & These define the comparison floor for newer optimizer claims. \\
+Momentum redesign & Adan, AdEMAMix, MARS, Cautious AdamW & faster or safer first-order adaptation & Best when convergence speed or noisy-gradient stability is the main concern. \\
+Large-batch and schedule simplification & LAMB, Schedule-Free AdamW & operational robustness at scale & Reduce brittleness from batch-size growth or schedule engineering. \\
+Memory-efficient & Adafactor, GaLore, Lion & optimizer-state reduction & Most useful when VRAM is dominated by optimizer state rather than activations. \\
+Curvature-aware & Shampoo, SOAP, Sophia & better conditioning & Prefer when richer geometry is worth implementation and compute overhead. \\
+Geometry-oriented & Muon, Turbo-Muon & orthogonalized update structure & Specialized options for matrix geometry and representation shaping. \\
+\bottomrule
+\end{longtable}
+\normalsize
+
+\section{Annex B: Transformer Families from \texttt{TRANSFORMER\_TYPES.md}}
+
+\subsection{Standard Attention}
+The markdown presents standard attention as the reference architecture for global contextualization. Every token attends to every other token through a softmax-normalized similarity matrix. Its major advantage is expressiveness: it can preserve perfect historical recall inside the active context window and it parallelizes well during training. Its main limitations are the quadratic training footprint and the KV-cache burden during decoding.
+
+\subsection{Sigmoid Attention}
+Sigmoid attention keeps the same query--key similarity matrix but replaces row-wise softmax normalization with an elementwise sigmoid. The survey highlights three implications: token competition is reduced, the computation avoids some row-wise synchronization, and the method can be more hardware-friendly. The cost is training instability at scale, which motivated the ``hybrid-norm'' stabilization techniques discussed in the source document.
+
+\subsection{RetNet}
+RetNet is presented as a bridge between attention and recurrence. In parallel form it resembles an attention-like interaction masked by exponential decay; in recurrent form it compresses history into a fixed-size state updated with decay. The report emphasizes its triple computation modes: parallel, recurrent, and chunkwise recurrent. The main tradeoff is that the fixed decay law imposes a stronger inductive bias than unconstrained softmax attention.
+
+\subsection{Mamba}
+Mamba replaces explicit attention with a selective state-space recurrence whose parameters depend on the input. The annex source stresses that its importance lies not only in linear asymptotic complexity but also in the hardware-aware scan algorithm that makes the linear recurrence practical on accelerators. The downside is that state compression can weaken exact recall and copying behavior relative to full attention.
+
+\subsection{ODE Transformer}
+The ODE transformer treats depth as numerical integration over a continuous dynamical system. The source discusses Runge--Kutta refinement as a way to reduce truncation error and improve sequence generation quality. The benefit is a more expressive intra-block trajectory with weight sharing; the drawback is higher cost because each block now behaves like several solver stages.
+
+\subsection{Titans}
+Titans introduces test-time neural memorization: instead of storing only activations, the model updates an internal memory using surprise-driven learning signals during inference. The markdown frames this as a way to handle extremely long contexts and associative recall beyond what fixed-state recurrent models typically support. The systems cost is higher implementation complexity because inference now includes memory adaptation logic.
+
+\subsection{Synthesis and Systemic Insights}
+The transformer survey ends with four synthesis claims:
+\begin{itemize}[leftmargin=*]
+    \item sequence modeling is shaped by an expressivity-versus-compression tradeoff,
+    \item hardware substrate constraints now strongly influence which architectures win,
+    \item continuous-time views provide a useful language for understanding depth and refinement,
+    \item the field is converging toward hybrid models that mix compression, recurrence, sparse routing, and test-time adaptation.
+\end{itemize}
+
+\begin{figure}[t]
+\centering
+\fitfigure{\begin{tikzpicture}[node distance=1.2cm and 1.0cm]
+\node[box, fill=blue!8] (pair) {Pairwise token interaction\\Standard / Sigmoid attention};
+\node[box, fill=green!8, below=of pair] (decay) {Decayed recurrent state\\RetNet / HGRN2 / GLA};
+\node[box, fill=yellow!10, below left=of decay, xshift=-1.7cm] (ssm) {Selective state evolution\\Mamba-like SSMs};
+\node[box, fill=orange!12, below right=of decay, xshift=1.7cm] (memory) {Adaptive external memory\\Titans-style updates};
+\draw[line] (pair) -- (decay);
+\draw[line] (decay) -- (ssm);
+\draw[line] (decay) -- (memory);
+\end{tikzpicture}}
+\caption{Annex view of transformer evolution: the field moves from explicit pairwise routing toward progressively more compressed or adaptive memory formulations.}
+\label{fig:annex-transformer-evolution}
+\end{figure}
+
+\small
+\begin{longtable}{p{2.4cm}p{2.1cm}p{2.2cm}p{5.7cm}}
+\toprule
+\textbf{Architecture} & \textbf{Training Trend} & \textbf{Inference Trend} & \textbf{Main Characterization in the Markdown} \\
+\midrule
+\endhead
+Standard Attention & quadratic & KV-cache based, linear per step & Highest expressiveness and direct token routing, but bottlenecked by dense pairwise interactions. \\
+Sigmoid Attention & quadratic & linear per step & Removes zero-sum competition and improves kernel behavior, but needs stabilization for large-scale training. \\
+RetNet & chunkwise or quadratic & constant-state recurrent inference & Unifies attention-style training with recurrent deployment through retention and decay. \\
+Mamba & linear & constant-state recurrent inference & Selective state-space model with hardware-aware scan; strong long-context efficiency. \\
+ODE Transformer & solver-dependent & solver-dependent & Continuous-depth interpretation with accuracy gains from multi-stage numerical integration. \\
+Titans & roughly linear in sequence length & memory-retrieval centered & Adds test-time adaptive memorization for extreme context and recall. \\
+\bottomrule
+\end{longtable}
+\normalsize
+
+\section{Annex C: Sparse Attention Families from \texttt{SPARSE\_TRANSFORMER\_TYPES.md}}
+
+\subsection{Executive Summary}
+The sparse-attention report treats sparsity as a full design space rather than a single approximation trick. The methods vary along three axes: whether the sparse pattern is fixed or data-dependent, whether the mechanism is trainable or training-free, and whether the sparsity unit is a token, a window, or a block.
+
+\subsection{Sparse Transformer}
+Sparse Transformer uses factorized sparse masks built from strided and fixed connectivity patterns. The markdown emphasizes that two sparse heads can approximate full reachability with much lower cost than dense attention. The advantages are strong early empirical results and sub-quadratic complexity; the drawback is that the pattern is data-agnostic.
+
+\subsection{Longformer}
+Longformer combines sliding-window locality, optional dilation, and task-specific global tokens. Its main value is practical linear scaling for long documents. The report notes that it is a drop-in replacement for standard attention in many settings, but window size and global-token selection remain task-dependent design choices.
+
+\subsection{BigBird}
+BigBird mixes local windows, random connections, and global tokens. The sparse-attention markdown highlights its theoretical guarantees: universal approximation and Turing completeness can be preserved with sparse graphs as long as enough global structure is retained.
+
+\subsection{FASA}
+FASA is a training-free decode-time method that predicts token importance from dominant frequency chunks in RoPE-based models. The key claims in the source are strong KV-cache compression and decoding speedup, plus compatibility with other compression methods. The limitations are its dependence on a frequency-analysis step and its focus on decoding rather than full training-time attention.
+
+\subsection{NSA}
+Native Sparse Attention is a trainable three-branch architecture composed of compressed, selected, and window branches. The report frames it as hardware-aligned sparse attention designed to use tensor cores efficiently. Its complexity is not only algorithmic but also architectural because the method introduces multiple branches and gating logic.
+
+\subsection{SparseK}
+SparseK uses a differentiable top-$k$ selection mechanism to determine which key/value pairs should participate in attention. The report presents it as end-to-end trainable and especially attractive for generation because the active memory can remain small. The weakness is that top-$k$ selection may lead to irregular memory access patterns.
+
+\subsection{SpargeAttn}
+SpargeAttn is a training-free universal sparse method that first predicts negligible interactions and then applies softmax-aware filtering. The survey highlights that it applies beyond language models to image and video diffusion workloads as well. Its performance depends on whether the model already contains enough inherent sparsity to exploit.
+
+\subsection{Comparison Pattern}
+Across the markdown source, the methods naturally group into:
+\begin{enumerate}[leftmargin=*]
+    \item patterned sparsity: Sparse Transformer and Longformer,
+    \item graph sparsity: BigBird,
+    \item learned or predicted selection: SparseK and NSA,
+    \item training-free acceleration: SpargeAttn and FASA.
+\end{enumerate}
+
+\small
+\begin{longtable}{p{2.4cm}p{2.8cm}p{1.8cm}p{2.2cm}p{4.8cm}}
+\toprule
+\textbf{Method} & \textbf{Mechanism} & \textbf{Trainable} & \textbf{Sparsity Unit} & \textbf{Main Takeaway from the Markdown} \\
+\midrule
+\endhead
+Sparse Transformer & strided + fixed factorized masks & Yes & token neighborhood & Structured reachability lowers cost but remains data-agnostic. \\
+Longformer & sliding window + dilation + global tokens & Yes & local window + global anchors & Practical linear scaling for long documents with selective global access. \\
+BigBird & random + local + global sparse graph & Yes & sparse edge set / blocks & Preserves strong theoretical properties while remaining sparse. \\
+FASA & frequency-aware decode-time selection & No & selected tokens / cache entries & Training-free KV compression guided by RoPE frequency structure. \\
+NSA & compressed + selected + window branches & Yes & branchwise reduced views & Hardware-aligned trainable sparsity with learned branch fusion. \\
+SparseK & differentiable top-$k$ selection & Yes & selected key/value pairs & End-to-end selective attention with small active memory. \\
+SpargeAttn & two-stage online block filtering & No & attention blocks & Training-free acceleration path for already trained dense models. \\
+\bottomrule
+\end{longtable}
+\normalsize
+
+\small
+\begin{longtable}{p{2.6cm}p{2.2cm}p{2.1cm}p{5.1cm}}
+\toprule
+\textbf{Method} & \textbf{Complexity Trend} & \textbf{Training-Free?} & \textbf{Pros / Cons Emphasized in the Markdown} \\
+\midrule
+\endhead
+Sparse Transformer & sub-quadratic & No & Strong early benchmarks and long-sequence reach, but fixed patterns may miss important interactions. \\
+Longformer & linear in sequence length for fixed window & No & Scales well and is flexible, but still depends heavily on window and global-token design. \\
+BigBird & near-linear & No & Strong theory and long-context performance, but randomness and block structure complicate tuning. \\
+FASA & decode-time selective & Yes & Plug-and-play compression and speedup, but depends on RoPE/frequency analysis quality. \\
+NSA & reduced-token multi-branch & No & High speedups and strong benchmark results, but requires custom kernels and extra architecture complexity. \\
+SparseK & linear train / small active generation state & No & Differentiable and trainable, but adds scoring overhead and scattered access. \\
+SpargeAttn & sparsity-dependent acceleration & Yes & Universal and training-free, but gains depend on how sparse the underlying model already is. \\
+\bottomrule
+\end{longtable}
+\normalsize
+
+\section{Annex D: Gated Attention Families from \texttt{GATED\_TRANSFORMER\_TYPES.md}}
+
+\subsection{Executive Summary}
+The gated-attention survey argues that gating is the missing control mechanism in many linear-attention and recurrent alternatives. Without it, memory only accumulates. With it, the model can forget, rewrite, or selectively scale information. The source splits the field into recurrent-state gating and softmax-path gating.
+
+\subsection{Gated Linear Attention (GLA)}
+GLA augments linear attention with a data-dependent multiplicative decay gate. The survey emphasizes that this directly addresses memory overload in additive recurrent states and that chunkwise training makes the method hardware friendly. The tradeoff is that the gate is still less expressive than full attention on retrieval-heavy tasks.
+
+\subsection{DeltaNet}
+DeltaNet replaces pure accumulation with a delta-rule update: the memory is corrected by comparing the retrieved value against the desired value. The source frames this as online error correction and connects it to test-time training ideas. Its strength is strong associative recall; its weakness is memory crowding because there is no explicit global forgetting.
+
+\subsection{Gated DeltaNet}
+Gated DeltaNet combines the two ideas above: a decay gate controls forgetting while the delta rule controls targeted writing. In the markdown this is presented as the most balanced pure linear recurrent design because it supports rapid erasure and precise updates at the same time.
+
+\subsection{RetNet}
+RetNet appears again in the gated survey because fixed exponential decay can be interpreted as a gate. The report contrasts it with fully data-dependent methods: RetNet is simpler and efficient, but its forgetting pattern is predetermined rather than learned token by token.
+
+\subsection{HGRN2}
+HGRN2 uses lower-bounded hierarchical forget gates with outer-product state expansion. The markdown stresses that the hierarchical bounds encourage different layers to specialize to different timescales, though the method still lags behind stronger retrieval-oriented gated models.
+
+\subsection{Forgetting Transformer (FoX)}
+FoX keeps full softmax attention but adds a forget gate in logit space. The report treats it as a conservative modification for users who want the expressive power of dense attention while still imposing recency-aware memory control. Its main limitation remains quadratic complexity.
+
+\subsection{Gated Attention after SDPA}
+The final architecture in the source applies a sigmoid gate after scaled dot-product attention. The survey highlights two claimed benefits: the extra nonlinearity breaks part of the low-rank bottleneck in the output path, and the gate helps suppress the attention-sink phenomenon. This is the least disruptive gated variant because it leaves the core attention operator intact.
+
+\subsection{Taxonomy and Comparison Dimensions}
+The source also adds two useful comparison lenses:
+\begin{itemize}[leftmargin=*]
+    \item \textbf{state type}: fixed recurrent matrix state versus full attention matrix,
+    \item \textbf{gate location}: recurrent decay, write strength, logit bias, or post-attention modulation.
+\end{itemize}
+
+\small
+\begin{longtable}{p{2.6cm}p{2.4cm}p{2.1cm}p{5.1cm}}
+\toprule
+\textbf{Method} & \textbf{Gate Location} & \textbf{Dense Softmax?} & \textbf{Main Interpretation in the Markdown} \\
+\midrule
+\endhead
+GLA & recurrent state decay & No & Adds forgetting to linear attention to avoid uncontrolled memory accumulation. \\
+DeltaNet & write strength in recurrent update & No & Uses error-correcting writes for targeted memory replacement. \\
+Gated DeltaNet & decay + write gates & No & Combines global forgetting with local corrective memory editing. \\
+RetNet & fixed decay in retention state & No & Uses deterministic multi-scale decay rather than a fully data-dependent gate. \\
+HGRN2 & lower-bounded recurrent forget gates & No & Hierarchical gating distributes time scales across depth. \\
+FoX & attention-logit bias & Yes & Injects forget dynamics into the standard softmax pipeline. \\
+Gated Softmax & post-attention output gate & Yes & Keeps SDPA intact and adds multiplicative modulation afterward. \\
+\bottomrule
+\end{longtable}
+\normalsize
+
+\small
+\begin{longtable}{p{2.6cm}p{2.0cm}p{2.0cm}p{5.5cm}}
+\toprule
+\textbf{Architecture} & \textbf{State Type} & \textbf{Recall Strength} & \textbf{Pros / Cons Emphasized in the Markdown} \\
+\midrule
+\endhead
+GLA & matrix recurrent state & moderate & Good length generalization and chunkwise efficiency, but still weaker than softmax on hard retrieval. \\
+DeltaNet & matrix recurrent state & strong & Excellent associative recall and principled updates, but lacks global forgetting. \\
+Gated DeltaNet & matrix recurrent state & very strong & Best-balanced pure linear recurrent design, but richer transitions reduce throughput. \\
+RetNet & matrix recurrent state & weaker retrieval bias & Efficient and simple with no KV cache, but fixed decay is less adaptive. \\
+HGRN2 & matrix recurrent state & moderate & Multi-scale temporal modeling via hierarchical bounds, but lower recall than DeltaNet variants. \\
+FoX & full attention path & very strong & Preserves softmax expressiveness and improves length extrapolation, but remains quadratic. \\
+Gated Attention & full attention path & strong & Very simple modification with low overhead, but only applicable when dense SDPA is already present. \\
+\bottomrule
+\end{longtable}
+\normalsize
 
 % Include all requested bibliography collections.
 \nocite{zhang_continuous_2021,sun_mobilebert_2020,yang_looped_2024,reimers_sentence-bert_2019,wang_bitnet_2023,devlin_bert_2019,canete_spanish_2023,cai_survey_2025,yang_survey_2025,behrouz_titans_2024,gillin_bert-jepa_2026,bui_knowledge_2024,samson_lightweight_2026,zhu_transformers_2025,chen_stronger_2025,yongueng_holonorm_2025,bravin_embbert_2026,hwang_hydra_2024,dai_hope_2025,sun_retentive_2023,gu_mamba_2024,zhang_why_2020}
