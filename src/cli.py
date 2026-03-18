@@ -195,6 +195,45 @@ def _run_sbert_infer(args: argparse.Namespace) -> int:
     return int(result) if isinstance(result, int) else 0
 
 
+def _run_web_server(args: argparse.Namespace) -> int:
+    """Run the Streamlit web server for building configurations."""
+    import subprocess
+    import sys
+
+    # Build the streamlit run command
+    streamlit_cmd = [
+        sys.executable,
+        "-m",
+        "streamlit",
+        "run",
+        str(__file__).replace("cli.py", "streamlit_gui/app.py"),
+    ]
+    
+    if args.server_port:
+        streamlit_cmd.extend(["--server.port", str(args.server_port)])
+    
+    if args.server_address:
+        streamlit_cmd.extend(["--server.address", args.server_address])
+    
+    if args.server_headless:
+        streamlit_cmd.append("--server.headless")
+    
+    if args.development_mode:
+        streamlit_cmd.append("--logger.level=debug")
+    
+    print(f"Starting Streamlit server: {' '.join(streamlit_cmd)}")
+    
+    try:
+        result = subprocess.run(streamlit_cmd, check=True)
+        return int(result.returncode) if result.returncode else 0
+    except subprocess.CalledProcessError as e:
+        print(f"Error running Streamlit server: {e}", file=sys.stderr)
+        return e.returncode
+    except KeyboardInterrupt:
+        print("\nStreamlit server stopped by user.")
+        return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="frankestein-transformer",
@@ -297,6 +336,13 @@ def build_parser() -> argparse.ArgumentParser:
     sbert_infer_parser.add_argument("--batch_size", type=int, default=32)
     sbert_infer_parser.add_argument("--device", choices=["auto", "cpu", "cuda", "mps"], default="auto")
     sbert_infer_parser.set_defaults(func=_run_sbert_infer)
+
+    web_server_parser = subparsers.add_parser("web-server", help="Run Streamlit web server for building configurations")
+    web_server_parser.add_argument("--server-port", type=int, default=8501, help="Port to run the Streamlit server on")
+    web_server_parser.add_argument("--server-address", type=str, default="localhost", help="Address to bind the Streamlit server to")
+    web_server_parser.add_argument("--server-headless", action="store_true", help="Run in headless mode (no browser)")
+    web_server_parser.add_argument("--development-mode", action="store_true", help="Enable development mode (debug logging)")
+    web_server_parser.set_defaults(func=_run_web_server)
 
     return parser
 

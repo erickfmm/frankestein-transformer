@@ -22,3 +22,4 @@ PyYAML>=6.0.1
 # Optional: training extras (uncomment if needed)
 wandb>=0.15.0
 tensorboard>=2.14.0
+streamlit
