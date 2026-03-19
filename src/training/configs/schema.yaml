@@ -9,33 +9,39 @@ required:
 properties:
   base_model:
     type: string
-    description: "Base model id/path for continual pretraining or SBERT finetuning."
+    title: "Base Model"
+    description: "HuggingFace model identifier or local path for continual pretraining or SBERT fine-tuning. When specified, uses an existing pre-trained model instead of building from scratch. This enables transfer learning from models like ModernBERT, BERT, RoBERTa, etc. The model architecture is loaded automatically from the provided path/id."
     examples:
       - answerdotai/ModernBERT-base
       - /path/to/local/model
 
   tokenizer:
     type: object
-    description: "Tokenizer settings for base-model MLM training."
+    title: "Tokenizer Settings"
+    description: "Configuration for the tokenizer used when base_model is specified for MLM training. This controls how text is tokenized into input IDs for the pre-trained model. Required when using base_model with MLM task."
     additionalProperties: false
     properties:
       name_or_path:
         type: string
-        description: "Tokenizer id/path to load with AutoTokenizer."
+        title: "Tokenizer Path"
+        description: "HuggingFace tokenizer identifier or local path passed to AutoTokenizer.from_pretrained(). Must match the tokenizer used to train the base_model. For example: 'bert-base-uncased', 'roberta-large', or a local path. The tokenizer determines the vocabulary and tokenization strategy used during training."
         examples:
           - answerdotai/ModernBERT-base
       use_fast:
         type: boolean
-        description: "Use fast tokenizer implementation when available."
+        title: "Use Fast Tokenizer"
+        description: "Enable Rust-based fast tokenizer implementation for significantly faster tokenization, especially for large datasets. Recommended for training. Some custom tokenizers may not support fast implementation, in which case set to false. Fast tokenizers are typically 5-10x faster than Python implementations."
         examples: [true]
       trust_remote_code:
         type: boolean
-        description: "Allow custom remote code during tokenizer/model loading."
+        title: "Trust Remote Code"
+        description: "Allow execution of custom code from the model/tokenizer repository. Only enable if you trust the model source, as remote code could execute arbitrary code. Required for some models with custom tokenization logic (e.g., T5, FLAN-T5). Security risk for untrusted sources."
         examples: [false]
 
   model_class:
     type: string
-    description: "Model variant name."
+    title: "Model Class"
+    description: "Model architecture variant to instantiate. Determines which model implementation class is used. 'frankenstein' enables mixed-architecture models with various attention mechanisms, MoE, and other advanced features. 'mini' is a simplified version for smaller-scale training."
     enum:
       - frankenstein
       - mini
@@ -73,54 +79,53 @@ properties:
     properties:
       vocab_size:
         type: integer
-        minimum: 1
-        description: "Vocabulary size."
+        title: "Vocabulary Size"
+        description: "Number of unique tokens in the model's vocabulary. Must match your tokenizer's vocabulary size. Typical values: 30k-100k for modern models. Larger vocabularies improve language coverage but increase embedding layer parameters (vocab_size × hidden_size). For transfer learning, use the same vocab_size as the base model."
         examples: [50000]
       hidden_size:
         type: integer
-        minimum: 1
-        description: "Hidden dimension."
+        title: "Hidden Dimension"
+        description: "Dimension of the model's hidden representations. This is the key size parameter affecting model capacity and memory. Typical values: 512 (small), 768 (BERT-base), 1024 (BERT-large), 2048 (large models). Larger values increase model expressiveness but quadratically increase attention computation and linearly increase memory. Hidden size should be divisible by num_heads for proper head splitting."
         examples: [768]
       num_layers:
         type: integer
-        minimum: 1
-        description: "Physical layer count."
+        title: "Number of Layers"
+        description: "Number of physical transformer layers in the model stack. Each layer processes the sequence once. More layers increase model depth and capacity for hierarchical representations. Typical values: 6 (small), 12 (BERT-base), 24 (BERT-large). Deeper models are harder to train (gradient flow issues) and slower but can capture more complex patterns. Consider layer_depth × num_heads ratio when tuning."
         examples: [12]
       num_loops:
         type: integer
-        minimum: 1
-        description: "Logical loop count."
+        title: "Logical Loops"
+        description: "Number of times to loop through the layer pattern during a single forward pass. When >1, creates logical layers without increasing parameters. Each loop processes the sequence through all layers again, effectively multiplying depth. Useful for increasing effective depth without parameter growth. num_loops=2 with num_layers=6 behaves like 12 layers but with 6-layer parameters. Increases training time linearly."
         examples: [1, 2]
       num_heads:
         type: integer
-        minimum: 1
-        description: "Attention heads."
+        title: "Attention Heads"
+        description: "Number of parallel attention heads in attention mechanisms. Must divide hidden_size evenly. Each head learns different attention patterns. Typical values: 8 (small models), 12 (BERT-base), 16 (BERT-large), 32 (large). More heads allow finer-grained attention patterns but increase per-head dimensionality (hidden_size/num_heads). Too many heads with small per-head dimension (<64) can hurt performance."
         examples: [12]
       retention_heads:
         type: integer
-        minimum: 1
-        description: "Retention heads."
+        title: "Retention Heads"
+        description: "Number of heads for RetentionNet/RetNet layers. Similar to attention heads but for retention mechanisms that combine RNN and transformer properties. Must divide hidden_size evenly. Controls granularity of retention patterns. Set equal to num_heads for simplicity, or experiment with different values. More heads allow diverse retention contexts but reduce per-head capacity."
         examples: [12]
       num_experts:
         type: integer
-        minimum: 1
-        description: "MoE expert count."
+        title: "Mixture of Experts Count"
+        description: "Total number of expert networks in the MoE (Mixture of Experts) layer. Each expert is a separate feed-forward network. Router selects top_k experts to activate for each token. Typical values: 4-8 for efficient training, up to 64 for scaling. More experts increase capacity without proportional compute cost (only top_k active per token) but require routing decisions and expert load balancing. Requires use_moe=true."
         examples: [4]
       top_k_experts:
         type: integer
-        minimum: 1
-        description: "Top-k experts for routing."
+        title: "Top-K Expert Selection"
+        description: "Number of experts to activate for each token. The router selects the top-k most relevant experts from num_experts. Only these experts compute forward/backward passes, enabling sparse activation. Typical values: 1-2. Higher k increases token expressiveness and compute cost. k=1 maximizes sparsity (only 1/num_experts experts active). Must be ≤ num_experts. Smaller values encourage expert specialization."
         examples: [2]
       dropout:
-        type: number
-        minimum: 0.0
-        maximum: 1.0
-        description: "Global dropout."
+        type: integer
+        title: "Dropout Probability"
+        description: "Global dropout rate applied throughout the model (attention, FFN, embeddings). Randomly drops units during training to prevent overfitting. Typical values: 0.1 (BERT), 0.3 (small datasets). Higher dropout increases regularization but may underfit large datasets. Lower dropout for larger models/datasets (0.05-0.1). Tune based on validation loss: decrease if underfitting (high train loss), increase if overfitting (low train loss, high val loss)."
         examples: [0.1]
       layer_pattern:
         type: array
-        minItems: 1
-        description: "Ordered layer pattern."
+        title: "Layer Pattern"
+        description: "Ordered sequence of layer types to stack in the model. Each element defines one physical layer. The pattern determines the architectural mix and enables hybrid models combining different attention mechanisms. Available types: retnet, retnet_attn, mamba, ode, titan_attn, standard_attn, sigmoid_attn, sparse_transformer_attn, longformer_attn, bigbird_attn, sparsek_attn, nsa_attn, sparge_attn, fasa_attn, gla_attn, deltanet_attn, gated_deltanet_attn, hgrn2_attn, fox_attn, gated_softmax_attn. Pattern length equals num_layers. Example: [standard_attn] × 12 for pure transformer, [retnet, mamba, ode] × 4 for 12-layer hybrid. Experiment with interleaved patterns for complementary mechanisms."
         items:
           type: string
           enum:
@@ -149,176 +154,192 @@ properties:
           - [standard_attn]
       ode_solver:
         type: string
+        title: "ODE Solver"
+        description: "Numerical integration method for ODE (Ordinary Differential Equation) layers. ODE layers model continuous-depth transformations. 'rk4' (Runge-Kutta 4th order) offers higher accuracy and stability but is 4x slower than 'euler'. 'euler' is faster but may require smaller steps or careful tuning. Use rk4 for quality-critical tasks or when experiencing instability with ode layers. ODE layers appear in layer_pattern when 'ode' is specified."
         enum: [rk4, euler]
-        description: "ODE integrator."
         examples: [rk4]
       ode_steps:
         type: integer
-        minimum: 1
-        description: "ODE integration steps."
+        title: "ODE Integration Steps"
+        description: "Number of integration steps for ODE layers between consecutive transformer layers. More steps approximate continuous dynamics more accurately but increase compute cost linearly. Typical values: 2-4. With rk4 solver, fewer steps are often sufficient compared to euler. Balance between accuracy and speed: higher steps for long sequences or fine-grained dynamics, lower for efficiency. This parameter multiplies ODE layer forward pass cost by this factor."
         examples: [2]
       use_bitnet:
         type: boolean
-        description: "Enable BitLinear."
+        title: "Enable BitNet"
+        description: "Enable BitLinear (binary quantization) layers to reduce memory and compute. BitNet uses -1/+1 weights instead of float32, enabling significant compression and speedup. Experimental feature; may affect model quality. Best for inference deployment rather than training. When enabled, requires careful learning rate tuning as gradients flow through binary weights. Not compatible with all layer types."
         examples: [false]
       norm_type:
         type: string
+        title: "Normalization Type"
+        description: "Normalization strategy applied throughout the model. 'layer_norm' uses standard layer normalization (stable, widely used). 'dynamic_tanh' uses dynamic tanh normalization (experimental, may improve training dynamics). 'derf' uses a custom normalization scheme (experimental). Layer norm is recommended for stability. Experiment with alternatives if training instability occurs or to explore novel training dynamics. Different norm types interact differently with activation functions."
         enum: [layer_norm, dynamic_tanh, derf]
-        description: "Normalization type."
         examples: [layer_norm]
       use_factorized_embedding:
         type: boolean
-        description: "Enable factorized embeddings."
+        title: "Factorized Embeddings"
+        description: "Enable embedding matrix factorization to reduce parameters and memory. Instead of full (vocab_size × hidden_size) embedding, uses two smaller matrices: (vocab_size × factorized_embedding_dim) × (factorized_embedding_dim × hidden_size). Reduces embedding parameters from O(v×h) to O(v×r + r×h) where r=factorized_embedding_dim << h. Recommended when vocab_size × hidden_size > 100M. Example: vocab=50k, hidden=768 → 38M params → 50M+38M=88M. With factorized_dim=128 → 50M×128/768=8M+0.4M=8.4M (4.5x reduction). May slightly impact quality but often negligible for large vocabularies."
         examples: [false]
       factorized_embedding_dim:
         type: integer
-        minimum: 1
-        description: "Reduced embedding dimension."
+        title: "Factorized Embedding Dimension"
+        description: "Intermediate dimension for factorized embeddings when use_factorized_embedding=true. Controls compression ratio vs. expressiveness tradeoff. Smaller values increase compression (fewer parameters) but may reduce representation quality. Typical values: 64-256. Rule of thumb: factorized_embedding_dim ≈ sqrt(vocab_size) or hidden_size/6. For vocab=50k, hidden=768, sqrt(50k)=224, 768/6=128 → try 128-224. Too small (<32) degrades quality; too large (>512) reduces compression benefits."
         examples: [128]
       use_embedding_conv:
         type: boolean
-        description: "Enable Conv1d on embeddings."
+        title: "Embedding Convolution"
+        description: "Apply 1D convolution over token embeddings to capture local n-gram patterns before feeding to transformer. The conv layer operates on the sequence dimension, adding locality bias to the embedding layer. Can help with short-range dependencies and pattern recognition. Adds parameters: hidden_size × embedding_conv_kernel. Experimental; may improve performance on tasks with strong local patterns (e.g., code, n-gram languages). Requires careful kernel size tuning."
         examples: [false]
       embedding_conv_kernel:
         type: integer
-        minimum: 1
-        description: "Conv1d kernel size."
+        title: "Embedding Convolution Kernel Size"
+        description: "Kernel size for the embedding Conv1d layer when use_embedding_conv=true. Determines the receptive field for local patterns in the embedding space. Typical values: 3 (trigram), 5 (5-gram), 7. Larger kernels capture longer-range local dependencies but increase parameters linearly (kernel_size × hidden_size). Odd kernels are common. Start with 3 for minimal overhead, increase if local patterns are important. Too large (>15) may negate transformer's global attention benefits."
         examples: [3]
       positional_encoding:
         type: string
+        title: "Titan Attention Positional Encoding"
+        description: "Positional encoding method used by titan_attn layers. Controls how position information is injected. 'hope' uses Higher-Order Position Encoding (analytic, efficient). 'rope' uses Rotary Position Embedding (standard in modern LLMs like GPT-3.5, Llama). RoPE is more widely adopted and has better long-range generalization. HoPE is more flexible and can be tuned for specific tasks. Only affects titan_attn layers; other layers use their own position encoding schemes."
         enum: [hope, rope]
-        description: "Positional encoding used by titan_attn. If omitted, use_hope is used as legacy fallback."
         examples: [hope, rope]
       hope_base:
         type: number
-        minimum: 0.0
-        description: "HoPE base value."
+        title: "HoPE Base Value"
+        description: "Base frequency scale for HoPE positional encoding. Controls wavelength of positional sin/cos functions. Higher values mean slower position decay (longer-range position sensitivity). Typical values: 10,000 (standard, matches original RoPE), 100,000 (very long-range), 1,000 (short-range). Tune based on your target sequence lengths: longer sequences benefit from higher base values. Too high may cause position confusion; too low may limit position discrimination. Only used when positional_encoding=hope."
         examples: [10000.0]
       hope_damping:
         type: number
-        minimum: 0.0
-        description: "HoPE damping."
+        title: "HoPE Damping Factor"
+        description: "Damping coefficient for HoPE to control attention decay over distance. Values between 0 and 1 scale positional influence. Higher values (closer to 1) preserve position information longer. Lower values encourage more local attention. Typical values: 0.01 (strong damping, local focus), 0.1 (moderate), 1.0 (no damping). Tune based on task: local tasks (code, NER) benefit from lower damping; long-range tasks (reasoning, document QA) benefit from higher damping. Only used when positional_encoding=hope."
         examples: [0.01]
       rope_base:
         type: number
-        minimum: 0.0
-        description: "RoPE base value."
+        title: "RoPE Base Value"
+        description: "Base frequency for RoPE positional encoding. Controls position encoding scale. Higher values extend effective context window. Standard: 10,000 (matches original Llama). Extended: 100,000 to 1,000,000 for longer contexts (e.g., 100k+ tokens). RoPE scaling allows training on shorter sequences while generalizing to longer inference. When using rotary scaling for extrapolation, increase rope_base proportionally to desired context length. Too high may degrade performance on shorter sequences. Only used when positional_encoding=rope."
         examples: [10000.0]
       rope_scaling:
         type: number
-        minimum: 0.0
-        description: "RoPE scaling multiplier for token positions."
+        title: "RoPE Scaling Multiplier"
+        description: "Multiplier for RoPE position indices to enable longer context windows. Enables training on sequence length L while generalizing to L × rope_scaling during inference. Typical values: 1.0 (no scaling), 2.0-8.0 (moderate extension), 16.0+ (aggressive extension). Combined with rope_base increase, supports context window extrapolation. Scaling beyond 8x may degrade quality. Useful when compute limits training on shorter sequences but you need longer inference context. Only used when positional_encoding=rope."
         examples: [1.0]
       use_hope:
         type: boolean
-        description: "Legacy fallback flag for titan_attn positional encoding when positional_encoding is omitted."
+        title: "Legacy HoPE Flag"
+        description: "Legacy fallback flag for backward compatibility. When positional_encoding is not specified and use_hope=true, titan_attn layers use HoPE encoding. This is deprecated; prefer setting positional_encoding explicitly. Maintained for existing configurations. New configs should set positional_encoding to 'hope' or 'rope' directly. Will be removed in future versions. Only affects titan_attn layers."
         examples: [true]
       use_moe:
         type: boolean
-        description: "Enable MoE in FFN."
+        title: "Enable Mixture of Experts"
+        description: "Enable MoE (Mixture of Experts) in the feed-forward network layers. Replaces standard FFN with a router that selects top-k_experts from num_experts specialized sub-networks. Enables model capacity scaling without proportional compute increase (only top_k active per token). Requires num_experts and top_k_experts to be configured. Increases router complexity and may require load balancing. Effective for large models and diverse data. May not benefit small models or narrow domains. Adds routing overhead and expert scheduling complexity."
         examples: [true]
       ffn_hidden_size:
         type: integer
-        minimum: 1
-        description: "FFN intermediate dimension."
+        title: "FFN Hidden Dimension"
+        description: "Intermediate dimension of the feed-forward network layers. Controls FFN capacity and parameter count. Typical ratio: 4× hidden_size (e.g., 768→3072 for BERT-base), or 3-4× for efficiency. Larger values increase model expressiveness but parameters grow as hidden_size × ffn_hidden_size (both dimensions contribute quadratically). When use_moe=true, this is the size of each expert's hidden layer. Tune based on task complexity: complex tasks benefit from larger FFN (4-6×), simpler tasks work with smaller (2-3×). Larger FFNs increase memory and compute proportionally."
         examples: [3072]
       ffn_activation:
         type: string
+        title: "FFN Activation Function"
+        description: "Non-linear activation function used in feed-forward networks. 'silu' (Sigmoid Linear Unit) is smoother and often performs better in modern transformers (used in Llama, PaLM). 'gelu' (Gaussian Error Linear Unit) is classic, widely used (BERT, GPT-2, GPT-3). SiLU tends to train more smoothly and can converge faster. Both perform well; choice is often empirical. SiLU recommended for new models. Gelu is more stable for very small models. When using BitNet or other quantization, SiLU may be more robust."
         enum: [silu, gelu]
-        description: "FFN activation function."
         examples: [gelu]
 
   training:
     type: object
-    description: "TrainingConfig + runtime parameters."
+    title: "Training Configuration"
+    description: "Training hyperparameters and runtime configuration. Includes task-specific settings (MLM/SBERT), data loading, optimization, checkpointing, logging, and hardware management. These parameters control the entire training pipeline from data ingestion to model saving."
     additionalProperties: false
     required:
       - task
     properties:
       task:
         type: string
+        title: "Training Task"
+        description: "Training task type. 'mlm' = Masked Language Modeling (pre-training task where tokens are masked and predicted, like BERT pre-training). 'sbert' = Sentence-BERT fine-tuning for semantic embeddings (contrastive learning on sentence pairs/triplets). MLM requires training.task-specific parameters (num_epochs, batch_size, etc.). SBERT requires sbert subsection configuration. MLM is for language understanding pre-training; SBERT is for semantic similarity and retrieval applications."
         enum: [mlm, sbert]
-        description: "Training task selector."
         examples: [mlm]
       num_epochs:
         type: integer
-        minimum: 1
-        description: "Number of training epochs for MLM task."
+        title: "Number of Training Epochs"
+        description: "Number of complete passes through the training dataset. Only applies to MLM task. More epochs can improve model quality but increase risk of overfitting and training time. Typical values: 1-3 for large datasets (billions of tokens), 5-10 for medium datasets (millions of tokens), 10-20+ for small datasets. Use early stopping or monitor validation loss to determine optimal epochs. Gradient accumulation can simulate larger batch sizes per epoch. For SBERT, use sbert.epochs instead."
         examples: [5]
       batch_size:
         type: integer
-        minimum: 1
-        description: "Dataloader batch size."
+        title: "Training Batch Size"
+        description: "Number of examples processed per optimization step (before gradient accumulation). Larger batches provide more stable gradients but require more GPU memory. Optimal values depend on GPU memory: 2-8 for small GPUs (8GB), 8-32 for medium (16GB), 32-64 for large (40GB+). Use gradient_accumulation_steps to increase effective batch size without memory increase. Combine: effective_batch = batch_size × gradient_accumulation_steps. Larger batches may require higher learning rates (linear scaling rule). Monitor gradient clipping needs when increasing batch size."
         examples: [4]
       dataloader_workers:
         type: integer
-        minimum: 0
-        description: "Dataloader workers."
+        title: "Dataloader Workers"
+        description: "Number of parallel worker processes for data loading and preprocessing. Higher values can reduce data loading bottlenecks, especially for complex tokenization or augmentation. Typical values: 0 (main process), 2-4 (small GPUs), 4-8 (medium), 8-16 (large). Setting too high may cause CPU bottleneck or memory issues. CPU cores limit effective workers. Use CPU monitoring to tune. More beneficial when dataset preprocessing is slow or tokenization is complex."
         examples: [2]
       max_length:
         type: integer
-        minimum: 1
-        description: "Max sequence length."
+        title: "Maximum Sequence Length"
+        description: "Maximum token sequence length. Longer sequences capture more context but increase memory quadratically for attention. Truncate longer sequences; pad shorter. Typical values: 128 (short context, efficient), 256 (moderate), 512 (BERT standard), 1024+ (long documents). Memory: O(seq_len²) for attention, O(seq_len) for other layers. Balance between context needs and compute budget. For long sequences, consider sparse attention layers (longformer, bigbird) in layer_pattern."
         examples: [512]
       mlm_probability:
         type: number
-        minimum: 0.0
-        maximum: 1.0
-        description: "MLM mask probability."
+        title: "MLM Masking Probability"
+        description: "Fraction of tokens randomly masked for prediction in MLM training. BERT uses 0.15 (15% masking). Higher values increase training difficulty; lower values reduce signal. Standard 15% breakdown: 80% replaced with [MASK], 10% replaced with random token, 10% kept unchanged (prevents over-reliance on [MASK]). Can adjust for domain adaptation: higher for pre-training, lower for fine-tuning. Values >0.3 may degrade quality; <0.05 may underutilize MLM objective."
         examples: [0.15]
       max_samples:
         type: integer
-        minimum: 1
-        description: "Max samples to stream."
+        title: "Maximum Training Samples"
+        description: "Total number of samples (examples) to train on before stopping, regardless of epochs. Useful for limiting training on very large datasets or for controlled experiments. Set to very large value (e.g., 100,000,000) to effectively disable limit. Training stops at min(num_epochs × dataset_size, max_samples). Useful for progressive training or when using streaming datasets without clear epoch boundaries. For SBERT, use sbert.max_train_samples instead."
         examples: [20000000]
       dataset_batch_size:
         type: integer
-        minimum: 1
-        description: "Streaming dataset internal batch size."
+        title: "Dataset Streaming Batch Size"
+        description: "Internal batch size for the streaming dataset implementation. Controls how many samples are fetched at once from the data source. Larger values reduce I/O overhead but increase memory. Typical values: 10,000-50,000. Independent of training batch_size (determined by batch_size and gradient_accumulation_steps). Tune based on storage backend performance: larger for fast SSD/local storage, smaller for network/HDFS. Should be multiple of training batch_size for efficiency."
         examples: [25000]
       num_workers:
         type: integer
-        minimum: 0
-        description: "Streaming dataset workers."
+        title: "Dataset Streaming Workers"
+        description: "Number of parallel workers for dataset streaming and preprocessing. Controls parallelism in dataset loading pipeline. Similar to dataloader_workers but for streaming datasets. Higher values reduce data loading latency but increase CPU usage and memory. Typical values: 4-16 depending on CPU cores. Set 0 for single-threaded loading. Monitor CPU utilization during training; adjust if CPU becomes bottleneck. More workers help when dataset preprocessing is complex or data fetching is slow."
         examples: [8]
       cache_dir:
         type: string
-        description: "Cache directory."
+        title: "Dataset Cache Directory"
+        description: "Directory path for caching processed dataset to avoid re-computation. Streamed datasets are cached locally for faster subsequent runs. Must have sufficient disk space for cached data. Example: './temp_data/v2_dataset_cache'. Clear cache to force re-processing when data schema changes. Use fast storage (SSD preferred) for cache directory. Subdirectories are created automatically. Cache structure depends on dataset implementation."
         examples: ["./temp_data/v2_dataset_cache"]
       local_parquet_dir:
         type: string
-        description: "Local parquet path (optional)."
+        title: "Local Parquet Directory"
+        description: "Optional path to local parquet files for streaming. If set, streams from local parquet instead of downloading from remote. Useful for offline training or repeated runs on fixed dataset. Path should point to directory containing parquet files. Overrides remote dataset fetching. Combine with stream_local_parquet=true to enable. Provides faster training and reduced network traffic. Ensure parquet files match expected schema."
         examples: ["/path/to/parquet"]
       prefer_local_cache:
         type: boolean
-        description: "Prefer local cache when available."
+        title: "Prefer Local Cache"
+        description: "When true, checks local cache directory first before downloading/fetching from remote sources. Improves speed and reduces bandwidth on subsequent runs. Useful for repeated training on same dataset or when cache is pre-populated. If cache miss, falls back to remote download. Combine with cache_dir to specify cache location. Recommended for development and debugging to avoid repeated downloads."
         examples: [true]
       stream_local_parquet:
         type: boolean
-        description: "Stream from local parquet if enabled."
+        title: "Stream Local Parquet"
+        description: "Enable streaming from local parquet files when local_parquet_dir is specified. When false, may use remote dataset even if local exists. When true, only uses local parquet (error if missing). Useful for ensuring consistent training from local data or offline training. Requires local_parquet_dir to be set. Faster than remote streaming and no network dependency."
         examples: [true]
       join_temp_data_context_window:
         type: integer
-        minimum: 0
-        description: "If >0, join cached temp_data token chunks into this context window length."
+        title: "Join Temp Data Context Window"
+        description: "If >0, joins cached token chunks into sequences of this length. Combines shorter cached chunks into longer sequences to increase effective context length. Example: set to 2000 to create 2000-token sequences from shorter cached chunks. 0 disables joining (use cached chunks as-is). Useful when cache contains short segments but you want longer training sequences. Must be >= max_length. Helps optimize training on cached/temporary data formats. Larger values use more memory but capture longer dependencies."
         examples: [0, 2000, 8192]
       join_temp_data_min_remainder_tokens:
         type: integer
-        minimum: 1
-        description: "Minimum remainder content tokens needed to keep the last partial joined window."
+        title: "Minimum Remainder Tokens"
+        description: "Minimum number of content tokens required in the last partial joined window to keep it. When joining chunks, the final window may be shorter than join_temp_data_context_window. If remainder < this threshold, discard it. Prevents wasting compute on very short sequences. Typical values: 64-256. Higher threshold reduces noise from tiny sequences but may waste some data. Lower threshold uses more data but includes very short sequences. Only active when join_temp_data_context_window > 0."
         examples: [128]
       use_amp:
         type: boolean
-        description: "Enable mixed precision."
+        title: "Use Automatic Mixed Precision"
+        description: "Enable mixed precision training using FP16 for compute and FP32 for master weights. Reduces memory usage by ~50% and speeds up training on modern GPUs (Tensor Core acceleration). Automatic gradient scaling prevents underflow. Recommended for most training on GPUs with Tensor Cores (V100, A100, RTX 20/30/40 series). May not work on older GPUs or specific operations. Can slightly reduce numeric stability; monitor for NaN gradients."
         examples: [false]
       gradient_accumulation_steps:
         type: integer
-        minimum: 1
-        description: "Gradient accumulation steps."
+        title: "Gradient Accumulation Steps"
+        description: "Number of steps to accumulate gradients before optimizer update. Allows training with large effective batch sizes without fitting batch in GPU memory. Effective batch size = batch_size × gradient_accumulation_steps. Example: batch_size=4, accumulation=4 → effective batch=16. Useful when GPU memory is limited or for large batch training strategies. Increased accumulation requires more steps per epoch. Learning rate should scale with effective batch size (linear scaling rule: LR ∝ effective_batch). Watch for long training times with large accumulation values."
         examples: [4]
       optimizer:
         type: object
-        description: "Optimizer chooser with prefixed hyperparameters."
+        title: "Optimizer Configuration"
+        description: "Optimizer type and hyperparameters for model training. Supports per-parameter-group learning rates, weight decay, and other settings. Parameters are prefixed with optimizer_class name (e.g., 'adamw-lr_embeddings'). Allows fine-grained control over different parameter types (embeddings, attention, FFN, etc.). Each optimizer has specific parameters; see x_parameter_reference for details. Optimizer choice significantly affects training dynamics and final model quality."
         additionalProperties: false
         required:
           - optimizer_class
@@ -326,6 +347,8 @@ properties:
         properties:
           optimizer_class:
             type: string
+            title: "Optimizer Class"
+            description: "Optimizer algorithm to use. Options: 'sgd_momentum' (classic SGD with momentum, simple but less adaptive), 'adamw' (Adam with decoupled weight decay, most common and recommended), 'adafactor' (memory-efficient, good for large models), 'galore_adamw' (GaLore + AdamW for gradient-low-rank training), 'prodigy' (adaptive, minimal LR tuning), 'lion' (sign-based, memory efficient), 'sophia' (Hessian-aware, robust), 'muon' (layer-wise momentum, stable), 'turbo_muon' (accelerated muon), 'radam' (rectified Adam, adaptive warmup), 'adan' (Nesterov-accelerated adaptive), 'adopt' (momentum-based adaptive), 'ademamix' (AdaMix, combines momentum), 'mars_adamw' (MARS regularized), 'cautious_adamw' (gradient masking), 'lamb' (LARS-style, large batch), 'schedulefree_adamw' (no learning rate schedule), 'shampoo' (second-order), 'soap' (sparse optimizer). AdamW is recommended for most cases. GaLore for memory-constrained large models. Prodigy for minimal tuning."
             enum:
               - sgd_momentum
               - adamw
@@ -346,11 +369,11 @@ properties:
               - schedulefree_adamw
               - shampoo
               - soap
-            description: "Optimizer id."
             examples: [adamw]
           parameters:
             type: object
-            description: "Optimizer parameters prefixed with '<optimizer_class>-'. Available parameters for each optimizer are documented in x_parameter_reference."
+            title: "Optimizer Parameters"
+            description: "Optimizer hyperparameters with parameter-group-specific settings. All parameters are prefixed with optimizer_class name (e.g., 'adamw-lr_embeddings=2e-5'). Supports per-parameter-group learning rates, weight decay, beta values, and epsilon for different model components (embeddings, norms, attention, ODE, RetNet, Mamba, etc.). This enables fine-tuned optimization for different parameter sensitivities. Example: lower LR for embeddings, higher for attention. Format: <optimizer_class>-<param_group>-<hyperparam>=value. Shared suffixes apply to all optimizers (lr_*, wd_*, betas_*, eps_*), specific suffixes are optimizer-specific. Parameter groups: embeddings (token embeddings), norms (layer/norm layers), ode (ODE layer parameters), retnet (RetNet parameters), mamba (Mamba parameters), attention (attention layer parameters), other (remaining parameters like FFN, routing)."
             minProperties: 1
             additionalProperties: true
             x_parameter_reference:
@@ -462,278 +485,324 @@ properties:
                   specific_global_suffixes: []
       scheduler_total_steps:
         type: integer
-        minimum: 1
-        description: "Total steps for scheduler."
+        title: "Scheduler Total Steps"
+        description: "Total number of optimizer steps for the learning rate schedule. The scheduler will adjust learning rate from step 0 to this value. Should match or exceed actual training steps. For dynamic training duration, estimate conservatively (overestimate). Formula: scheduler_total_steps = (num_epochs × dataset_size) / (batch_size × gradient_accumulation_steps). Learning rate warmup and decay are calculated based on this value. Too short: schedule ends early, constant LR for remainder. Too long: never reaches final LR."
         examples: [10000]
       scheduler_warmup_ratio:
         type: number
-        minimum: 0.0
-        maximum: 1.0
-        description: "Warmup fraction of total steps."
+        title: "Scheduler Warmup Ratio"
+        description: "Fraction of scheduler_total_steps used for learning rate warmup. Learning rate linearly increases from 0 to initial LR during warmup, then follows scheduler_type decay. Typical values: 0.05-0.1 (5-10% warmup). Prevents early training instability from large gradients. Too much warmup wastes time at suboptimal LR. Too little warmup causes unstable early training. For cosine schedule, affects how quickly LR peaks. Adjust based on model size: larger models may need more warmup (0.1), smaller models less (0.05)."
         examples: [0.1]
       scheduler_type:
         type: string
+        title: "Learning Rate Scheduler"
+        description: "Learning rate decay strategy. 'cosine' follows cosine curve from peak to near-zero over training (smooth decay, recommended). 'constant' maintains initial LR throughout (rarely good). 'linear_warmup_then_constant' warms up linearly, then stays constant (good for fine-tuning). Cosine is most common for pre-training; achieves smooth decay without manual tuning. Linear warmup-then-constant useful for transfer learning where LR shouldn't decay much."
         enum: [cosine, constant, linear_warmup_then_constant]
-        description: "Scheduler type."
         examples: [cosine]
       grad_clip_max_norm:
         type: number
-        minimum: 0.0
-        description: "Gradient clipping max norm."
+        title: "Gradient Clipping Max Norm"
+        description: "Maximum allowed gradient norm. Gradients larger than this are scaled down. Prevents exploding gradients that destabilize training. Typical values: 1.0-10.0. Lower values provide stronger clipping (more stable, slower training). Higher values allow larger gradient updates (faster, less stable). Monitor gradient norms in logs; if consistently hitting this threshold, increase it. If training diverges (loss spikes, NaN), decrease it. Disable by setting to 0 or very high value."
         examples: [5.0]
       inf_post_clip_threshold:
         type: number
-        minimum: 0.0
-        description: "Post-clip exploding gradient threshold."
+        title: "Inf Post-Clip Threshold"
+        description: "Post-clipping threshold for detecting exploding gradients. After grad_clip_max_norm is applied, if any gradient norm exceeds this, it's flagged as potentially problematic. Values > grad_clip_max_norm to detect pathological gradients despite clipping. Typical values: 50-200. Helps identify training issues early. If exceeded frequently, consider lower LR, smaller batch, or different optimizer. Used for logging and debugging; doesn't stop training."
         examples: [100.0]
       max_nan_retries:
         type: integer
-        minimum: 0
-        description: "Max retries for NaN handling."
+        title: "Max NaN Retries"
+        description: "Maximum number of times to retry a training step when NaN/Inf gradients are detected. NaN detection and recovery attempts to skip corrupted batches and continue training. After exceeding this threshold within a window, training may stop. Typical values: 3-10. Too low: stops training on transient issues. Too high: wastes time on systematic problems. Combined with nan_check_interval for monitoring frequency. If NaNs persist, investigate data quality, learning rate, or numerical stability issues."
         examples: [3]
       checkpoint_every_n_steps:
         type: integer
-        minimum: 1
-        description: "Checkpoint frequency in steps."
+        title: "Checkpoint Frequency"
+        description: "Save a rolling checkpoint every N optimizer steps. Rolling checkpoints are temporary and managed by max_rolling_checkpoints. Provides recovery points from training interruptions. Typical values: 500-5000. More frequent checkpoints reduce data loss from crashes but increase disk I/O. Balance checkpoint frequency against disk speed and storage. For very long training (weeks), use smaller intervals. For short runs (hours), use larger intervals. Rolling checkpoints are separate from best checkpoints."
         examples: [500]
       max_rolling_checkpoints:
         type: integer
-        minimum: 1
-        description: "Rolling checkpoints to keep."
+        title: "Max Rolling Checkpoints"
+        description: "Maximum number of rolling checkpoints to keep. Oldest checkpoints are deleted when this limit is exceeded. Only applies to rolling checkpoints, not best checkpoints. Typical values: 2-5. Keeps disk usage bounded while maintaining recent recovery points. Set to 1 to only keep latest. Set higher to recover from older states if recent checkpoints are corrupted. Rolling checkpoints are typically saved at checkpoint_every_n_steps intervals. Disk usage ≈ checkpoint_size × max_rolling_checkpoints."
         examples: [3]
       num_best_checkpoints:
         type: integer
-        minimum: 1
-        description: "Best checkpoints to keep."
+        title: "Number of Best Checkpoints"
+        description: "Number of best model checkpoints to keep permanently, based on validation loss (or other metric). Checkpoints are saved when validation improves. Typical values: 1-3. Allows keeping multiple best-performing models. Useful for selecting between models with similar performance but different tradeoffs, or for ensembling. Disk usage ≈ checkpoint_size × num_best_checkpoints. Unlike rolling checkpoints, these are not automatically deleted."
         examples: [2]
       nan_check_interval:
         type: integer
-        minimum: 1
-        description: "NaN/Inf check interval."
+        title: "NaN Check Interval"
+        description: "Frequency (in steps) to check for NaN/Inf gradients and loss values. Checks more frequently than logging to catch numerical issues early. Typical values: 10-100. More frequent checks catch problems sooner but add small overhead. Less frequent checks may miss transient NaNs. Balance between safety and efficiency. Critical for mixed precision training where underflow is more likely. Combined with max_nan_retries for recovery attempts."
         examples: [10]
       log_gradient_stats:
         type: boolean
-        description: "Enable gradient logging."
+        title: "Log Gradient Statistics"
+        description: "Enable detailed gradient statistics logging including per-layer norms, min/max values, and other metrics. Useful for debugging training issues and understanding gradient flow. Increases log size and may add small performance overhead. Typical: true during development/tuning, false in production. Use gradient_log_interval to control frequency. Combined with enable_block_grad_norms for per-block aggregation. Helps identify dying/vanishing/exploding gradients in specific layers."
         examples: [true]
       gradient_log_interval:
         type: integer
-        minimum: 1
-        description: "Gradient logging interval."
+        title: "Gradient Log Interval"
+        description: "Frequency (in steps) to log detailed gradient statistics when log_gradient_stats=true. Controls how often gradient statistics are written to logs. Typical values: 10-100. More frequent logging provides finer-grained insight but increases log size and I/O. Less frequent logging reduces overhead. Balance between monitoring detail and performance. Useful for debugging training issues; can reduce frequency once training is stable."
         examples: [10]
       csv_log_path:
         type: string
-        description: "CSV path for step-level training metrics."
+        title: "CSV Metrics Log Path"
+        description: "File path for saving step-level training metrics in CSV format. Includes loss, learning rate, gradient norms, GPU metrics (if enabled), per-block gradients (if enabled), and other telemetry. Useful for post-training analysis and visualization. Directory is created if it doesn't exist. File can grow large over long training; consider log rotation. Compatible with CSV_ROTATE_ON_SCHEMA_CHANGE for schema versioning."
         examples: ["training_metrics.csv"]
       csv_rotate_on_schema_change:
         type: boolean
-        description: "Rotate existing CSV when logging schema changes."
+        title: "CSV Rotate on Schema Change"
+        description: "When true, if CSV logging schema changes (new metrics added), rotate the existing CSV file instead of appending incompatible rows. Old file is backed up with timestamp suffix, new file started with updated schema. Prevents CSV corruption from schema changes. Typical: true for long-running training where schema may evolve, false for short runs. Ensures CSVs remain parseable with consistent columns."
         examples: [true]
       gpu_metrics_backend:
         type: string
+        title: "GPU Metrics Backend"
+        description: "Backend for collecting GPU telemetry (temperature, memory, utilization). 'nvml' uses NVIDIA Management Library for detailed metrics (requires CUDA GPU, works on NVIDIA GPUs). 'none' disables GPU metrics logging. NVML provides temperature, memory usage, utilization for thermal monitoring and resource profiling. Disable if not on NVIDIA GPU or if metrics cause issues. Required for gpu_temp_guard_enabled functionality."
         enum: [nvml, none]
-        description: "GPU telemetry backend."
         examples: [nvml]
       nvml_device_index:
         type: integer
-        minimum: 0
-        description: "GPU index used for NVML telemetry."
+        title: "NVML Device Index"
+        description: "GPU index to monitor when gpu_metrics_backend=nvml. 0 for first GPU, 1 for second, etc. Must match CUDA device used for training. Typical values: 0 (single GPU), 0-N (for specific GPU in multi-GPU setup). Only matters in multi-GPU systems; on single GPU, use 0. Metrics are collected from this specific device. Ensure training uses same GPU index; otherwise metrics don't match training workload."
         examples: [0]
       enable_block_grad_norms:
         type: boolean
-        description: "Enable per-block gradient norm aggregation in CSV logs."
+        title: "Enable Per-Block Gradient Norms"
+        description: "When true, aggregates and logs gradient norms per logical block (embeddings, attention, FFN, etc.) in CSV logs. Provides finer-grained insight into gradient flow across model components. Useful for identifying which blocks have gradient issues. Increases log size and small overhead. Typical: true for debugging/tuning, false for production. Combined with telemetry_log_interval for logging frequency. Helps diagnose layer-specific training issues."
         examples: [true]
       telemetry_log_interval:
         type: integer
-        minimum: 1
-        description: "Interval (optimizer steps) for heavy telemetry and block grad norms."
+        title: "Telemetry Log Interval"
+        description: "Frequency (in optimizer steps) to log heavy telemetry including GPU metrics and per-block gradient norms. Controls how often detailed metrics are written. Typical values: 1-10. More frequent logging provides detailed monitoring but increases log size and I/O. Less frequent logging reduces overhead. Balance between monitoring detail and performance. Separate from gradient_log_interval; this is for all heavy telemetry. Set to 1 for maximum visibility, higher for efficiency."
         examples: [1]
       gpu_temp_guard_enabled:
         type: boolean
-        description: "Enable strict GPU temperature guard (CUDA only)."
+        title: "Enable GPU Temperature Guard"
+        description: "Enable strict GPU temperature monitoring and protection (CUDA only). Monitors GPU temperature during training and applies thermal protection policies to prevent hardware damage. Requires gpu_metrics_backend=nvml. When temperature exceeds thresholds, training is paused. Combined with switch_on_thermal to control protection behavior. Critical for preventing overheating on sustained workloads, especially in poorly cooled environments. Default: true for safety."
         examples: [true]
       switch_on_thermal:
         type: boolean
-        description: "When true, critical temperature triggers GPU->CPU training fallback with resume to GPU when cooled down."
+        title: "Switch on Thermal Event"
+        description: "When true, critical temperature triggers GPU→CPU fallback training with automatic resume to GPU when cooled down. When false, training simply pauses until temperature drops. Fallback mode continues training on CPU to make progress despite thermal issues, albeit much slower. Useful for long unattended training where thermal events are expected. Requires CPU with sufficient memory. False is safer (prevents corrupt states), True maximizes training progress."
         examples: [false, true]
       gpu_temp_pause_threshold_c:
         type: number
-        exclusiveMinimum: 0
-        description: "Pause training when GPU temperature is above this threshold."
+        title: "GPU Pause Temperature Threshold"
+        description: "Temperature (Celsius) at which to pause training when exceeded. Training stops and waits for cooldown before resuming. Typical values: 85-95°C. Lower values provide conservative protection but may pause frequently. Higher values allow more aggressive usage but risk overheating. Set below GPU Tjmax (typically 100-110°C) with safety margin. Should be > gpu_temp_resume_threshold_c to allow resumption. Monitor typical operating temps to set appropriately."
         examples: [90.0]
       gpu_temp_resume_threshold_c:
         type: number
-        exclusiveMinimum: 0
-        description: "Resume training when GPU temperature is at or below this threshold."
+        title: "GPU Resume Temperature Threshold"
+        description: "Temperature (Celsius) at or below which training can resume after thermal pause. Training waits until GPU cools to this level. Typical values: 70-85°C. Lower values ensure longer cooldown periods (safer but slower). Higher values reduce downtime but risk immediate re-pause. Should be < gpu_temp_pause_threshold_c by at least 5-10°C for hysteresis. Balance between thermal safety and training efficiency."
         examples: [80.0]
       gpu_temp_critical_threshold_c:
-        type: [number, "null"]
-        exclusiveMinimum: 0
-        description: "Optional critical temperature marker used for logging while still using pause/retry policy."
+        type: number
+        title: "GPU Critical Temperature Threshold"
+        description: "Optional temperature marker for logging/warning purposes when thermal events are severe but still using pause/retry policy. Unlike pause threshold, this is informational only - doesn't change behavior. Used to flag critical thermal events in logs for analysis. Set higher than pause_threshold (e.g., pause=90°C, critical=95°C). Null disables critical logging. Helps identify near-failure thermal events."
         examples: [95.0]
       gpu_temp_poll_interval_seconds:
         type: number
-        exclusiveMinimum: 0
-        description: "Polling interval in seconds while waiting for cooldown."
+        title: "GPU Temperature Poll Interval"
+        description: "Seconds between temperature checks while waiting for GPU cooldown during thermal pause. Controls how frequently GPU temperature is monitored. Typical values: 10-60 seconds. More frequent checks provide faster resume when GPU cools but increase overhead. Less frequent checks reduce overhead but delay resume. Shorter intervals for systems with fast thermal response, longer for slow response. Impacts how quickly training resumes after thermal event."
         examples: [30.0]
       use_galore:
         type: boolean
-        description: "Enable GaLore."
+        title: "Enable GaLore"
+        description: "Enable GaLore (Gradient Low-Rank Projection) to reduce optimizer memory for large models. GaLore projects gradients to low-rank subspace, reducing optimizer state memory from O(p×2) to O(p×rank). Enables training larger models with limited GPU memory. Recommended for models >1B parameters. Works with adamw optimizer (via galore_adamw optimizer_class). Adds computational overhead for projection but significant memory savings. Requires galore_rank, galore_update_interval, galore_scale, galore_max_dim configuration."
         examples: [false]
       galore_rank:
         type: integer
-        minimum: 1
-        description: "GaLore low-rank projection."
+        title: "GaLore Rank"
+        description: "Low-rank projection rank for GaLore. Controls compression ratio of optimizer states. Lower rank = more compression but may affect optimization. Typical values: 16-128. Formula: memory savings ≈ 1 - (rank / param_dim). For hidden_size=768, rank=64 → 8× compression. Tune based on model size and available memory. Too low rank may degrade optimization quality. Higher rank uses more memory but maintains optimizer quality. Start with hidden_size/12 or similar."
         examples: [64]
       galore_update_interval:
         type: integer
-        minimum: 1
-        description: "GaLore update interval."
+        title: "GaLore Update Interval"
+        description: "Frequency (in steps) to update GaLore low-rank projection matrices. Projection matrices are recomputed periodically to track gradient subspace changes. Typical values: 1-10. More frequent updates track gradient changes better but increase overhead. Less frequent updates reduce compute but projection may become stale. Value=1 updates every step (most accurate, slower). Value=10 updates every 10 steps (less accurate, faster). Balance between optimization quality and speed."
         examples: [1]
       galore_scale:
         type: number
-        minimum: 0.0
-        description: "GaLore gradient scale."
+        title: "GaLore Gradient Scale"
+        description: "Scaling factor applied to projected gradients in GaLore. Adjusts gradient magnitude in low-rank subspace. Typical values: 1.0 (no scaling), 0.5-2.0 for tuning. Compensates for potential amplitude changes due to projection. May help if optimization is too aggressive (scale down) or too conservative (scale up). Often 1.0 works well. Tune if observing optimization instability or slow convergence with GaLore. Interacts with learning rate."
         examples: [1.0]
       galore_max_dim:
         type: integer
-        minimum: 1
-        description: "Max tensor dimension for GaLore."
+        title: "GaLore Max Tensor Dimension"
+        description: "Maximum tensor dimension to apply GaLore projection to. Tensors larger than this dimension use GaLore; smaller tensors use standard optimizer. Typical values: 4096 or model's largest dimension (hidden_size, num_heads, etc.). Avoids applying GaLore to small tensors where overhead isn't worthwhile. Should be ≤ largest dimension in model (e.g., hidden_size, intermediate_size). Set to hidden_size or similar for coverage. Larger values cover more parameters but may include tensors where projection isn't beneficial."
         examples: [4096]
       hf_output_dir:
         type: string
-        description: "Output directory for save_pretrained artifacts when base_model is used."
+        title: "HuggingFace Output Directory"
+        description: "Directory path for saving final model using HuggingFace save_pretrained() when base_model is specified. Creates a model-agnostic export suitable for loading with from_pretrained(). Only applies when using base_model for continual pre-training or fine-tuning. For scratch-built models (model_class specified), model saves to checkpoints directory differently. Directory structure matches HuggingFace format (config.json, pytorch_model.bin, tokenizer files). Use for final models intended for deployment or sharing."
         examples: ["checkpoints/hf_final"]
       sbert:
         type: object
-        description: "SBERT task settings (used when training.task=sbert)."
+        title: "SBERT Training Configuration"
+        description: "Sentence-BERT training settings for semantic embedding fine-tuning. Used when training.task='sbert'. SBERT learns to produce similar embeddings for semantically similar texts using contrastive learning. Supports multiple dataset types: paired_similarity (sentence pairs with similarity scores), triplets (anchor, positive, negatives), and qa (question-answer pairs). Configuration includes dataset loading, optimization, evaluation, and checkpointing. SBERT training is typically faster than MLM pre-training and produces models suitable for semantic search, clustering, and retrieval tasks."
         additionalProperties: false
         properties:
           dataset_name:
             type: string
+            title: "Dataset Name"
+            description: "HuggingFace dataset identifier or local path for SBERT training. Should contain sentence pairs, triplets, or QA pairs compatible with dataset_type. Example: 'erickfmm/agentlans__multilingual-sentences__paired_10_sts'. Dataset is loaded and converted to SBERT-compatible format based on dataset_type. Can use local datasets with './path/to/dataset' format. Ensure dataset has appropriate columns or specify column overrides in columns section."
             examples: ["erickfmm/agentlans__multilingual-sentences__paired_10_sts"]
           dataset_type:
             type: string
+            title: "Dataset Type"
+            description: "Dataset format and training strategy. 'paired_similarity' for sentence pairs with similarity scores (e.g., STS benchmark). Uses CosineSimilarityLoss with regression on similarity scores. 'triplets' for anchor-positive-negative training (common in information retrieval). Uses MultipleNegativesRankingLoss for contrastive learning. 'qa' for question-answer pairs. Similarity between questions and answers is optimized. Choose based on your data format and task type."
             enum: [paired_similarity, triplets, qa]
-            description: "Dataset layout for SBERT conversion and loss/evaluator strategy."
             examples: [paired_similarity, triplets, qa]
           columns:
             type: object
+            title: "Column Mappings"
+            description: "Optional column name overrides for dataset fields. Maps expected column names to actual dataset columns. Useful when dataset uses non-standard column names. Relevant keys depend on dataset_type: paired_similarity expects 'sentence1', 'sentence2', 'similarity'; triplets expects 'query', 'positive', 'negatives'; qa expects 'question', 'answer'. If not specified, uses default column names. Column names are case-sensitive."
             additionalProperties: false
-            description: "Optional column overrides; relevant keys depend on dataset_type."
             properties:
               sentence1:
                 type: string
-                description: "Sentence 1 column for paired_similarity datasets."
+                title: "Sentence 1 Column"
+                description: "Column name for first sentence in paired_similarity datasets. Default: 'sentence1' if not specified. Points to the first text column in your dataset. Example: if dataset has 'text_a', set sentence1='text_a'. Used for constructing sentence pairs with sentence2."
                 examples: [sentence1]
               sentence2:
                 type: string
-                description: "Sentence 2 column for paired_similarity datasets."
+                title: "Sentence 2 Column"
+                description: "Column name for second sentence in paired_similarity datasets. Default: 'sentence2' if not specified. Points to the second text column in your dataset. Example: if dataset has 'text_b', set sentence2='text_b'. Used with sentence1 to form pairs for similarity learning."
                 examples: [sentence2]
               similarity:
                 type: string
-                description: "Similarity score column for paired_similarity datasets."
+                title: "Similarity Score Column"
+                description: "Column name for similarity scores in paired_similarity datasets. Default: 'score' or 'similarity' if not specified. Should contain numeric values (typically 0-1 or 0-5 scale). Higher values indicate more similar sentences. Used as regression target in CosineSimilarityLoss. Example: if dataset has 'similarity_score', set similarity='similarity_score'."
                 examples: [score, similarity]
               query:
                 type: string
-                description: "Query/anchor column for triplets datasets."
+                title: "Query/Anchor Column"
+                description: "Column name for query/anchor text in triplets datasets. Default: 'query' if not specified. This is the reference text (e.g., search query, anchor sentence). Positive and negative examples are compared against this. Example: if dataset has 'anchor', set query='anchor'. Used as anchor in MultipleNegativesRankingLoss."
                 examples: [Q]
               positive:
                 type: string
-                description: "Positive column for triplets datasets."
+                title: "Positive Example Column"
+                description: "Column name for positive/matching text in triplets datasets. Default: 'positive' or 'pos' if not specified. This text should be semantically similar to the query. Example: if dataset has 'POS', set positive='POS'. Used as positive example in contrastive learning."
                 examples: [POS]
               negatives:
                 type: string
-                description: "Negatives list column for triplets datasets."
+                title: "Negatives List Column"
+                description: "Column name for list of negative/dissimilar texts in triplets datasets. Default: 'negatives' or 'neg' if not specified. Should contain a list or array of texts dissimilar to the query. Example: if dataset has 'NEGs', set negatives='NEGs'. Used as hard negatives in contrastive learning to improve model discrimination."
                 examples: [NEGs]
               question:
                 type: string
-                description: "Question column for qa datasets."
+                title: "Question Column"
+                description: "Column name for question text in qa datasets. Default: 'question' if not specified. The query text to be matched with answers. Example: if dataset has 'Question', set question='Question'. Used in QA pair training for semantic similarity."
                 examples: [Question]
               answer:
                 type: string
-                description: "Answer column for qa datasets."
+                title: "Answer Column"
+                description: "Column name for answer text in qa datasets. Default: 'answer' if not specified. The response text corresponding to the question. Model learns to bring question and answer embeddings closer. Example: if dataset has 'Answer', set answer='Answer'. Used with question for pair training."
                 examples: [Answer]
           query_prefix:
             type: string
-            description: "Optional text prefix applied to query/question fields."
+            title: "Query Prefix"
+            description: "Optional text string prepended to query/question fields. Useful for distinguishing between different text types or for prompt-based training. Example: 'query: ' results in 'query: the actual text'. Helps model understand role of text (query vs document). Common in retrieval systems. Empty string disables prefix. Applied during tokenization before encoding."
             examples: ["query: "]
           document_prefix:
             type: string
-            description: "Optional text prefix applied to answer/positive/negative/document fields."
+            title: "Document Prefix"
+            description: "Optional text string prepended to answer/positive/negative/document fields. Similar to query_prefix but for the other side of pairs/triplets. Example: 'document: ' or 'passage: '. Helps model distinguish query from document embeddings. Works with answer, positive, negatives columns. Empty string disables prefix. Useful in asymmetric tasks (query-document vs sentence-sentence)."
             examples: ["document: "]
           output_dir:
             type: string
+            title: "Output Directory"
+            description: "Directory path for saving SBERT training artifacts. Model checkpoints, final model, and logs are saved here. Checkpoints saved in 'output_dir/checkpoints/' subdirectory. Directory structure follows HuggingFace format for easy loading. Created if it doesn't exist. Use './output/sbert_model' or similar path. Final model can be loaded with SentenceTransformer('output_dir')."
             examples: ["./output/sbert_base_model"]
           batch_size:
             type: integer
-            minimum: 1
+            title: "Training Batch Size"
+            description: "Number of training examples per batch. For contrastive learning, each example may be a sentence pair or triplet. Larger batches improve contrastive learning quality (more negatives) but require more memory. Typical values: 16-64 for SBERT. Memory scales linearly. Use gradient_accumulation_steps to increase effective batch size. SBERT often benefits from larger batches than MLM due to contrastive objective."
             examples: [16]
           gradient_accumulation_steps:
             type: integer
-            minimum: 1
-            description: "Accumulate gradients over N mini-batches before each optimizer step."
+            title: "Gradient Accumulation Steps"
+            description: "Accumulate gradients over N mini-batches before optimizer step. Effective batch size = batch_size × gradient_accumulation_steps. Useful for larger effective batch sizes without memory increase. Example: batch_size=16, accumulation=4 → effective=64. SBERT contrastive learning benefits from larger effective batches (more negatives). Values of 1-8 are common. Monitor training quality vs. memory constraints."
             examples: [1, 4]
           max_grad_norm:
             type: number
-            minimum: 0.0
-            description: "Gradient clipping norm for SBERT training (0 disables clipping)."
+            title: "Max Gradient Norm"
+            description: "Gradient clipping threshold for SBERT training. Gradients exceeding this norm are scaled down. Prevents exploding gradients. Typical values: 0.5-2.0 for SBERT (often lower than MLM). Set to 0 to disable clipping. Lower values for stability, higher for speed. SBERT often uses lower clipping (1.0) than pre-training due to contrastive loss sensitivity. Monitor gradient norms in logs to tune."
             examples: [1.0]
           epochs:
             type: integer
-            minimum: 1
+            title: "Training Epochs"
+            description: "Number of complete passes through SBERT training dataset. More epochs can improve embedding quality but risk overfitting. Typical values: 1-10. SBERT often converges faster than MLM (2-5 epochs often sufficient). Use early stopping based on evaluation metrics. For large datasets, 1-3 epochs may be enough. For small datasets, 5-10 epochs may be needed. Monitor validation similarity metrics."
             examples: [4]
           warmup_steps:
             type: integer
-            minimum: 0
+            title: "Warmup Steps"
+            description: "Number of steps for learning rate warmup in SBERT training. Learning rate increases from 0 to initial LR over these steps. Typical values: 10-20% of total steps. Example: 10000 total steps → warmup 1000-2000 steps. Helps stabilize early training. Too much warmup wastes time; too little causes instability. Calculate as int(epochs × (dataset_size/batch_size) × warmup_ratio)."
             examples: [1000]
           evaluation_steps:
             type: integer
-            minimum: 1
+            title: "Evaluation Frequency"
+            description: "Evaluate model every N training steps. Measures performance on validation split and saves best models. Typical values: 500-5000 steps. More frequent evaluation provides better checkpointing but slows training. Less frequent evaluation saves time but may miss optimal checkpoint. For small datasets, use lower values (100-500). For large datasets, higher values (1000-10000). Balance between monitoring detail and speed."
             examples: [5000]
           checkpoint_save_steps:
             type: integer
-            minimum: 0
-            description: "Rolling checkpoint save interval in steps for SBERT (0 disables checkpointing)."
+            title: "Checkpoint Save Interval"
+            description: "Save rolling checkpoint every N steps for SBERT training. Provides recovery points from training interruption. 0 disables checkpointing (only best checkpoints saved). Typical values: 1000-10000. More frequent checkpoints reduce data loss on crashes but increase I/O. Rolling checkpoints are temporary; only kept until max_rolling_checkpoints limit. Best checkpoints (based on evaluation) are kept separately."
             examples: [1000]
           resume_from_checkpoint:
             type: boolean
-            description: "Resume SBERT from latest checkpoint in output_dir/checkpoints."
+            title: "Resume from Checkpoint"
+            description: "When true, resumes training from latest checkpoint in output_dir/checkpoints/. Automatically detects and loads most recent checkpoint. Useful for resuming interrupted training or continuing training from previous run. Checkpoint must exist in output_dir/checkpoints/. False starts training from scratch. Training state including optimizer, scheduler, and epoch is restored."
             examples: [false]
           learning_rate:
             type: number
-            minimum: 0.0
+            title: "Learning Rate"
+            description: "Initial learning rate for SBERT optimizer. Typical values: 1e-5 to 1e-4. Lower LR for fine-tuning (1e-5 to 2e-5), higher for learning from scratch (5e-5 to 1e-4). SBERT often works well with 2e-5 for fine-tuning. Higher values converge faster but risk instability. Lower values are more stable but slower. Schedule decays from this value. Adjust based on convergence: decrease if unstable, increase if too slow."
             examples: [2.0e-5]
           max_train_samples:
             type: integer
-            minimum: 1
+            title: "Max Training Samples"
+            description: "Limit training to N samples (pairs/triplets). Useful for quick experiments or limited training. Training stops after processing this many samples. If not specified, uses full dataset. Set lower for debugging/testing. Set higher for full training. Example: 10000 for 10k training pairs. For large datasets, use subset for faster iteration. Only applies to training set, not evaluation."
+            examples: [100000]
           max_eval_samples:
             type: integer
-            minimum: 1
+            title: "Max Evaluation Samples"
+            description: "Limit evaluation to N samples. Speeds up evaluation during training. Useful when validation set is large. Typical values: 1000-10000. Larger values give more accurate metrics but slower evaluation. Set based on dataset size and evaluation frequency. For small datasets, use all data (don't set or set to large value). For large datasets, sample subset for faster evaluation."
             examples: [10000]
           max_seq_length:
             type: integer
-            minimum: 1
+            title: "Maximum Sequence Length"
+            description: "Maximum token length for input texts. Longer texts are truncated, shorter are padded. Affects memory and computation. Typical values: 128-512. SBERT often works with shorter sequences (128-256) than MLM since sentence-level. Longer sequences capture more context but increase memory quadratically for attention. Balance between context needs and efficiency. For retrieval tasks, 256-512 is common. For classification-style embeddings, 128 may suffice."
             examples: [512]
           pooling_mode:
             type: string
+            title: "Pooling Mode"
+            description: "Method for aggregating token embeddings into single sentence embedding. 'mean' averages all token embeddings (recommended, most stable). 'cls' uses CLS token embedding only (BERT-style, but less stable). 'max' uses max-pooling across tokens (can highlight salient features but less common). Mean pooling is most common and effective for SBERT. Different pooling suits different tasks: mean for general similarity, cls for classification-style tasks."
             enum: [mean, cls, max]
             examples: [mean]
           trust_remote_code:
             type: boolean
+            title: "Trust Remote Code"
+            description: "Allow execution of custom code from model/tokenizer repository. Required for some models with custom implementations (e.g., sentence-transformers specific models). Security risk for untrusted sources. Set to true only if you trust the model source. False uses only standard HF implementations. Most SBERT models work without this. Enable if getting 'trust_remote_code' errors."
             examples: [false]
           use_amp:
             type: boolean
+            title: "Use Automatic Mixed Precision"
+            description: "Enable mixed precision (FP16) training for SBERT. Reduces memory by ~50% and speeds up training on modern GPUs with Tensor Cores. Automatic gradient scaling prevents underflow. Recommended for most SBERT training on modern GPUs. May not work on older hardware. Can slightly affect numeric stability. Monitor for NaN issues; disable if problems occur."
             examples: [true]
           resample_balanced:
             type: boolean
+            title: "Resample Balanced"
+            description: "When true, resamples dataset to create balanced distribution over similarity scores or classes. Useful when original dataset is imbalanced (e.g., many high-similarity pairs, few low-similarity). Resampling improves learning across full similarity range. May discard some data or duplicate underrepresented samples. Set to false to use original distribution without modification. Particularly useful for paired_similarity datasets with skewed score distributions."
             examples: [true]
           standardize_scores:
             type: boolean
-            description: "Standardize paired similarity scores to mean 0 and target std instead of undersampling."
+            title: "Standardize Scores"
+            description: "When true, standardizes similarity scores to mean 0 and target standard deviation (resample_std) instead of undersampling for balancing. Applies z-score normalization: (score - mean) / std. Alternative to resample_balanced. Preserves all data while standardizing score distribution. Useful when you want to keep all samples but normalize score ranges. Set resample_std to desired standard deviation. Combining with resample_balanced may cause double standardization."
             examples: [false]
           resample_std:
             type: number
-            minimum: 0.0
+            title: "Resample Standard Deviation"
+            description: "Target standard deviation when standardize_scores=true. Controls score distribution width after standardization. Lower values create tighter distribution around 0. Typical values: 0.2-0.5. Formula: standardized_score = (score - mean) / resample_std. Original std doesn't matter; output will have this std. Smaller values reduce score range, may help learning but compresses information. Larger values preserve more dynamic range but may not normalize well. Tune based on original score range and learning behavior."
             examples: [0.3]
     allOf:
       - if:
