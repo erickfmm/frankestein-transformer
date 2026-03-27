@@ -1,0 +1,660 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[spanish]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage[numbers]{natbib}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{geometry}
+\usepackage{tikz}
+\usepackage{graphicx}
+\usepackage{adjustbox}
+%Includes "References" in the table of contents
+\usepackage[nottoc]{tocbibind}
+
+\usetikzlibrary{arrows.meta,positioning,fit,calc,backgrounds,shapes.geometric,shapes.multipart}
+\geometry{margin=1in}
+\hypersetup{colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue}
+
+\tikzset{
+box/.style={draw, rounded corners, align=center, minimum height=1cm, inner sep=6pt},
+line/.style={-Latex, thick},
+group/.style={draw, dashed, rounded corners, inner sep=8pt}
+}
+
+\newcommand{\fitfigure}[1]{\adjustbox{max width=0.98\linewidth,max totalheight=0.42\textheight,keepaspectratio}{#1}}
+
+\title{Transformer Encoder Frankenstein:\\Biblioteca, CLI y Notas de Diseño Basadas en Investigación}
+\author{
+Erick F. Merino M. \\
+Este trabajo no está afiliado \\
+\texttt{erickfmm@gmail.com}
+}
+\date{Febrero 2026}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Transformer Encoder Frankenstein presenta un kit de herramientas unificado basado en configuración para la experimentación sistemática con arquitecturas de codificador modernas, abarcando diecisiete variantes de mezclador de secuencias y veinte familias de optimizadores. Las contribuciones de investigación son triples: (i) un contrato de configuración basado en esquema estricto que permite la experimentación reproducible en diversos mecanismos de atención, incluyendo atención softmax estándar, atención sigmoide, redes retentivas, modelos de espacio de estado selectivos, transformadores de profundidad continua, atención aumentada con memoria, patrones de atención dispersa y mecanismos con compuerta; (ii) un marco integral de enrutamiento de optimizadores que admite métodos de reducción de varianza (MARS, Adan, AdEMAMix), variantes eficientes en memoria (Adafactor, GaLore, Lion), enfoques sin programador y precondicionadores de segundo orden (Shampoo, SOAP, Sophia); y (iii) flujos de trabajo de extremo a extremo que abarcan el despliegue cuantificado mediante empaquetado de pesos ternarios y entrenamiento de incrustaciones de oraciones inspirado en SBERT. El kit de herramientas implementa una interfaz de configuración basada en web que proporciona renderizado de formularios impulsado por esquemas con documentación en línea y validación en tiempo real. Este documento de referencia técnica incluye diagramas arquitectónicos, visualizaciones de flujo de ejecución, tablas de decisión y apéndices integrales que sintetizan la literatura sobre arquitecturas de transformadores, mecanismos de atención dispersa, variantes de atención con compuerta y algoritmos de optimización. El sistema permite iteración rápida mientras mantiene condiciones experimentales reproducibles a través de su filosofía de diseño basada primero en esquemas.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+\section{Introducción}
+
+\subsection{Motivación y Planteamiento del Problema}
+
+Las arquitecturas de transformadores han transformado fundamentalmente el panorama del modelado de secuencias en el procesamiento del lenguaje natural \citep{vaswani_attention_2017}, visión por computadora y biología computacional. El éxito de modelos como BERT \citep{devlin_bert_2019}, GPT y sus variantes ha establecido al transformador como el estándar de facto para el aprendizaje de representaciones en aprendizaje profundo. Sin embargo, la rápida proliferación de innovaciones arquitectónicas presenta desafíos prácticos significativos para investigadores y profesionales.
+
+Los años recientes han presenciado una explosión de mecanismos alternativos de atención y mezcla de secuencias, cada uno abordando limitaciones específicas de la atención softmax estándar: complejidad computacional cuadrática \citep{child_sparse_transformer_2019}, requisitos de inferencia eficiente en memoria \citep{sun_retentive_2023,gu_mamba_2023}, gestión de estado selectivo basada en contenido \citep{behrouz_titans_2025} y optimizaciones conscientes del hardware \citep{ramapuram_theory_2024}. Simultáneamente, la literatura de optimización se ha diversificado más allá del AdamW clásico, introduciendo técnicas de reducción de varianza \citep{xie_adan_2022,pagliardini_ademamix_2024,yuan_mars_2024}, variantes eficientes en memoria \citep{shazeer_adafactor_2018,zhao_galore_2024}, enfoques sin programador \citep{defazio_road_2024} y métodos de precondicionamiento de segundo orden \citep{gupta_shampoo_2018,vyas_soap_2024}.
+
+La consecuencia práctica es un ecosistema de investigación fragmentado donde la comparación experimental a través de arquitecturas y optimizadores requiere un esfuerzo de ingeniería significativo. Los investigadores deben implementar y depurar múltiples variantes desde cero, garantizar canalizaciones de entrenamiento consistentes y gestionar espacios de hiperparámetros complejos. Esta fragmentación obstaculiza la reproducibilidad, ralentiza el progreso científico y aumenta la barrera de entrada para nuevos investigadores.
+
+Este trabajo aborda estos desafíos a través de un kit de herramientas de experimentación unificado basado en configuración que proporciona:
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Diseño Basado Primero en Esquemas}: Un contrato de configuración estricto y validado que impone reproducibilidad mientras admite diecisiete arquitecturas distintas de mezclador de secuencias y veinte familias de optimizadores.
+    \item \textbf{Entrenamiento Agnóstico a la Arquitectura}: Infraestructura de entrenamiento común que admite líneas base de atención densa (estándar, sigmoide), alternativas recurrentes (RetNet, Mamba, bloques estilo ODE), patrones de atención dispersa (Sparse Transformer, Longformer, BigBird, SparseK, NSA, SpargeAttn, FASA) y mecanismos con compuerta (GLA, DeltaNet, Gated DeltaNet, HGRN2, FoX, Gated Softmax).
+    \item \textbf{Marco de Enrutamiento de Optimizadores}: Grupos de hiperparámetros con prefijo que permiten control granular sobre incrustaciones, capas de normalización, bloques recurrentes, bloques de atención y otros subconjuntos de parámetros a través de optimizadores diversos.
+    \item \textbf{Flujos de Trabajo de Extremo a Extremo}: Despliegue integrado mediante cuantización (empaquetado de pesos ternarios, activaciones INT8) y capacidades de incrustación de oraciones inspirado en SBERT \citep{reimers_sentence-bert_2019}.
+    \item \textbf{Configuración Interactiva}: Interfaz basada en web que proporciona renderizado de formularios impulsado por esquemas, validación en tiempo real y generación de comandos CLI.
+\end{enumerate}
+
+La superficie de comandos del proyecto es:
+\begin{center}
+\texttt{frankestein-transformer}
+\end{center}
+con subcomandos:
+\texttt{train}, \texttt{deploy}, \texttt{quantize}, \texttt{infer}, \texttt{sbert-train}, \texttt{sbert-infer}, \texttt{web-server}.
+
+El comando \texttt{web-server} lanza un constructor de configuración basado en Streamlit que proporciona:
+\begin{itemize}[leftmargin=*]
+    \item Campos de formulario impulsados por esquemas con títulos de parámetros y descripciones detalladas
+    \item Información sobre herramientas y texto de ayuda en tiempo real para cada opción de configuración
+    \item Vista previa y descarga en tiempo real de YAML
+    \item Comandos CLI generados para entrenamiento, despliegue, inferencia y flujos de trabajo SBERT
+\end{itemize}
+
+Esta interfaz interactiva sirve como alternativa a la edición manual de YAML, mejorando la usabilidad para usuarios que exploran opciones de configuración disponibles y comprenden su impacto en el comportamiento del modelo y la dinámica de entrenamiento.
+
+\subsection{Contribuciones}
+
+Este trabajo realiza las siguientes contribuciones principales:
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Esquema de Configuración Unificado}: Un contrato de esquema basado en YAML con validación estricta que admite diecisiete arquitecturas distintas de mezclador de secuencias a través de cuatro categorías (líneas base densas, bloques recurrentes/retentivos, patrones de atención dispersa y mecanismos con compuerta) mientras impone reproducibilidad a través de restricciones \texttt{additionalProperties: false}.
+    \item \textbf{Soporte de Arquitectura Integral}: Implementación de variantes modernas de transformador incluyendo atención softmax estándar \citep{vaswani_attention_2017}, atención sigmoide \citep{ramapuram_theory_2024}, RetNet \citep{sun_retentive_2023}, Mamba \citep{gu_mamba_2023}, transformadores continuos estilo ODE \citep{zhang_continuous_2021}, atención aumentada con memoria Titans \citep{behrouz_titans_2025}, mecanismos de atención dispersa \citep{child_sparse_transformer_2019,beltagy_longformer_2020,zaheer_bigbird_2020,lou_sparsek_2024,yuan_nsa_2025,zhang_spargeattn_2025,wang_fasa_2026} y arquitecturas de atención con compuerta \citep{yang_gla_2023,yang_deltanet_2024,yang_gated_deltanet_2024,qin_hgrn2_2024,lin_forgetting_transformer_2025,qiu_gated_attention_2025}.
+    \item \textbf{Marco de Enrutamiento de Optimizadores}: Sistema de hiperparámetros con prefijo que permite control por grupo de parámetros a través de veinte optimizadores, incluyendo métodos de reducción de varianza (MARS, Adan, AdEMAMix, Cautious AdamW), variantes eficientes en memoria (Adafactor, GaLore, Lion), enfoques sin programador (Schedule-Free AdamW), métodos conscientes de la curvatura (Sophia), precondicionadores de segundo orden (Shampoo, SOAP) y optimizadores orientados a la ortogonalidad (Muon, Turbo-Muon).
+    \item \textbf{Cuantización y Despliegue}: Canalización de despliegue integrada que admite empaquetado de pesos ternarios y cuantización de activaciones INT8 con estimaciones de tamaño siguiendo la aproximación de almacenamiento de $1.58$ bits.
+    \item \textbf{Flujos de Trabajo de Incrustación de Oraciones}: Canalizaciones de entrenamiento e inferencia inspiradas en SBERT que admiten puntuación de similitud, recuperación, agrupamiento y exportación de incrustaciones persistentes.
+    \item \textbf{Interfaz de Configuración Interactiva}: Servidor web basado en Streamlit que proporciona generación de formularios impulsada por esquemas, validación en tiempo real, documentación en línea y generación de comandos CLI.
+\end{enumerate}
+
+\subsection{Guía de Lectura}
+
+Este documento está organizado como referencia técnica que aborda cuatro preocupaciones operacionales:
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Contrato de Configuración}: La sección~\ref{sec:config-centric-architecture} describe el esquema YAML que impone experimentos válidos y la sección~\ref{sec:schema-validation} explica las reglas de validación.
+    \item \textbf{Selección de Arquitectura}: La sección~\ref{sec:normalization} cubre opciones de normalización; la sección~\ref{sec:attention-families} proporciona comparación integral de familias de mezcladores de secuencias; los apéndices~\ref{sec:annex-transformer}, \ref{sec:annex-sparse} y \ref{sec:annex-gated} sintetizan literatura de apoyo.
+    \item \textbf{Dinámica de Optimización}: La sección~\ref{sec:optimizer-families} detalla el enrutamiento de optimizadores y la dinámica de entrenamiento; el apéndice~\ref{sec:annex-optimizers} proporciona análisis integral de familias de optimizadores.
+    \item \textbf{Despliegue e Inferencia}: Las secciones~\ref{sec:quantization} y~\ref{sec:sbert} describen el despliegue cuantizado y los flujos de trabajo de incrustación de oraciones.
+\end{enumerate}
+
+\subsection{Constructor de Configuración Basado en Web}
+
+Además de la edición directa de YAML, este proyecto proporciona una interfaz web basada en Streamlit (accedida a través del comando \texttt{web-server}) que mejora la accesibilidad y descubrimiento de configuración. La interfaz presenta campos de esquemas con:
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Renderizado de formularios impulsado por esquemas} --- Todos los campos se generan dinámicamente desde el esquema autoritativo, garantizando consistencia y validación.
+    \item \textbf{Documentación de parámetros en línea} --- Cada campo de formulario muestra un \emph{título} del esquema como su etiqueta, con la \emph{descripción} mostrada como ayuda al pasar el cursor.
+    \item \textbf{Vista previa de configuración en tiempo real} --- Los usuarios ven salida YAML en vivo mientras modifican campos de formulario, permitiendo retroalimentación de validación inmediata.
+    \item \textbf{Generación de comandos CLI} --- La interfaz genera comandos CLI completos para entrenamiento, despliegue, inferencia y flujos de trabajo SBERT basados en la configuración actual.
+    \item \textbf{Mejoras de accesibilidad} --- Información sobre herramientas y formularios estructurados hacen que las opciones de configuración sean más fáciles de entender, especialmente para usuarios nuevos en el proyecto o explorando arquitecturas novedosas.
+\end{itemize}
+
+Este enfoque basado en web aborda barreras de usabilidad comunes en la experimentación impulsada por configuración:
+\begin{itemize}[leftmargin=*]
+    \item Reduce la necesidad de memorizar la estructura de YAML y los nombres de campos
+    \item Previene errores tipográficos a través de validación de esquema
+    \item Proporciona contexto educativo a través de documentación en línea
+    \item Permite experimentación rápida con ajuste guiado de parámetros
+    \item Sirve tanto como herramienta de configuración como recurso de aprendizaje
+\end{itemize}
+
+La implementación de la interfaz web utiliza widgets de formulario de Streamlit con:
+\begin{itemize}[leftmargin=*]
+    \item \texttt{st.checkbox()} para interruptores binarios con texto de ayuda
+    \item \texttt{st.number\_input()} para campos numéricos con tamaño de paso y formato
+    \item \texttt{st.selectbox()} para opciones de enumeración con visualización de opciones
+    \item \texttt{st.multiselect()} para selecciones de matriz desde opciones definidas
+    \item \texttt{st.text\_input()} para campos de texto
+    \item \texttt{st.info()}, \texttt{st.caption()} para información complementaria
+\end{itemize}
+
+Los metadatos del esquema (campos de título y descripción) se extraen y renderizan sistemáticamente a través de todas las secciones de formulario, incluyendo:
+\begin{itemize}[leftmargin=*]
+    \item Parámetros de arquitectura del modelo (tamaño oculto, capas, cabezas de atención, etc.)
+    \item Configuraciones de tiempo de ejecución de entrenamiento (tamaño de lote, acumulación, programador)
+    \item Configuración de optimizador con hiperparámetros por grupo de parámetros
+    \item Opciones de despliegue y cuantización
+    \item Parámetros de entrenamiento e inferencia específicos de SBERT
+\end{itemize}
+
+\section{Trabajo Relacionado}
+
+Este trabajo se sitúa en la intersección de tres áreas de investigación activas: arquitecturas de atención alternativas, mecanismos de atención dispersa y algoritmos de optimización avanzados. Esta sección sintetiza literatura relevante a través de estos dominios para contextualizar las contribuciones.
+
+\subsection{Arquitecturas de Mezclador de Secuencias}
+
+La trayectoria del modelado de secuencias en inteligencia artificial ha sido moldeada por una tensión continua entre expresividad computacional y eficiencia de recursos. El advenimiento del mecanismo de atención estándar de transformador transformó fundamentalmente el procesamiento del lenguaje natural, visión por computadora y biología computacional priorizando la contextualización global sobre la recurrencia secuencial. Sin embargo, a medida que la ambición de los modelos fundacionales escala hacia ventanas de contexto de millones de tokens, la complejidad computacional cuadrática $\mathcal{O}(n^2)$ de la autoatención tradicional ha surgido como un cuello de botella severo \citep{vaswani_attention_2017}.
+
+\subsubsection{Líneas Base de Atención Densa}
+
+\paragraph{Atención Softmax Estándar.}
+El mecanismo de autoatención multi-cabeza estándar estableció un cambio de paradigma eliminando completamente la recurrencia secuencial y convoluciones localizadas. Al permitir que cada token en una secuencia atienda directamente a cualquier otro token, el transformador estándar logró un éxito sin precedentes en capturar dependencias de largo alcance. La formulación calcula una suma ponderada de vectores de valor:
+
+$$
+\text{Attention}(Q,K,V) = \text{softmax}\left(\frac{QK^\top}{\sqrt{d_k}}\right)V
+$$
+
+Para la decodificación autorregresiva, este mecanismo requiere almacenamiento en caché de Key-Value (KV) para evitar la recomputación $\mathcal{O}(n^2)$. Sin embargo, esta eficiencia teórica viene con el costo de una huella de memoria que crece linealmente requiriendo espacio $\mathcal{O}(n \cdot d)$, que puede consumir cientos de gigabytes de Memoria de Ancho de Banda Alto (HBM) para modelos grandes \citep{vaswani_attention_2017}.
+
+\paragraph{Atención Sigmoide.}
+La atención sigmoide reemplaza la normalización softmax por filas con activación sigmoide elemento por elemento:
+
+$$
+\text{SigmoidAttn}(Q,K,V) = \sigma\left(\frac{QK^\top}{\sqrt{d_k}}+b\right)V
+$$
+
+Los análisis teóricos que aprovechan la perspectiva de mezcla de expertos revelan ventajas críticas en complejidad muestral. Para modelos que utilizan expertos ReLU, la compuerta softmax converge a $\mathcal{O}(n^{-0.24})$, mientras que la versión sigmoide logra una convergencia significativamente más rápida $\mathcal{O}(n^{-0.51})$. La naturaleza elemento por elemento evita la sobrecarga de sincronización entre hilos, permitiendo una aceleración del kernel de inferencia del 17\% mediante FlashSigmoid en GPUs NVIDIA H100 \citep{ramapuram_theory_2024}. Sin embargo, el escalado empírico reveló inestabilidades de entrenamiento que requieren una capa de estabilización de ``norma híbrida'' para modelos a gran escala.
+
+\subsubsection{Arquitecturas Recurrentes y Retentivas}
+
+\paragraph{RetNet (Red Retentiva).}
+RetNet fue diseñada explícitamente para resolver el ``triángulo imposible'' del modelado de secuencias: lograr entrenamiento paralelizable, inferencia de bajo costo $\mathcal{O}(1)$ y alto rendimiento simultáneamente. El mecanismo de retención introduce una matriz de decadencia exponencial causal fija $D$:
+
+$$
+\text{Retention}(X) = (QK^\top \odot D)V
+$$
+
+con forma recurrente:
+$$
+S_n = \gamma S_{n-1} + k_n^\top v_n,\quad o_n = q_n S_n
+$$
+
+Esta representación dual permite entrenamiento paralelo con complejidad $\mathcal{O}(n^2 \cdot d)$ e inferencia recurrente con tiempo $\mathcal{O}(1)$ por paso, eliminando completamente el caché KV \citep{sun_retentive_2023}.
+
+\paragraph{Mamba (Modelo de Espacio de Estado Selectivo).}
+Mamba aborda las limitaciones de los modelos de espacio de estado de Tiempo Invariante Lineal (LTI) introduciendo selectividad a los parámetros fundamentales. El sistema de tiempo continuo:
+
+$$
+h'(t) = A h(t) + B x(t),\quad y(t) = C h(t)
+$$
+
+se discretiza con parámetros dependientes de entrada:
+$$
+\bar{A}_t = \exp(\Delta_t A),\quad \bar{B}_t = \Delta_t B_t,\quad \Delta_t = \text{softplus}(\text{Linear}(x_t))
+$$
+
+El algoritmo de escaneo consciente del hardware permite complejidad lineal $\mathcal{O}(n \cdot d)$ con utilización eficiente de GPU, haciendo que la recurrencia lineal sea práctica en aceleradores \citep{gu_mamba_2023}.
+
+\paragraph{Transformadores Continuos Estilo ODE.}
+El transformador ODE trata la profundidad como integración numérica sobre un sistema dinámico continuo:
+
+$$
+\frac{dh(t)}{dt} = f_\theta(h(t),t)
+$$
+
+con refinamiento Runge-Kutta que reduce el error de truncamiento y mejora la calidad de generación de secuencias. Esto proporciona una trayectoria intra-bloque más expresiva con uso compartido de pesos, aunque a mayor costo computacional \citep{zhang_continuous_2021}.
+
+\paragraph{Atención Aumentada con Memoria (Titans).}
+Titans introduce memorización neuronal en tiempo de prueba: en lugar de almacenar solo activaciones, el modelo actualiza su memoria interna utilizando señales de aprendizaje impulsadas por sorpresa durante la inferencia. Esto aborda el contexto más allá de lo que los modelos recurrentes de estado fijo típicamente soportan, permitiendo contextos extremadamente largos y recuerdo asociativo. El costo del sistema es una mayor complejidad de implementación porque la inferencia ahora incluye lógica de adaptación de memoria \citep{behrouz_titans_2025}.
+
+\subsubsection{Mecanismos de Atención Dispersa}
+
+La complejidad cuadrática de la atención estándar se vuelve prohibitiva para secuencias que exceden cientos de miles de tokens. Los mecanismos de atención dispersa abordan esto restringiendo el conjunto de interacciones de tokens, explotando la observación de que la mayoría de los pesos de atención aprendidos están cerca de cero.
+
+\paragraph{Sparse Transformer.}
+Introduce atención dispersa factorizada reduciendo la complejidad $\mathcal{O}(n^2)$ a $\mathcal{O}(n\sqrt{n})$. Utiliza dos patrones dispersos complementarios: atención con zancada y atención fija, cada una atendiendo a $\mathcal{O}(\sqrt{n})$ posiciones \citep{child_sparse_transformer_2019}.
+
+\paragraph{Longformer.}
+Introduce atención de ventana deslizante con tokens globales opcionales, logrando escalado lineal $\mathcal{O}(n \cdot w)$ donde $w$ es el tamaño de ventana fijo. Combina ventanas deslizantes, patrones dilatados y tokens globales para mantener conectividad de largo alcance con cómputo disperso \citep{beltagy_longformer_2020}.
+
+\paragraph{BigBird.}
+Combina ventanas locales, enlaces aleatorios y tokens globales para preservar una fuerte conectividad de contexto largo con cómputo disperso. Máscara dispersa aleatoria más rutas locales/globales mantiene propiedades teóricas de aproximación \citep{zaheer_bigbird_2020}.
+
+\paragraph{SparseK.}
+Utiliza una proyección estilo top-$k$ diferenciable sobre puntuaciones de importancia antes de la atención, por lo que solo los pares KV seleccionados participan en la ruta de producto punto costosa \citep{lou_sparsek_2024}.
+
+\paragraph{NSA (Atención Dispersa Nativa).}
+Implementa un diseño disperso de tres ramas: rama comprimida, rama seleccionada y rama de ventana local, luego las combina con compuertas aprendidas \citep{yuan_nsa_2025}.
+
+\paragraph{SpargeAttn.}
+Filtrado de bloques sin entrenamiento en dos etapas: primero predice interacciones de bloques despreciables, luego aplica poda consciente de softmax para eliminar bloques de baja contribución \citep{zhang_spargeattn_2025}.
+
+\paragraph{FASA.}
+Selección consciente de frecuencia basada en componentes de frecuencia dominantes RoPE, luego aplica atención completa solo en tokens seleccionados \citep{wang_fasa_2026}.
+
+\subsubsection{Mecanismos de Memoria con Compuerta}
+
+Los mecanismos de memoria con compuerta introducen control dependiente de datos sobre cómo se retiene, olvida y actualiza la información en arquitecturas lineales o recurrentes.
+
+\paragraph{GLA (Atención Lineal con Compuerta).}
+GLA aumenta la atención lineal con una compuerta de decaimiento multiplicativa dependiente de datos. Esto aborda directamente la sobrecarga de memoria en estados recurrentes aditivos, permitiendo que el modelo controle activamente qué información retener a través del tiempo \citep{yang_gla_2023}.
+
+\paragraph{DeltaNet.}
+DeltaNet reemplaza la acumulación pura con una regla delta: la memoria se corrige comparando el valor recuperado contra el valor deseado. Esto puede interpretarse como corrección de errores en línea y mejora el recuerdo asociativo \citep{yang_deltanet_2024}.
+
+\paragraph{Gated DeltaNet.}
+Gated DeltaNet combina ambas ideas: una compuerta de decaimiento controla el olvido mientras que la regla delta controla la escritura dirigida. Esto se presenta como el diseño recurrente lineal más equilibrado porque soporta tanto el borrado rápido como las actualizaciones precisas simultáneamente \citep{yang_gated_deltanet_2024}.
+
+\paragraph{HGRN2.}
+HGRN2 utiliza compuertas de olvido jerárquicas acotadas inferiormente con expansión de estado de producto externo. Los límites jerárquicos fomentan que diferentes capas se especialicen en diferentes escalas de tiempo \citep{qin_hgrn2_2024}.
+
+\paragraph{FoX (Transformador de Olvido).}
+FoX mantiene atención softmax completa pero añade una compuerta de olvido en el espacio de logit. Esto inyecta dinámica consciente de recencia en la canalización estándar sin perder la expresividad de atención completa, aunque mantiene la complejidad cuadrática \citep{lin_forgetting_transformer_2025}.
+
+\paragraph{Atención con Compuerta después de SDPA.}
+La arquitectura final aplica una compuerta sigmoide después de la atención producto-escala escalada. Los beneficios incluyen la no linealidad adicional que rompe parte del cuello de botella de rango bajo en la ruta de salida, y la compuerta ayuda a suprimir el fenómeno de sumidero de atención \citep{qiu_gated_attention_2025}.
+
+\subsection{Algoritmos de Optimización Avanzados}
+
+El paisaje de optimización moderna en aprendizaje profundo se ha expandido más allá de SGD y AdamW, con varios desarrollos que abordan desafíos específicos.
+
+\paragraph{Reducción de Varianza.}
+Adan reformula la aceleración Nesterov para aprendizaje profundo, ADOPT corrige problemas teóricos de no convergencia de Adam, y AdEMAMix introduce mezcla de historias duales EMA \citep{xie_adan_2022,taniguchi_adopt_2024,pagliardini_ademamix_2024}.
+
+\paragraph{Variantes Eficientes en Memoria.}
+Adafactor y GaLore reducen el estado del optimizador mediante factorización o proyección de rango bajo, mientras que Lion utiliza actualizaciones basadas en signos \citep{shazeer_adafactor_2018,zhao_galore_2024,chen_symbolic_2023}.
+
+\paragraph{Enfoques Sin Programador.}
+Schedule-Free AdamW elimina la necesidad de diseño de programador explícito integrando la dinámica de programación en las actualizaciones \citep{defazio_road_2024}.
+
+\paragraph{Métodos Conscientes de la Curvatura.}
+Sophia, Shampoo y SOAP incorporan información de segundo orden aproximada mediante estimaciones de Hessiano diagonal, estadísticas estructuradas de Kronecker o seguimiento de base propia \citep{gupta_shampoo_2018,vyas_soap_2024,liu_sophia_2023}.
+
+\paragraph{Optimizadores Orientados a la Geometría.}
+Muon y Turbo-Muon remodelan explícitamente la geometría de actualización mediante ortogonalización, útil cuando la estructura matricial importa para dar forma a representaciones \citep{shen_convergence_2025,boissin_turbo-muon_2025}.
+
+\section{Arquitectura Centrada en Configuración}
+
+\subsection{Contrato de Esquema y Validación}
+\label{sec:config-centric-architecture}
+
+El sistema se basa en un contrato de esquema YAML estricto que impone experimentos válidos fallando rápido en configuraciones inválidas. El esquema está estructurado jerárquicamente con \texttt{additionalProperties: false} en todos los niveles para eliminar el comportamiento silencioso de ``tragar'' parámetros desconocidos.
+
+Los componentes principales del esquema son:
+\begin{itemize}[leftmargin=*]
+    \item \textbf{model}: Arquitectura del codificador (tamaño oculto, capas, tipo de normalización, tipo de mezclador, parámetros específicos del mezclador).
+    \item \textbf{tokenizer}: Tokenización y vocabulario (tipo, ruta del modelo, ruta del vocabulario, longitud máxima).
+    \item \textbf{training}: Tiempo de ejecución de entrenamiento (tamaño de lote, acumulación, programador, cortado, repetición, puntos de control).
+    \item \textbf{optimizer}: Configuración del optimizador (clase, hiperparámetros con prefijo).
+    \item \textbf{data}: Carga de datos (directorio de caché, tamaño máximo de secuencia, probabilidad MLM).
+    \item \textbf{deploy}: Opciones de despliegue (cuantización, ruta del modelo).
+    \item \textbf{sbert}: Configuración específica de SBERT (modo, ruta del corpus, hiperparámetros).
+\end{itemize}
+
+\subsection{Validación de Esquema}
+\label{sec:schema-validation}
+
+La validación ocurre en la carga de configuración utilizando el validador PyYAML. Las reglas principales incluyen:
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Validación de tipo}: Todos los campos deben coincidir con los tipos declarados (entero, flotante, booleano, cadena, enumeración).
+    \item \textbf{Validación de rango}: Los campos numéricos deben respetar las restricciones mínimas/máximas (por ejemplo, \texttt{batch\_size} $\ge 1$, \texttt{learning\_rate} $> 0$).
+    \item \textbf{Validación de enumeración}: Los campos de enumeración deben elegir de conjuntos de opciones predefinidos (por ejemplo, \texttt{norm\_type} $\in$ \{\texttt{layer\_norm}, \texttt{dynamic\_tanh}, \texttt{derf}\}).
+    \item \textbf{Validación de estructura}: Los objetos anidados deben cumplir con sus esquemas anidados.
+    \item \textbf{Validación de propiedades adicionales}: Se rechazan campos no declarados explícitamente.
+\end{itemize}
+
+\section{Taxonomía de Arquitectura e Implementación}
+\label{sec:architecture-taxonomy}
+
+\subsection{Familias de Atención y Mezclador de Secuencias}
+\label{sec:attention-families}
+
+Este sistema implementa diecisiete arquitecturas distintas de mezclador de secuencias organizadas en cinco categorías funcionales que reflejan tendencias de investigación en el diseño de modelado de secuencias. La organización taxonómica refleja la comprensión evolutiva de cómo equilibrar expresividad, eficiencia computacional y restricciones de memoria.
+
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Líneas Base de Atención Densa}: Atención softmax estándar y atención sigmoide proporcionan contextualización global completa a costo computacional cuadrático, sirviendo como líneas base de referencia para comparación con alternativas más eficientes.
+    \item \textbf{Arquitecturas Recurrentes y Retentivas}: RetNet, Mamba, bloques estilo ODE y Titans mantienen representaciones de estado que permiten costo de inferencia $\mathcal{O}(1)$ mientras preservan expresividad a través de dinámica recurrente, parámetros selectivos o adaptación de memoria en tiempo de prueba.
+    \item \textbf{Patrones de Atención Dispersa}: Siete variantes dispersas (Sparse Transformer, Longformer, BigBird, SparseK, NSA, SpargeAttn, FASA) reducen la complejidad cuadrática mediante dispersión estructurada, selección de tokens o estrategias de poda sin entrenamiento.
+    \item \textbf{Mecanismos de Memoria con Compuerta}: Seis arquitecturas con compuerta (GLA, DeltaNet, Gated DeltaNet, HGRN2, FoX, Gated Softmax) introducen control dependiente de datos sobre la retención de memoria, el olvido y la fuerza de actualización.
+\end{enumerate}
+
+\begin{figure}[t]
+\centering
+\fitfigure{\begin{tikzpicture}[
+    font=\scriptsize,
+    node distance=0.38cm and 1.0cm,
+    box/.append style={inner sep=4pt, minimum height=0.55cm}
+]
+% Root
+\node[box, fill=blue!15, minimum width=3.2cm] (root) {\textbf{Registro de Mezclador de Secuencias (17 variantes)}};
+
+% Category headers
+\node[box, fill=red!10, below left=1.0cm and 5.4cm of root, minimum width=2.2cm] (dense) {\textbf{Denso (2)}};
+\node[box, fill=green!10, below left=1.0cm and 1.8cm of root, minimum width=2.2cm] (recur) {\textbf{Recurrente (4)}};
+\node[box, fill=yellow!12, below right=1.0cm and 1.8cm of root, minimum width=2.2cm] (sparse) {\textbf{Disperso (7)}};
+\node[box, fill=purple!12, below right=1.0cm and 5.4cm of root, minimum width=2.2cm] (gated) {\textbf{Compuerta (6)}};
+
+% Dense column
+\node[box, fill=red!5, below=of dense] (d1) {\texttt{standard\_attn}};
+\node[box, fill=red!5, below=of d1] (d2) {\texttt{sigmoid\_attn}};
+
+% Recurrent column
+\node[box, fill=green!5, below=of recur] (r1) {\texttt{retnet / retnet\_attn}};
+\node[box, fill=green!5, below=of r1] (r2) {\texttt{mamba}};
+\node[box, fill=green!5, below=of r2] (r3) {\texttt{ode}};
+\node[box, fill=green!5, below=of r3] (r4) {\texttt{titan\_attn}};
+
+% Sparse column
+\node[box, fill=yellow!6, below=of sparse] (s1) {\texttt{sparse\_transformer\_attn}};
+\node[box, fill=yellow!6, below=of s1] (s2) {\texttt{longformer\_attn}};
+\node[box, fill=yellow!6, below=of s2] (s3) {\texttt{bigbird\_attn}};
+\node[box, fill=yellow!6, below=of s3] (s4) {\texttt{sparsek\_attn}};
+\node[box, fill=yellow!6, below=of s4] (s5) {\texttt{nsa\_attn}};
+\node[box, fill=yellow!6, below=of s5] (s6) {\texttt{sparge\_attn}};
+\node[box, fill=yellow!6, below=of s6] (s7) {\texttt{fasa\_attn}};
+
+% Gated column
+\node[box, fill=purple!6, below=of gated] (g1) {\texttt{gla\_attn}};
+\node[box, fill=purple!6, below=of g1] (g2) {\texttt{deltanet\_attn}};
+\node[box, fill=purple!6, below=of g2] (g3) {\texttt{gated\_deltanet\_attn}};
+\node[box, fill=purple!6, below=of g3] (g4) {\texttt{hgrn2\_attn}};
+\node[box, fill=purple!6, below=of g4] (g5) {\texttt{fox\_attn}};
+\node[box, fill=purple!6, below=of g5] (g6) {\texttt{gated\_softmax\_attn}};
+
+% Root-to-category links
+\draw[line] (root) -- (dense);
+\draw[line] (root) -- (recur);
+\draw[line] (root) -- (sparse);
+\draw[line] (root) -- (gated);
+
+% Category-to-list links
+\draw[line] (dense) -- (d1);
+\draw[line] (d1) -- (d2);
+
+\draw[line] (recur) -- (r1);
+\draw[line] (r1) -- (r2);
+\draw[line] (r2) -- (r3);
+\draw[line] (r3) -- (r4);
+
+\draw[line] (sparse) -- (s1);
+\draw[line] (s1) -- (s2);
+\draw[line] (s2) -- (s3);
+\draw[line] (s3) -- (s4);
+\draw[line] (s4) -- (s5);
+\draw[line] (s5) -- (s6);
+\draw[line] (s6) -- (s7);
+
+\draw[line] (gated) -- (g1);
+\draw[line] (g1) -- (g2);
+\draw[line] (g2) -- (g3);
+\draw[line] (g3) -- (g4);
+\draw[line] (g4) -- (g5);
+\draw[line] (g5) -- (g6);
+\end{tikzpicture}}
+\caption{Taxonomía integral de diecisiete arquitecturas de mezclador de secuencias soportadas. Las líneas base densas proporcionan enrutamiento global completo a costo cuadrático. Las arquitecturas recurrentes permiten inferencia de tiempo constante mediante compresión de estado. Las variantes dispersas reducen complejidad mediante patrones estructurados o selección de tokens. Los mecanismos con compuerta introducen control dependiente de datos sobre la retención y olvido de memoria.}
+\label{fig:comprehensive-taxonomy}
+\end{figure}
+
+\subsection{Atención Estándar}
+Dadas matrices proyectadas $(Q,K,V)$:
+\[
+\text{Attn}(Q,K,V)=\text{softmax}\left(\frac{QK^\top}{\sqrt{d_k}}\right)V
+\]
+Este es el mecanismo de línea base para el enrutamiento de contenido \citep{vaswani_attention_2017}.
+
+\subsection{Atención Sigmoide}
+La atención sigmoide elimina la normalización de probabilidad por filas:
+\[
+\text{SigmoidAttn}(Q,K,V)=\sigma\left(\frac{QK^\top}{\sqrt{d_k}}+b\right)V
+\]
+y tiene diferentes requisitos de estabilidad de entrenamiento, a menudo con normalización adicional \citep{ramapuram_theory_2024}.
+
+\subsection{Formulación Retentiva}
+RetNet utiliza retención con matriz de decaimiento $D$:
+\[
+\text{Retention}(Q,K,V)=\left(QK^\top \odot D\right)V
+\]
+con forma recurrente:
+\[
+S_n=\gamma S_{n-1}+k_n^\top v_n,\qquad o_n=q_n S_n
+\]
+permitiendo inferencia recurrente de bajo costo \citep{sun_retentive_2023,yang_survey_2025}.
+
+\subsection{SSM Selectivo (Mamba)}
+La recurrencia de espacio de estado selectivo discreto es:
+\[
+h_t=\bar{A}_t h_{t-1}+\bar{B}_t x_t,\qquad y_t=C_t h_t
+\]
+donde $(\bar{A}_t,\bar{B}_t,C_t)$ dependen de la entrada, preservando el escalado de tiempo lineal con escaneo consciente del hardware \citep{gu_mamba_2023,hwang_hydra_2024}.
+
+\subsection{Actualizaciones Continuas Estilo ODE}
+Enmarcación de profundidad continua:
+\[
+\frac{dh(t)}{dt}=f_\theta(h(t),t)
+\]
+con integradores RK prácticos para ejecución discreta \citep{zhang_continuous_2021}.
+
+\subsection{Memoria en Tiempo de Prueba (Titans)}
+Una actualización aumentada con memoria puede escribirse:
+\[
+M_t=(1-\alpha_t)M_{t-1}+S_t,\qquad
+S_t=\eta_t S_{t-1}-\theta_t\nabla \ell(M_{t-1};x_t)
+\]
+para adaptar la memoria en tiempo de inferencia \citep{behrouz_titans_2025,behrouz_titans_2024}.
+
+\subsection{Extensiones Dispersas y con Compuerta en la Base de Código Actual}
+El registro de mezclador ahora incluye bloques dispersos:
+\texttt{sparse\_transformer\_attn}, \texttt{longformer\_attn}, \texttt{bigbird\_attn},
+\texttt{sparsek\_attn}, \texttt{nsa\_attn}, \texttt{sparge\_attn}, y \texttt{fasa\_attn};
+y bloques con compuerta:
+\texttt{gla\_attn}, \texttt{deltanet\_attn}, \texttt{gated\_deltanet\_attn},
+\texttt{hgrn2\_attn}, \texttt{fox\_attn}, y \texttt{gated\_softmax\_attn}.
+
+La implementación impone una política de ejecución explícita para métodos dispersos sin entrenamiento:
+\texttt{fasa\_attn} y \texttt{sparge\_attn} son solo de evaluación/inferencia y lanzan errores de tiempo de ejecución si se usan mientras el modelo está en modo de entrenamiento.
+
+\section{Familias de Optimizadores y Dinámica de Entrenamiento}
+\label{sec:optimizer-families}
+
+La optimización de arquitecturas de transformador altamente parametrizadas presenta desafíos significativos debido a paisajes de pérdida no convexos, puntos de silla y heterogeneidad de bloques a través de grupos de parámetros. El espectro de Hessiano varía dramáticamente entre incrustaciones, pesos de atención, capas de normalización y redes de retroalimentación, creando caminos de optimización donde ciertas dimensiones son exponencialmente más agudas o planas que otras. Este sistema aborda estos desafíos a través de un marco unificado que admite veinte familias de optimizadores que abarcan múltiples trayectorias algorítmicas.
+
+\subsection{Organización Taxonómica de Optimizadores Soportados}
+
+El soporte de optimizadores está organizado en seis categorías algorítmicas que reflejan direcciones de investigación modernas en optimización de aprendizaje profundo:
+
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Líneas Base Clásicas}: SGD con momentum, Adam y AdamW definen el suelo de comparación contra el cual se evalúan métodos más nuevos. Estos métodos son bien entendidos pero exhiben limitaciones incluyendo sensibilidad a programadores de tasa de aprendizaje, robustez pobre a curvatura heterogénea (SGD) y alta sobrecarga de memoria para modelos grandes (familia Adam).
+    \item \textbf{Momentum Avanzado y Reducción de Varianza}: Adan, ADOPT, AdEMAMix, MARS y Cautious AdamW (2024--2025) abordan limitaciones específicas de métodos clásicos. Adan reformula la aceleración Nesterov, ADOPT corrige la no convergencia teórica de Adam, AdEMAMix introduce mezcla de historias duales EMA, MARS trae reducción de varianza al entrenamiento a gran escala, y variantes Cautious enmascaran actualizaciones a direcciones consistentes en signo.
+    \item \textbf{Optimizadores Eficientes en Memoria}: Adafactor, GaLore y Lion reducen el estado del optimizador mediante factorización, proyección de rango bajo o actualizaciones basadas en signos. Estos métodos son críticos cuando VRAM está dominado por estado del optimizador más que activaciones.
+    \item \textbf{Sin Programador y Sin Parámetros}: Schedule-Free AdamW y Prodigy eliminan el diseño de programador explícito o ajuste de tasa de aprendizaje haciendo que la dinámica de actualización absorba estas responsabilidades, reduciendo la complejidad de búsqueda de hiperparámetros.
+    \item \textbf{Conscientes de la Curvatura y de Segundo Orden}: Sophia, Shampoo y SOAP incorporan información de segundo orden aproximada mediante estimaciones de Hessiano diagonal, estadísticas estructuradas de Kronecker o seguimiento de base propia, mejorando la condición a costo de complejidad de implementación.
+    \item \textbf{Orientados a Geometría}: Muon y Turbo-Muon remodelan explícitamente la geometría de actualización mediante ortogonalización, útil cuando la estructura matricial importa para dar forma a representaciones.
+\end{enumerate}
+
+\subsection{Formulación Adaptativa Central}
+
+Muchos optimizadores soportados comparten formulación fundamental de seguimiento de momentos. Los optimizadores de familia Adam rastrean primer y segundo momentos de gradientes:
+
+\[
+m_t = \beta_1 m_{t-1} + (1-\beta_1)g_t,\quad
+v_t = \beta_2 v_{t-1} + (1-\beta_2)g_t^2
+\]
+
+seguidos por actualizaciones precondicionadas con corrección de sesgo:
+
+\[
+\hat{m}_t = \frac{m_t}{1 - \beta_1^t},\quad
+\hat{v}_t = \frac{v_t}{1 - \beta_2^t},\quad
+\theta_{t+1} = \theta_t - \eta_t\left(\frac{\hat{m}_t}{\sqrt{\hat{v}_t}+\epsilon} + \lambda\theta_t\right)
+\]
+
+donde $\eta_t$ es el programador de tasa de aprendizaje, $\epsilon$ es constante de estabilidad numérica, y $\lambda$ es coeficiente de decaimiento de pesos \citep{loshchilov_decoupled_2017}.
+
+\section{Cuantización y Despliegue}
+\label{sec:quantization}
+
+La pila de despliegue utiliza empaquetado de pesos ternarios más cuantización de activaciones INT8 para artefactos eficientes.
+
+\subsection{Cuantización Ternaria}
+Dado tensor de pesos $W$, un escalado práctico es:
+\[
+s=\text{mean}(|W|),\qquad
+\tilde{W}=\text{clip}\left(\text{round}\left(\frac{W}{s}\right),-1,1\right)
+\]
+que aproxima actualizaciones de bajo bits estilo BitNet \citep{wang_bitnet_2023}. La mapeo empaquetada utiliza dos bits por símbolo de peso para eficiencia de almacenamiento.
+
+\subsection{Cuantización de Activaciones}
+Para activaciones $x$:
+\[
+q=\text{round}\left(x\cdot\frac{127}{\max(|x|)+\epsilon}\right),\qquad q\in[-128,127]
+\]
+con decuantización $x\approx q/\alpha$.
+
+\subsection{Estimaciones de Tamaño}
+Para $N$ parámetros:
+\[
+\text{Tamaño FP32}\approx 4N,\quad \text{Tamaño FP16}\approx 2N,\quad \text{Tamaño 1.58-bit}\approx \frac{1.58}{8}N
+\]
+antes de metadatos y sobrecarga de empaquetado. Esto se alinea con objetivos de despliegue ligero \citep{samson_lightweight_2026,bravin_embbert_2026}.
+
+\section{Tareas Posteriores SBERT}
+\label{sec:sbert}
+
+La incrustación de oraciones se basa en entrenamiento estilo siamés \citep{reimers_sentence-bert_2019}. Para par de oraciones $(s_1,s_2)$ con incrustaciones $(e_1,e_2)$:
+\[
+\text{cos}(e_1,e_2)=\frac{e_1^\top e_2}{\|e_1\|\|e_2\|}
+\]
+y pérdida de coseno estilo regresión:
+\[
+\mathcal{L}_{\text{cos}}=\left(\text{cos}(e_1,e_2)-y\right)^2
+\]
+con $y\in[-1,1]$ en esta canalización.
+
+Modos posteriores soportados:
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Similitud}: puntuación por pares entre dos oraciones.
+    \item \textbf{Búsqueda}: $k$ vecinos más cercanos sobre un corpus.
+    \item \textbf{Agrupamiento}: agrupación de incrustaciones (por ejemplo, k-means).
+    \item \textbf{Codificación}: exportación de incrustaciones persistentes para recuperación posterior.
+\end{itemize}
+
+\section{Tablas Resumen}
+\label{sec:summary-tables}
+
+\subsection{Resumen de Atención y Mezclador de Secuencias}
+\small
+\begin{longtable}{p{2.4cm}p{3.2cm}p{2.0cm}p{2.0cm}p{4.8cm}}
+\toprule
+\textbf{Tipo} & \textbf{Ecuación Central} & \textbf{Entrenamiento} & \textbf{Inferencia} & \textbf{Notas} \\
+\midrule
+\endhead
+Atención Estándar & $\text{softmax}(QK^\top/\sqrt{d_k})V$ & $\mathcal{O}(n^2d)$ & $\mathcal{O}(n)$/paso & Enrutamiento global expresivo de línea base \citep{vaswani_attention_2017}. \\
+Atención Sigmoide & $\sigma(QK^\top/\sqrt{d_k}+b)V$ & $\mathcal{O}(n^2d)$ & $\mathcal{O}(n)$/paso & Compuerta elemento por elemento; a menudo necesita norma de estabilización \citep{ramapuram_theory_2024}. \\
+RetNet & $(QK^\top\odot D)V$ & $\mathcal{O}(n^2d)$ o por bloques & $\mathcal{O}(1)$/paso & Forma dual paralela/recurrente con retención de decaimiento \citep{sun_retentive_2023}. \\
+Mamba & $h_t=\bar{A}_t h_{t-1}+\bar{B}_t x_t$ & $\mathcal{O}(nd)$ & $\mathcal{O}(1)$/paso & Espacio de estado selectivo con escaneo consciente del hardware \citep{gu_mamba_2023}. \\
+Bloque estilo ODE & $\frac{dh}{dt}=f_\theta(h,t)$ & depende del solucionador & depende del solucionador & Interpretación de profundidad continua; integración RK \citep{zhang_continuous_2021}. \\
+Memoria Titans & $M_t=(1-\alpha_t)M_{t-1}+S_t$ & aprox.\ $\mathcal{O}(nd)$ & centrada en recuperación & Actualizaciones de memoria en tiempo de prueba con dinámica impulsada por sorpresa \citep{behrouz_titans_2025}. \\
+\bottomrule
+\end{longtable}
+\normalsize
+
+\subsection{Resumen de Optimizadores}
+\small
+\begin{longtable}{p{2.2cm}p{2.8cm}p{2.0cm}p{5.4cm}p{1.8cm}}
+\toprule
+\textbf{Optimizador} & \textbf{Familia} & \textbf{Costo de Estado} & \textbf{Idea Clave} & \textbf{Ref} \\
+\midrule
+\endhead
+AdamW & Adaptativo momento primero/segundo & Alto & Línea base con decaimiento de pesos desacoplado & \citep{loshchilov_decoupled_2017} \\
+RAdam & Adaptativo corregido en varianza & Alto & Rectifica varianza adaptativa temprana & \citep{liu_variance_2019} \\
+Adan & Momentum + reducción de varianza & Alto & Actualización adaptativa estilo Nesterov & \citep{xie_adan_2022} \\
+ADOPT & Variante de Adam & Alto & Actualizaciones reordenadas con garantías de convergencia mejoradas & \citep{taniguchi_adopt_2024} \\
+AdEMAMix & Adaptativo multi-EMA & Alto & Mezcla EMAs de horizonte corto y largo & \citep{pagliardini_ademamix_2024} \\
+MARS & Precondicionado reducido en varianza & Alto & Corrección de momentum recursiva & \citep{yuan_mars_2024} \\
+Cautious AdamW & Momentum enmascarado & Alto & Aplica actualizaciones solo en direcciones consistentes en signo & \citep{liang_cautious_2024} \\
+Schedule-free AdamW & Adaptativo sin programador & Alto & Elimina dependencia de programador LR explícito & \citep{defazio_road_2024} \\
+Adafactor & Adaptativo eficiente en memoria & Medio & Segundos momentos factorizados para tensores de matriz & \citep{shazeer_adafactor_2018} \\
+GaLore AdamW & Proyección de gradiente de rango bajo & Medio & Optimiza en espacio de gradiente proyectado de rango bajo & \citep{zhao_galore_2024} \\
+Prodigy & Adaptación sin parámetros & Medio & Calibración de paso adaptativa a distancia & \citep{mishchenko_prodigy_2023} \\
+Lion & Momentum de signo & Bajo & Actualización de momentum de signo, estado reducido & \citep{chen_symbolic_2023} \\
+Sophia & Segundo orden aprox. & Medio & Precondicionamiento de Hessiano diagonal con recorte & \citep{liu_sophia_2023} \\
+Shampoo & Precondicionador de matriz & Alto & Estadísticas de segundo orden estructuradas de Kronecker & \citep{gupta_shampoo_2018} \\
+SOAP & Shampoo + base Adam & Alto & Seguimiento estilo Adam en base de precondicionador & \citep{vyas_soap_2024} \\
+Muon & Basado en ortogonalidad & Medio & Actualizaciones matriciales ortogonalizadas & \citep{shen_convergence_2025} \\
+Turbo-Muon & Ortogonalización acelerada & Medio & Aceleración de Newton-Schulz precondicionada & \citep{boissin_turbo-muon_2025} \\
+\bottomrule
+\end{longtable}
+\normalsize
+
+\section{Discusión}
+\label{sec:discussion}
+
+Las elecciones de diseño en Transformer Encoder Frankenstein reflejan varias tensiones de ingeniería e investigación en herramientas modernas de aprendizaje profundo.
+
+\subsection{Compromisos de Diseño Impulsado por Esquemas}
+
+El enfoque basado primero en esquemas proporciona beneficios significativos de reproducibilidad imponiendo contratos explícitos y fallando rápido en configuraciones inválidas. Sin embargo, este enfoque también introduce rigidez: agregar nuevas arquitecturas u optimizadores requiere extensiones de esquema más que argumentos de línea de comandos sueltos. El sistema de hiperparámetros con prefijo permite control granular pero aumenta la complejidad de configuración para usuarios acostumbrados a interfaces más simples.
+
+La decisión de imponer \texttt{additionalProperties: false} en todos los niveles de esquema elimina el comportamiento silencioso de ``tragar'' parámetros que ha plagado sistemas de configuración anteriores, pero esta estrictitud requiere mantenimiento cuidadoso del esquema al extender capacidades del sistema. Cada nuevo mecanismo de atención o variante de optimizador debe integrarse adecuadamente en el marco de validación, incluyendo definiciones de campos de esquema con tipos y restricciones apropiados, mapeo de hiperparámetros con prefijo para grupos específicos de optimizador, valores predeterminados alineados con mejores prácticas de investigación, y cadenas de documentación para renderizado de interfaz web.
+
+\subsection{Cobertura Arquitectónica y Brechas}
+
+Las diecisiete arquitecturas de mezclador implementadas abarcan direcciones principales de investigación en modelado de secuencias, pero ciertas brechas permanecen. El sistema carece de arquitecturas híbridas recientes como Griffin \citep{soares_griffin_2024} y Jamba \citep{gu_jamba_2024}, que combinan compuertas con modelos de espacio de estado. El enrutamiento MoE (Mezcla de Expertos) está implementado para capas FFN pero no para cómputo de atención, donde el trabajo reciente ha mostrado beneficios \citep{lewis_moe_2021}.
+
+La cobertura de atención dispersa es integral, pero la implementación de métodos sin entrenamiento (FASA, SpargeAttn) lanza errores de tiempo de ejecución durante el entrenamiento, reflejando restricciones arquitectónicas: estos métodos requieren puntos de control preentrenados de modelos de atención completa o procedimientos de ajuste específicos que no están automatizados actualmente.
+
+La cobertura de mecanismo con compuerta es fuerte a través de categorías principales (GLA, DeltaNet, Gated DeltaNet, HGRN2, FoX, Gated Softmax).
+
+\subsection{Fragmentación del Paisaje de Optimizadores}
+
+El soporte para veinte familias de optimizadores a través de seis categorías algorítmicas demuestra integralidad pero también destaca el estado fragmentado de investigación de optimización. Los usuarios enfrentan una complejidad de decisión significativa al elegir entre métodos de reducción de varianza (Adan, MARS), variantes eficientes en memoria (GaLore, Adafactor) y enfoques conscientes de la curvatura (Sophia, Shampoo). El sistema de hiperparámetros con prefijo, aunque poderoso, requiere comprensión de qué parámetros son relevantes para cada clase de optimizador.
+
+La calidad de implementación varía a través de optimizadores: métodos clásicos (AdamW, SGD con momentum) están altamente optimizados en PyTorch, mientras que métodos más nuevos (Muon, Turbo-Muon, SOAP) pueden requerir implementaciones personalizadas que afectan estabilidad numérica y características de rendimiento.
+
+\subsection{Consideraciones de Despliegue y Producción}
+
+La canalización de cuantización demuestra preocupaciones prácticas de despliegue pero hace compromisos de ingeniería específicos. El empaquetado de pesos ternarios reduce el almacenamiento a aproximadamente $1.58$ bits por parámetro, pero esta compresión agresiva puede degradar el rendimiento, especialmente para modelos más pequeños donde el error de cuantización es más significativo. La implementación actual aplica cuantización uniformemente a través de tipos de parámetros.
+
+Los flujos de trabajo SBERT proporcionan utilidad práctica para tareas de similitud semántica y recuperación, pero la implementación asume estrategias de agrupamiento estándar (token CLS, agrupamiento promedio). Avances recientes como incrustaciones Matryoshka \citep{muennighoff_matryoshka_2021} y refinamientos de aprendizaje contrastivo \citep{chen_supervised_2020} no están incorporados todavía.
+
+\subsection{Desafíos de Integración y Extensibilidad}
+
+La estructura de base de código actual, aunque funcional, presenta desafíos de mantenimiento a medida que se expanden familias de arquitectura y optimizador. El patrón de despachador para selección de mezclador y enrutamiento de optimizador maneja extensibilidad pero arriesga convertirse en un ``fregadero de cocina'' de lógica condicional. Versiones futuras se beneficiarían de arquitecturas basadas en complementos donde nuevos mezcladores y optimizadores podrían registrarse declarativamente más que modificar lógica de despacho central.
+
+La interfaz de configuración web proporciona mejoras significativas de usabilidad pero introduce complejidad de despliegue: ejecutar Streamlit junto con trabajos de entrenamiento requiere recursos adicionales e consideraciones de infraestructura que pueden no ser apropiadas para todos los entornos, particularmente clústeres HPC sin acceso web.
+
+\section{Conclusión}
+\label{sec:conclusion}
+
+Transformer Encoder Frankenstein presenta una plataforma de experimentación unificada basada en configuración que aborda desafíos críticos en investigación moderna de aprendizaje profundo: fragmentación arquitectónica a través de atención densa, modelos recurrentes, patrones dispersos y mecanismos con compuerta; complejidad del paisaje de optimizadores que abarca líneas base clásicas, métodos de reducción de varianza, variantes eficientes en memoria, enfoques sin programador, algoritmos conscientes de la curvatura y métodos orientados a geometría; y flujos de trabajo de extremo a extremo que abarcan cuantización y aplicaciones de incrustación de oraciones.
+
+Las contribuciones principales del sistema son:
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Diseño Basado Primero en Esquemas}: Un contrato de configuración basado en YAML estricto con validación y enrutamiento de hiperparámetros con prefijo que permite experimentos reproducibles a través de diecisiete arquitecturas de mezclador y veinte familias de optimizadores.
+    \item \textbf{Soporte de Arquitectura Integral}: Implementación que abarca categorías principales de investigación incluyendo líneas base densas (atención estándar, sigmoide), alternativas recurrentes (RetNet, Mamba, bloques estilo ODE, memoria aumentada con memoria), patrones dispersos (Sparse Transformer, Longformer, BigBird, SparseK, NSA, SpargeAttn, FASA) y mecanismos con compuerta (GLA, DeltaNet, Gated DeltaNet, HGRN2, FoX, Gated Softmax).
+    \item \textbf{Marco de Enrutamiento de Optimizadores}: Sistema de grupos de hiperparámetros con prefijo que permite control por grupo de parámetros a través de veinte optimizadores que abarcan líneas base clásicas, reducción de varianza, eficiencia de memoria, programación libre, segundo orden y métodos orientados a geometría.
+    \item \textbf{Cuantización y Despliegue}: Canalización integrada que soporta empaquetado de pesos ternarios y cuantización de activaciones INT8 con estimaciones de tamaño para despliegue ligero.
+    \item \textbf{Flujos de Trabajo de Incrustación de Oraciones}: Canalizaciones de entrenamiento e inferencia inspiradas en SBERT que soportan similitud, recuperación, agrupamiento y exportación de incrustaciones.
+    \item \textbf{Interfaz de Configuración Interactiva}: Servidor web basado en Streamlit que proporciona generación de formularios impulsada por esquemas, validación en tiempo real, documentación en línea y generación de comandos CLI.
+\end{enumerate}
+
+Este trabajo demuestra que un diseño basado en esquemas riguroso puede unificar experimentación a través de arquitecturas y optimizadores diversos mientras mantiene reproducibilidad. El sistema proporciona una plataforma sólida para exploración sistemática de diseño de transformadores, permitiendo a investigadores y profesionales iterar rápidamente en configuraciones experimentales sin comprometer condiciones reproducibles.
+
+El desarrollo futuro se centrará en extender la cobertura arquitectónica (agregando variantes híbridas y mecanismos MoE para atención), mejorar la canalización de despliegue (soportando estrategias de cuantización más sofisticadas y métodos de inferencia eficientes), y refinar la interfaz de configuración (añadiendo asistentes guiados para selección de arquitectura/optimizador y exportación de configuraciones compartibles).
+
+\bibliographystyle{plainnat}
+\bibliography{bibliography/other,bibliography/optimizers,bibliography/attention_types}
+
+\end{document}

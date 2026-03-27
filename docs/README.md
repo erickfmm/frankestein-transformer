@@ -9,6 +9,13 @@ pdflatex -interaction=nonstopmode paper.tex
 pdflatex -interaction=nonstopmode paper.tex
 ```
 
+```bash
+pdflatex -interaction=nonstopmode paper-es.tex
+bibtex paper-es
+pdflatex -interaction=nonstopmode paper-es.tex
+pdflatex -interaction=nonstopmode paper-es.tex
+```
+
 ## 1. CLI Command Surface
 
 The entrypoint is:
