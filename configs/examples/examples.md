@@ -10,13 +10,13 @@ This document provides a curated set of **24 schema-compliant YAML presets** for
 All examples are tuned around practical stability on **NVIDIA Tesla P40 (24GB VRAM)**.
 
 ## Quick Start Commands
-The example presets are stored in `src/training/configs/examples/`.
+The example presets are stored in `configs/examples/`.
 
 ### CLI (terminal)
 ```bash
 # Run MLM example
 python -m src.cli train \
-  --config src/training/configs/examples/es_mlm_beto_adamw.yaml \
+  --config configs/examples/es_mlm_beto_adamw.yaml \
   --device cuda \
   --gpu-temp-guard \
   --gpu-temp-pause-threshold-c 90 \
@@ -26,7 +26,7 @@ python -m src.cli train \
 
 # Run custom architecture MLM example
 python -m src.cli train \
-  --config src/training/configs/examples/es_arch_moe_titan_ademamix.yaml \
+  --config configs/examples/es_arch_moe_titan_ademamix.yaml \
   --device cuda \
   --gpu-temp-guard \
   --gpu-temp-pause-threshold-c 90 \
@@ -36,7 +36,7 @@ python -m src.cli train \
 
 # Run SBERT finetuning example
 python -m src.cli train \
-  --config src/training/configs/examples/es_sbert_modernbert_mean.yaml \
+  --config configs/examples/es_sbert_modernbert_mean.yaml \
   --device cuda \
   --gpu-temp-guard \
   --gpu-temp-pause-threshold-c 90 \
@@ -52,7 +52,7 @@ from src.training.main import main as train_main
 
 train_main([
     "--config",
-    "src/training/configs/examples/es_mlm_beto_adamw.yaml",
+    "configs/examples/es_mlm_beto_adamw.yaml",
     "--device",
     "cuda",
     "--gpu-temp-guard",
@@ -72,7 +72,7 @@ from src.cli import main as cli_main
 cli_main([
     "train",
     "--config",
-    "src/training/configs/examples/es_sbert_beto_mean.yaml",
+    "configs/examples/es_sbert_beto_mean.yaml",
     "--device",
     "cuda",
     "--gpu-temp-guard",

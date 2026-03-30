@@ -63,7 +63,7 @@ Key train flags:
 - `--gpu-temp-critical-threshold-c`
 - `--gpu-temp-poll-interval-seconds`
 
-## 3. Configuration Schema (`src/training/configs/schema.yaml`)
+## 3. Configuration Schema (`configs/schema.yaml`)
 
 Top-level required keys:
 

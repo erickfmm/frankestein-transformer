@@ -492,7 +492,7 @@ def main(argv=None):
         "--config-name",
         type=str,
         default=os.environ.get("CONFIG_NAME", "mini"),
-        help="Config name under src/training/configs (without extension)",
+        help="Config name under configs (without extension)",
     )
     parser.add_argument("--list-configs", action="store_true", help="List available configs and exit")
     parser.add_argument("--batch-size", type=int, default=None, help="Override batch size from YAML")
@@ -575,7 +575,7 @@ def main(argv=None):
     except ImportError:
         logging.warning("psutil not installed, storage monitoring limited")
 
-    config_dir = os.path.join(os.path.dirname(__file__), "configs")
+    config_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "configs")
     available_configs = list_config_paths(config_dir)
     if args.list_configs:
         logging.info("Available configs:")

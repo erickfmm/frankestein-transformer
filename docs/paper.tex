@@ -366,7 +366,7 @@ Orthogonality-oriented optimizers explicitly reshaping update geometry. Turbo-Mu
 
 The core design choice in this repository is that experimentation is \emph{schema first}. Instead of exposing a large number of loosely checked flags, the project forces model topology, optimizer family, training limits, and telemetry options through a single validated configuration document. This reduces ambiguity when reproducing results and makes it possible to compare many architectures under a consistent operational interface.
 
-The authoritative contract is \texttt{src/training/configs/schema.yaml}. It enforces three top-level objects:
+The authoritative contract is \texttt{configs/schema.yaml}. It enforces three top-level objects:
 \begin{itemize}[leftmargin=*]
     \item \texttt{model\_class}
     \item \texttt{model}

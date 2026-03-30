@@ -6,7 +6,7 @@ import yaml
 
 class SchemaAttentionLayerTests(unittest.TestCase):
     def test_schema_includes_all_attention_layer_names(self):
-        schema_path = pathlib.Path("src/training/configs/schema.yaml")
+        schema_path = pathlib.Path("configs/schema.yaml")
         with schema_path.open("r", encoding="utf-8") as handle:
             schema = yaml.safe_load(handle)
 

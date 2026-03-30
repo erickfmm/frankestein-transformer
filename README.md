@@ -21,7 +21,7 @@ frankestein-transformer
 
 The project is organized around:
 
-- `src/training/configs/schema.yaml`: authoritative training configuration schema
+- `configs/schema.yaml`: authoritative training configuration schema
 - `src/cli.py`: CLI entrypoint and subcommands
 - `src/deploy/*`: deployment, quantization, inference runtime
 - `src/sbert/*`: sentence-embedding fine-tuning and inference tools
@@ -81,7 +81,7 @@ All model-executing commands support:
 
 Training is fully controlled by YAML files validated against:
 
-`src/training/configs/schema.yaml`
+`configs/schema.yaml`
 
 ### Run Training
 
@@ -93,7 +93,7 @@ frankestein-transformer train --list-configs
 frankestein-transformer train --config-name mini --device auto
 
 # run a custom config file
-frankestein-transformer train --config src/training/configs/standard.yaml --device auto
+frankestein-transformer train --config configs/standard.yaml --device auto
 ```
 
 ### Schema Feature Surface
@@ -271,7 +271,7 @@ Use the web server as an alternative to manual YAML editing, especially for:
 - `README.md`: overview and quick usage
 - `docs/README.md`: detailed schema and CLI reference
 - `docs/paper.tex`: technical report focused on toolkit architecture and workflow
-- `src/training/configs/README.md`: schema walkthrough and preset details
+- `configs/README.md`: schema walkthrough and preset details
 - `src/deploy/README.md`: deployment runtime details
 - `src/sbert/README.md`: SBERT-specific training/inference details
 
