@@ -35,6 +35,7 @@ class SpargeAttention(nn.Module):
         self.v_proj = proj_cls(self.hidden_size, self.hidden_size, bias=False)
         self.out_proj = proj_cls(self.hidden_size, self.hidden_size, bias=False)
         self.dropout = nn.Dropout(config.dropout)
+        self.mode = getattr(config, "mode", "encoder")
 
     def forward(self, x: torch.Tensor, logical_layer_idx: Optional[int] = None) -> torch.Tensor:
         bsz, seq_len, hidden = x.shape
@@ -66,6 +67,10 @@ class SpargeAttention(nn.Module):
 
         eye = torch.eye(padded_len, device=x.device, dtype=torch.bool).unsqueeze(0).unsqueeze(0)
         full_mask = full_mask | eye
+
+        if self.mode == "decoder":
+            causal = torch.tril(torch.ones(padded_len, padded_len, dtype=torch.bool, device=x.device))
+            full_mask = full_mask & causal.unsqueeze(0).unsqueeze(0)
 
         scores = torch.matmul(q, k.transpose(-2, -1)) * self.scale
         scores = scores.masked_fill(~full_mask, float("-inf"))

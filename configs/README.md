@@ -6,6 +6,7 @@ This directory contains YAML presets. Each file describes the model (`model`) an
 
 - `frankenstein.yaml`
 - `mini.yaml`
+- `frankesteindecoder.yaml`
 - `standard.yaml`
 - `standard_hope.yaml`
 - `tinybert.yaml`
@@ -18,7 +19,7 @@ This directory contains YAML presets. Each file describes the model (`model`) an
 
 ```yaml
 # Option A: train custom Tormented model
-model_class: frankenstein|mini
+model_class: frankenstein|mini|frankesteindecoder
 model: # UltraConfig
   ...
 
@@ -202,7 +203,8 @@ Examples:
 ## Available Fields (Detailed)
 
 ### model_class
-- `frankenstein` or `mini`.
+- `frankenstein`, `mini`, or `frankesteindecoder`.
+- `frankesteindecoder` builds the autoregressive causal decoder variant (`FrankensteinDecoder`).
 - Ignored when `base_model` is set.
 
 ### base_model
@@ -245,6 +247,22 @@ Examples:
 - `use_moe`: use MoE in FFN.
 - `ffn_hidden_size`: FFN intermediate dimension.
 - `ffn_activation`: `silu` or `gelu`.
+- `mode`: `encoder` or `decoder` (if omitted, defaults to encoder unless `model_class: frankesteindecoder`, which forces decoder).
+
+## Decoder Examples (Famous Architecture-Inspired)
+
+Autoregressive decoder examples are available in `configs/examples/`:
+
+- `decoder_gpt_like.yaml` — GPT-style stacked causal transformer blocks.
+- `decoder_llama_like.yaml` — LLaMA-inspired causal stack (`silu`, `rope`).
+- `decoder_retnet_mamba_like.yaml` — hybrid RetNet + Mamba causal decoder.
+
+You can also run the named decoder preset directly:
+
+```yaml
+model_class: frankesteindecoder
+# file: configs/frankesteindecoder.yaml
+```
 
 ### training (TrainingConfig + runtime)
 - `task`: `mlm` or `sbert` (required).

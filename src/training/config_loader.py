@@ -42,6 +42,12 @@ def load_training_config(path: str) -> LoadedTrainingConfig:
     if model_class is not None:
         model_class = str(model_class).strip().lower()
 
+    valid_model_classes = {"frankenstein", "mini", "frankesteindecoder"}
+    if model_class is not None and model_class not in valid_model_classes:
+        raise ValueError(
+            "model_class must be one of: frankenstein, mini, frankesteindecoder"
+        )
+
     model_data = data.get("model", {}) or {}
     training_data = data.get("training", {}) or {}
     tokenizer_config = data.get("tokenizer", {}) or {}

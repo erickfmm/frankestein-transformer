@@ -246,7 +246,11 @@ def build_parser() -> argparse.ArgumentParser:
     train_parser.add_argument("--config-name", type=str, default="mini")
     train_parser.add_argument("--list-configs", action="store_true")
     train_parser.add_argument("--batch-size", type=int, default=None)
-    train_parser.add_argument("--model-mode", choices=["frankenstein", "mini"], default=None)
+    train_parser.add_argument(
+        "--model-mode",
+        choices=["frankenstein", "mini", "frankesteindecoder"],
+        default=None,
+    )
     train_parser.add_argument("--device", choices=["auto", "cpu", "cuda", "mps"], default="auto")
     gpu_temp_group = train_parser.add_mutually_exclusive_group()
     gpu_temp_group.add_argument("--gpu-temp-guard", dest="gpu_temp_guard", action="store_true")

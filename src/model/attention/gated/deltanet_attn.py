@@ -33,6 +33,7 @@ class DeltaNetAttention(nn.Module):
         self.out_proj = proj_cls(self.total_dim, self.hidden_size, bias=False)
         self.norm = nn.LayerNorm(self.total_dim)
         self.dropout = nn.Dropout(config.dropout)
+        self.mode = getattr(config, "mode", "encoder")
 
     def forward(self, x: torch.Tensor, logical_layer_idx: Optional[int] = None) -> torch.Tensor:
         bsz, seq_len, _ = x.shape

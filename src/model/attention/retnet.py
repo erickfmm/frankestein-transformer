@@ -29,6 +29,7 @@ class MultiScaleRetention(nn.Module):
         self.norm = get_norm(config)
 
         self.register_buffer("decay_mask", self._build_decay_mask(config.hidden_size, 2048))
+        self.mode = getattr(config, "mode", "encoder")
 
     def _build_decay_mask(self, dim, max_len=2048):
         gammas = 1 - torch.exp(torch.linspace(math.log(1 / 32), math.log(1 / 512), self.heads))
@@ -49,7 +50,10 @@ class MultiScaleRetention(nn.Module):
         dist = n - m
 
         decay_matrix = gammas.view(self.heads, 1, 1) ** dist.abs().unsqueeze(0)
-        causal_mask = (dist >= 0).float().unsqueeze(0)
+        if self.mode == "decoder":
+            causal_mask = (dist >= 0).float().unsqueeze(0)
+        else:
+            causal_mask = torch.ones_like(dist, dtype=torch.float).unsqueeze(0)
 
         retention_scores = attn * decay_matrix * causal_mask
 

@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from .common import BitLinear, get_norm
 
@@ -22,6 +23,7 @@ class ODEFunc(nn.Module):
         self.out_proj = proj_cls(self.dim, self.dim, bias=False)
         self.norm = get_norm(config)
         self.dropout = nn.Dropout(config.dropout)
+        self.mode = getattr(config, "mode", "encoder")
 
     def forward(self, t, x):
         bsz, seq_len, dim = x.shape
@@ -31,6 +33,9 @@ class ODEFunc(nn.Module):
         q, k, v = qkv[0], qkv[1], qkv[2]
 
         attn = (q @ k.transpose(-2, -1)) * self.scale
+        if self.mode == "decoder":
+            causal_mask = torch.triu(torch.ones(seq_len, seq_len, device=x.device, dtype=torch.bool), diagonal=1)
+            attn = attn.masked_fill(causal_mask.unsqueeze(0).unsqueeze(0), float("-inf"))
         attn = attn.softmax(dim=-1)
         attn = self.dropout(attn)
 

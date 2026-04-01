@@ -34,6 +34,7 @@ class BigBirdAttention(nn.Module):
         self.v_proj = proj_cls(self.hidden_size, self.hidden_size, bias=False)
         self.out_proj = proj_cls(self.hidden_size, self.hidden_size, bias=False)
         self.dropout = nn.Dropout(config.dropout)
+        self.mode = getattr(config, "mode", "encoder")
 
     def _build_mask(self, seq_len: int, device: torch.device) -> torch.Tensor:
         mask = torch.zeros(seq_len, seq_len, dtype=torch.bool, device=device)
@@ -63,6 +64,9 @@ class BigBirdAttention(nn.Module):
 
         scores = (q @ k.transpose(-2, -1)) * self.scale
         mask = self._build_mask(seq_len, x.device)
+        if self.mode == "decoder":
+            causal = torch.tril(torch.ones(seq_len, seq_len, dtype=torch.bool, device=x.device))
+            mask = mask & causal
         scores = scores.masked_fill(~mask.unsqueeze(0).unsqueeze(0), float("-inf"))
 
         attn = F.softmax(scores, dim=-1)

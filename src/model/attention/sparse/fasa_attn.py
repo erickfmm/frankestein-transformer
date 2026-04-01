@@ -35,6 +35,7 @@ class FASAAttention(nn.Module):
         self.v_proj = proj_cls(self.hidden_size, self.hidden_size, bias=False)
         self.out_proj = proj_cls(self.hidden_size, self.hidden_size, bias=False)
         self.dropout = nn.Dropout(config.dropout)
+        self.mode = getattr(config, "mode", "encoder")
 
         pair_dim = max(1, self.head_dim // 2)
         dominant = torch.arange(self.n_tip, dtype=torch.long) % pair_dim
@@ -60,6 +61,9 @@ class FASAAttention(nn.Module):
             q_sub = q[:, h, :, dim_idx]
             k_sub = k[:, h, :, dim_idx]
             importance = torch.matmul(q_sub, k_sub.transpose(-2, -1))
+            if self.mode == "decoder":
+                causal = torch.tril(torch.ones(seq_len, seq_len, device=x.device))
+                importance = importance * causal.unsqueeze(0)
             top_idx = importance.topk(n_select, dim=-1).indices
 
             for b in range(bsz):

@@ -92,6 +92,9 @@ frankestein-transformer train --list-configs
 # run a named preset
 frankestein-transformer train --config-name mini --device auto
 
+# run the autoregressive decoder preset
+frankestein-transformer train --config-name frankesteindecoder --device auto
+
 # run a custom config file
 frankestein-transformer train --config configs/standard.yaml --device auto
 ```
@@ -100,7 +103,7 @@ frankestein-transformer train --config configs/standard.yaml --device auto
 
 Top-level sections:
 
-- `model_class`: `frankenstein` or `mini`
+- `model_class`: `frankenstein`, `mini`, or `frankesteindecoder`
 - `model`: model hyperparameters and feature toggles
 - `training`: data loading, optimizer, scheduler, checkpointing, telemetry, stability controls
 
@@ -116,6 +119,7 @@ Model options include:
 - Quantization/normalization: `use_bitnet`, `norm_type` (`layer_norm|dynamic_tanh|derf`)
 - Embedding options: `use_factorized_embedding`, `factorized_embedding_dim`, `use_embedding_conv`, `embedding_conv_kernel`
 - Positional controls: `use_hope`, `hope_base`, `hope_damping`
+- Execution mode: `mode` (`encoder|decoder`), with `frankesteindecoder` forcing causal decoder behavior
 
 Training-free attention policy:
 
@@ -138,6 +142,14 @@ Training options include:
 Supported optimizer classes:
 
 - `sgd_momentum`, `adamw`, `adafactor`, `galore_adamw`, `prodigy`, `lion`, `sophia`, `muon`, `turbo_muon`, `radam`, `adan`, `adopt`, `ademamix`, `mars_adamw`, `cautious_adamw`, `lamb`, `schedulefree_adamw`, `shampoo`, `soap`
+
+### Decoder Architecture Presets (Autoregressive)
+
+See `configs/examples/` for decoder-ready presets inspired by popular LLM families:
+
+- `decoder_gpt_like.yaml` (stacked causal transformer style)
+- `decoder_llama_like.yaml` (SiLU + RoPE-oriented causal stack)
+- `decoder_retnet_mamba_like.yaml` (RetNet/Mamba hybrid causal decoder)
 
 ## Deployment and Inference
 

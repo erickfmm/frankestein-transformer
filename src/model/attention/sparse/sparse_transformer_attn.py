@@ -35,6 +35,7 @@ class SparseTransformerAttention(nn.Module):
         self.v_proj = proj_cls(self.hidden_size, self.hidden_size, bias=False)
         self.out_proj = proj_cls(self.hidden_size, self.hidden_size, bias=False)
         self.dropout = nn.Dropout(config.dropout)
+        self.mode = getattr(config, "mode", "encoder")
 
     def _resolved_stride(self, seq_len: int) -> int:
         if self.stride > 0:
@@ -77,6 +78,10 @@ class SparseTransformerAttention(nn.Module):
 
         strided_mask = self._strided_mask(seq_len, stride, x.device)
         fixed_mask = self._fixed_mask(seq_len, stride, x.device)
+        if self.mode == "decoder":
+            causal = torch.tril(torch.ones(seq_len, seq_len, dtype=torch.bool, device=x.device))
+            strided_mask = strided_mask & causal
+            fixed_mask = fixed_mask & causal
 
         half = max(1, self.num_heads // 2)
         scores[:, :half] = scores[:, :half].masked_fill(~strided_mask.unsqueeze(0).unsqueeze(0), float("-inf"))

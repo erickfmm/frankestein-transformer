@@ -47,6 +47,7 @@ class TitanAttention(nn.Module):
             )
 
         self.dropout = nn.Dropout(config.dropout)
+        self.mode = getattr(config, "mode", "encoder")
 
     def forward(self, x: torch.Tensor, logical_layer_idx: Optional[int] = None) -> torch.Tensor:
         bsz, seq_len, hidden = x.shape
@@ -60,6 +61,9 @@ class TitanAttention(nn.Module):
         k = self.pos_encoder(k, logical_layer_idx=logical_layer_idx)
 
         attn_scores = (q @ k.transpose(-2, -1)) * self.scale
+        if self.mode == "decoder":
+            causal_mask = torch.triu(torch.ones(seq_len, seq_len, device=x.device, dtype=torch.bool), diagonal=1)
+            attn_scores = attn_scores.masked_fill(causal_mask.unsqueeze(0).unsqueeze(0), float("-inf"))
         attn_weights = F.softmax(attn_scores, dim=-1)
         attn_weights = self.dropout(attn_weights)
 

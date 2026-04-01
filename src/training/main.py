@@ -22,14 +22,24 @@ try:
     from .streaming_mlm_dataset import StreamingMLMDataset
     from .trainer import TitanTrainer, TrainingConfig
     from .config_loader import LoadedTrainingConfig, load_training_config, list_config_paths
-    from ..model.tormented_bert_frankestein import TormentedBertFrankenstein, TormentedBertMini, UltraConfig
+    from ..model.tormented_bert_frankestein import (
+        FrankensteinDecoder,
+        TormentedBertFrankenstein,
+        TormentedBertMini,
+        UltraConfig,
+    )
     from ..utils.device import SUPPORTED_DEVICE_CHOICES, resolve_torch_device
 except ImportError:
     from tokenizer.spm_spa_redpajama35 import SpanishSPMTokenizer
     from training.streaming_mlm_dataset import StreamingMLMDataset
     from training.trainer import TitanTrainer, TrainingConfig
     from training.config_loader import LoadedTrainingConfig, load_training_config, list_config_paths
-    from model.tormented_bert_frankestein import TormentedBertFrankenstein, TormentedBertMini, UltraConfig
+    from model.tormented_bert_frankestein import (
+        FrankensteinDecoder,
+        TormentedBertFrankenstein,
+        TormentedBertMini,
+        UltraConfig,
+    )
     from utils.device import SUPPORTED_DEVICE_CHOICES, resolve_torch_device
 
 
@@ -134,6 +144,9 @@ def _load_legacy_tormented_model(loaded: LoadedTrainingConfig) -> Tuple[torch.nn
 
     if loaded.model_class == "mini":
         model = TormentedBertMini(config)
+    elif loaded.model_class == "frankesteindecoder":
+        config.mode = "decoder"
+        model = FrankensteinDecoder(config)
     else:
         model = TormentedBertFrankenstein(config)
 
@@ -498,7 +511,7 @@ def main(argv=None):
     parser.add_argument("--batch-size", type=int, default=None, help="Override batch size from YAML")
     parser.add_argument(
         "--model-mode",
-        choices=["frankenstein", "mini"],
+        choices=["frankenstein", "mini", "frankesteindecoder"],
         default=None,
         help="Deprecated: use --config-name instead",
     )

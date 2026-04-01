@@ -55,7 +55,7 @@ Key train flags:
 - `--config-name`
 - `--list-configs`
 - `--batch-size`
-- `--model-mode` (`frankenstein|mini`)
+- `--model-mode` (`frankenstein|mini|frankesteindecoder`)
 - `--device`
 - `--gpu-temp-guard` / `--no-gpu-temp-guard`
 - `--gpu-temp-pause-threshold-c`
@@ -77,6 +77,9 @@ Allowed values:
 
 - `frankenstein`
 - `mini`
+- `frankesteindecoder`
+
+`frankesteindecoder` selects the autoregressive causal decoder class for LLM-style generation.
 
 ### 3.2 `model` section
 

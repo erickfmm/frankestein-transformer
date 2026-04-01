@@ -65,6 +65,7 @@ class SparseKAttention(nn.Module):
             nn.Linear(self.head_dim, 1),
         )
         self.dropout = nn.Dropout(config.dropout)
+        self.mode = getattr(config, "mode", "encoder")
 
     def forward(self, x: torch.Tensor, logical_layer_idx: Optional[int] = None) -> torch.Tensor:
         bsz, seq_len, hidden = x.shape
@@ -84,6 +85,11 @@ class SparseKAttention(nn.Module):
         v_sel = v.gather(2, top_idx_exp)
 
         scores = torch.matmul(q, k_sel.transpose(-2, -1)) / math.sqrt(self.head_dim)
+        if self.mode == "decoder":
+            # Mask future positions: top_idx holds key positions per head
+            q_pos = torch.arange(seq_len, device=x.device).view(1, 1, seq_len, 1)
+            k_pos = top_idx.unsqueeze(2).expand_as(scores)
+            scores = scores.masked_fill(k_pos > q_pos, float("-inf"))
         attn = F.softmax(scores, dim=-1)
         attn = self.dropout(attn)
 

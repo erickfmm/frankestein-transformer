@@ -42,6 +42,7 @@ class NSAAttention(nn.Module):
         self.compress_v = nn.Linear(self.block_size * self.head_dim, self.head_dim)
         self.gate = nn.Sequential(nn.Linear(self.head_dim, 3), nn.Sigmoid())
         self.dropout = nn.Dropout(config.dropout)
+        self.mode = getattr(config, "mode", "encoder")
 
     def _compress(self, k: torch.Tensor, v: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         bsz, heads, seq_len, dim = k.shape
@@ -83,6 +84,10 @@ class NSAAttention(nn.Module):
 
         comp_k, comp_v = self._compress(k, v)
         comp_scores = torch.matmul(q, comp_k.transpose(-2, -1)) * self.scale
+        if self.mode == "decoder":
+            c_len = comp_k.shape[2]
+            causal_c = torch.triu(torch.ones(seq_len, c_len, device=x.device, dtype=torch.bool), diagonal=1)
+            comp_scores = comp_scores.masked_fill(causal_c.unsqueeze(0).unsqueeze(0), float("-inf"))
         comp_attn = F.softmax(comp_scores, dim=-1)
         out_comp = torch.matmul(comp_attn, comp_v)
 

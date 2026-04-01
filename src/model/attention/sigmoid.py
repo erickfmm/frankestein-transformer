@@ -2,6 +2,7 @@ from typing import Optional
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from .common import BitLinear
 
@@ -26,6 +27,7 @@ class SigmoidAttention(nn.Module):
         self.v_proj = proj_cls(self.hidden_size, self.hidden_size, bias=False)
         self.out_proj = proj_cls(self.hidden_size, self.hidden_size, bias=False)
         self.dropout = nn.Dropout(config.dropout)
+        self.mode = getattr(config, "mode", "encoder")
 
     def forward(self, x: torch.Tensor, logical_layer_idx: Optional[int] = None) -> torch.Tensor:
         bsz, seq_len, hidden = x.shape
@@ -35,6 +37,9 @@ class SigmoidAttention(nn.Module):
         v = self.v_proj(x).view(bsz, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
 
         attn_scores = (q @ k.transpose(-2, -1)) * self.scale
+        if self.mode == "decoder":
+            causal_mask = torch.triu(torch.ones(seq_len, seq_len, device=x.device, dtype=torch.bool), diagonal=1)
+            attn_scores = attn_scores.masked_fill(causal_mask.unsqueeze(0).unsqueeze(0), float("-inf"))
         attn_weights = torch.sigmoid(attn_scores)
         attn_weights = attn_weights / (attn_weights.sum(dim=-1, keepdim=True) + self.eps)
         attn_weights = self.dropout(attn_weights)

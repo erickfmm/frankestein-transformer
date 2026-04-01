@@ -153,6 +153,11 @@ cli_main([
 | `es_sbert_xlmr_mean.yaml` | sbert | `xlm-roberta-base` | n/a (SBERT trainer) | n/a | sentence pooling `mean` | high | `p40_safe` |
 
 ## Selector Guides
+### Decoder autoregressive presets (famous architecture-inspired)
+- `decoder_gpt_like.yaml`
+- `decoder_llama_like.yaml`
+- `decoder_retnet_mamba_like.yaml`
+
 ### Best first run
 - `es_mlm_beto_adamw.yaml`
 - `es_mlm_distilmbert_lamb.yaml`

@@ -41,13 +41,15 @@ properties:
   model_class:
     type: string
     title: "Model Class"
-    description: "Model architecture variant to instantiate. Determines which model implementation class is used. 'frankenstein' enables mixed-architecture models with various attention mechanisms, MoE, and other advanced features. 'mini' is a simplified version for smaller-scale training."
+    description: "Model architecture variant to instantiate. Determines which model implementation class is used. 'frankenstein' enables mixed-architecture encoder models with various attention mechanisms, MoE, and other advanced features. 'mini' is a simplified encoder variant for smaller-scale training. 'frankesteindecoder' is an autoregressive causal decoder for LLM-style next-token generation."
     enum:
       - frankenstein
       - mini
+      - frankesteindecoder
     examples:
       - frankenstein
       - mini
+      - frankesteindecoder
 
   model:
     type: object
@@ -241,6 +243,12 @@ properties:
         description: "Non-linear activation function used in feed-forward networks. 'silu' (Sigmoid Linear Unit) is smoother and often performs better in modern transformers (used in Llama, PaLM). 'gelu' (Gaussian Error Linear Unit) is classic, widely used (BERT, GPT-2, GPT-3). SiLU tends to train more smoothly and can converge faster. Both perform well; choice is often empirical. SiLU recommended for new models. Gelu is more stable for very small models. When using BitNet or other quantization, SiLU may be more robust."
         enum: [silu, gelu]
         examples: [gelu]
+      mode:
+        type: string
+        title: "Transformer Mode"
+        description: "Controls attention masking behavior. 'encoder' uses bidirectional attention. 'decoder' uses causal masking for autoregressive next-token prediction. When model_class=frankesteindecoder, runtime forces mode='decoder'."
+        enum: [encoder, decoder]
+        examples: [encoder, decoder]
 
   training:
     type: object

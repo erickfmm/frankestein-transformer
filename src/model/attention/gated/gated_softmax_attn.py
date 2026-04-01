@@ -32,6 +32,7 @@ class GatedSoftmaxAttention(nn.Module):
         self.gate_proj = proj_cls(self.hidden_size, self.total_dim, bias=False)
         self.out_proj = proj_cls(self.total_dim, self.hidden_size, bias=False)
         self.dropout = nn.Dropout(config.dropout)
+        self.mode = getattr(config, "mode", "encoder")
 
     def forward(self, x: torch.Tensor, logical_layer_idx: Optional[int] = None) -> torch.Tensor:
         bsz, seq_len, _ = x.shape
@@ -41,6 +42,9 @@ class GatedSoftmaxAttention(nn.Module):
         v = self.v_proj(x).view(bsz, seq_len, self.num_heads, self.head_dim).permute(0, 2, 1, 3)
 
         attn = (q @ k.transpose(-2, -1)) * self.scale
+        if self.mode == "decoder":
+            causal_mask = torch.triu(torch.ones(seq_len, seq_len, device=x.device, dtype=torch.bool), diagonal=1)
+            attn = attn.masked_fill(causal_mask.unsqueeze(0).unsqueeze(0), float("-inf"))
         attn = F.softmax(attn, dim=-1)
         attn = self.dropout(attn)
 

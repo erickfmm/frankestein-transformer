@@ -95,6 +95,7 @@ class UltraConfig:
     ffn_hidden_size: Optional[int] = None
     ffn_activation: str = "silu"
     embedding_conv_kernel: int = 3
+    mode: str = "encoder"
 
     def __post_init__(self):
         if self.ffn_hidden_size is None:
@@ -109,6 +110,9 @@ class UltraConfig:
 
         # Keep legacy flag semantically aligned with the selected encoder.
         self.use_hope = self.positional_encoding == "hope"
+
+        if self.mode not in {"encoder", "decoder"}:
+            raise ValueError("mode must be one of {'encoder', 'decoder'}")
 
 
 class FactorizedEmbedding(nn.Module):
@@ -346,6 +350,81 @@ class TormentedBertMini(nn.Module):
 
     def forward(self, input_ids: torch.Tensor) -> torch.Tensor:
         return self.backbone(input_ids)
+
+
+class FrankensteinDecoder(nn.Module):
+    """Autoregressive decoder variant of Frankenstein for causal LLM generation.
+
+    Uses the same hybrid architecture as TormentedBertFrankenstein but with
+    ``mode='decoder'`` so every attention layer applies causal masking.
+    """
+
+    @staticmethod
+    def build_decoder_config(
+        vocab_size: int = 50_000,
+        hidden_size: int = 2048,
+        num_layers: int = 12,
+        num_loops: int = 1,
+        use_bitnet: bool = True,
+        layer_pattern: Optional[List[str]] = None,
+    ) -> UltraConfig:
+        if layer_pattern is None:
+            layer_pattern = [
+                "titan_attn",
+                "retnet",
+                "titan_attn",
+                "mamba",
+            ] * 3
+        return UltraConfig(
+            vocab_size=vocab_size,
+            hidden_size=hidden_size,
+            num_layers=num_layers,
+            num_loops=num_loops,
+            num_heads=16,
+            retention_heads=8,
+            num_experts=8,
+            top_k_experts=2,
+            dropout=0.1,
+            ode_solver="rk4",
+            ode_steps=2,
+            use_bitnet=use_bitnet,
+            norm_type="dynamic_tanh",
+            layer_pattern=layer_pattern,
+            use_factorized_embedding=False,
+            mode="decoder",
+        )
+
+    def __init__(self, config: Optional[UltraConfig] = None):
+        super().__init__()
+        self.config = config or self.build_decoder_config()
+
+        if self.config.mode != "decoder":
+            self.config.mode = "decoder"
+
+        self.backbone = TormentedBertFrankenstein(self.config)
+
+    def forward(self, input_ids: torch.Tensor) -> torch.Tensor:
+        return self.backbone(input_ids)
+
+    @torch.inference_mode()
+    def generate(
+        self,
+        input_ids: torch.Tensor,
+        max_new_tokens: int = 128,
+        temperature: float = 1.0,
+        top_k: int = 50,
+    ) -> torch.Tensor:
+        """Simple greedy / top-k sampling loop for autoregressive generation."""
+        for _ in range(max_new_tokens):
+            logits = self.forward(input_ids)
+            next_logits = logits[:, -1, :] / max(temperature, 1e-8)
+            if top_k > 0:
+                v, _ = torch.topk(next_logits, min(top_k, next_logits.size(-1)))
+                next_logits[next_logits < v[:, [-1]]] = float("-inf")
+            probs = F.softmax(next_logits, dim=-1)
+            next_token = torch.multinomial(probs, num_samples=1)
+            input_ids = torch.cat([input_ids, next_token], dim=1)
+        return input_ids
 
 
 # ==================== PRUEBA DE ESTRES ====================

@@ -16,6 +16,7 @@ class RetNetAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.inner = MultiScaleRetention(config)
+        self.mode = getattr(config, "mode", "encoder")
 
     def forward(self, x: torch.Tensor, logical_layer_idx: Optional[int] = None) -> torch.Tensor:
         return self.inner(x)
