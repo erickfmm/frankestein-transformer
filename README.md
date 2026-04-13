@@ -1,4 +1,4 @@
-# Frnakestein Transformer
+# Frankestein Transformer
 
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch 2.0+](https://img.shields.io/badge/PyTorch-2.0+-ee4c2c.svg)](https://pytorch.org/)
@@ -14,7 +14,7 @@ Config-driven training library and CLI for end-to-end NLP workflows with encoder
 
 ## What This Project Is
 
-Frnakestein Transformer is an installable Python package centered on a single CLI:
+Frankestein Transformer is an installable Python package centered on a single CLI:
 
 ```bash
 frankestein-transformer
