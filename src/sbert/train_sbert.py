@@ -1448,7 +1448,7 @@ class SBERTTrainer:
         if custom_optimizer_cls is not None:
             fit_kwargs["optimizer_params"] = custom_optimizer_kwargs
             # sentence-transformers v3+ supports optimizer_cls parameter
-            fit_kwargs["optimizer_cls"] = custom_optimizer_cls
+            fit_kwargs["optimizer_class"] = custom_optimizer_cls
         if self.checkpoint_save_steps > 0 or self.resume_from_checkpoint:
             fit_kwargs["checkpoint_path"] = os.path.join(self.output_dir, "checkpoints")
         if self.checkpoint_save_steps > 0:
