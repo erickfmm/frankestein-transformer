@@ -300,7 +300,7 @@ class HybridLayer(nn.Module):
             return self._forward_dense(x, logical_layer_idx=logical_layer_idx)
 
         batch_size, seq_len, hidden_size = x.shape
-        if seq_len <= 0:
+        if seq_len == 0:
             raise ValueError("Mixture-of-Depths requires a non-empty token sequence")
         capacity = self._mixture_of_depths_capacity(seq_len)
         self.last_mixture_of_depths_capacity = capacity
@@ -321,7 +321,7 @@ class HybridLayer(nn.Module):
         gather_index = selected_indices.unsqueeze(-1).expand(batch_size, capacity, hidden_size)
         selected_tokens = torch.gather(x, dim=1, index=gather_index)
         updated_tokens = self._forward_dense(selected_tokens, logical_layer_idx=logical_layer_idx)
-        return torch.scatter(x.clone(), dim=1, index=gather_index, src=updated_tokens)
+        return torch.scatter(x, dim=1, index=gather_index, src=updated_tokens)
 
 
 # ==================== MAIN MODEL ====================

@@ -199,6 +199,10 @@ class AttentionRefactorTests(unittest.TestCase):
         self.assertIn("mixture_of_depths_router_loss", model.last_auxiliary_losses)
         self.assertIn("average_selected_fraction", model.last_mixture_of_depths_stats)
         self.assertAlmostEqual(model.last_mixture_of_depths_stats["average_selected_fraction"], 0.5)
+        self.assertGreater(
+            float(model.last_auxiliary_losses["mixture_of_depths_router_loss"].detach().item()),
+            0.0,
+        )
 
 
 if __name__ == "__main__":

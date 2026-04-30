@@ -1200,10 +1200,12 @@ class TitanTrainer:
             loss = logits.new_zeros((), requires_grad=True)
 
         if isinstance(auxiliary_losses, dict):
-            for aux_loss in auxiliary_losses.values():
+            for aux_name, aux_loss in auxiliary_losses.items():
                 if torch.is_tensor(aux_loss) and aux_loss.requires_grad:
                     if not torch.isfinite(aux_loss):
-                        raise RuntimeError("Non-finite auxiliary loss detected during forward pass")
+                        raise RuntimeError(
+                            f"Non-finite auxiliary loss detected for {aux_name} during forward pass"
+                        )
                     loss = loss + aux_loss
         
         # Compute accuracy on masked tokens
