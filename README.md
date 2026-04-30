@@ -113,6 +113,7 @@ Model options include:
 
 - Core sizing: `vocab_size`, `hidden_size`, `num_layers`, `num_loops`, `num_heads`, `retention_heads`
 - Routing/FFN: `num_experts`, `top_k_experts`, `use_moe`, `ffn_hidden_size`, `ffn_activation`
+- Adaptive depth: `use_mixture_of_depths`, `mixture_of_depths_capacity_ratio`, `mixture_of_depths_router_aux_loss_weight`
 - Mixer selection: `layer_pattern` now supports legacy + sparse + gated families.
   - Legacy: `retnet | retnet_attn | mamba | ode | titan_attn | standard_attn | sigmoid_attn`
   - Sparse: `sparse_transformer_attn | longformer_attn | bigbird_attn | sparsek_attn | nsa_attn | sparge_attn | fasa_attn`
@@ -122,6 +123,8 @@ Model options include:
 - Embedding options: `use_factorized_embedding`, `factorized_embedding_dim`, `use_embedding_conv`, `embedding_conv_kernel`
 - Positional controls: `use_hope`, `hope_base`, `hope_damping`
 - Execution mode: `mode` (`encoder|decoder`), with `frankesteindecoder` forcing causal decoder behavior
+
+Mixture-of-Depths support adds a per-layer token router that only updates the top-capacity subset of tokens and lets the rest skip the block unchanged, following the adaptive-depth idea from the paper.
 
 Training-free attention policy:
 

@@ -24,7 +24,7 @@ from src.model.attention import (
     StandardAttention,
     TitanAttention,
 )
-from src.model.tormented_bert_frankestein import TormentedBertFrankenstein, UltraConfig
+from src.model.tormented_bert_frankestein import HybridLayer, TormentedBertFrankenstein, UltraConfig
 
 
 class AttentionRefactorTests(unittest.TestCase):
@@ -50,6 +50,9 @@ class AttentionRefactorTests(unittest.TestCase):
             embedding_conv_kernel=3,
             use_hope=True,
             use_moe=False,
+            use_mixture_of_depths=False,
+            mixture_of_depths_capacity_ratio=0.5,
+            mixture_of_depths_router_aux_loss_weight=0.0,
             ffn_hidden_size=96,
             ffn_activation="gelu",
         )
@@ -150,6 +153,56 @@ class AttentionRefactorTests(unittest.TestCase):
             x = torch.randint(0, config.vocab_size, (1, 6))
             with self.assertRaisesRegex(ValueError, "training-free"):
                 _ = model(x)
+
+    def test_invalid_mixture_of_depths_capacity_ratio_raises(self):
+        with self.assertRaisesRegex(ValueError, "mixture_of_depths_capacity_ratio"):
+            UltraConfig(
+                **{
+                    **self._build_config(["standard_attn"]).__dict__,
+                    "use_mixture_of_depths": True,
+                    "mixture_of_depths_capacity_ratio": 0.0,
+                }
+            )
+
+    def test_mixture_of_depths_updates_only_selected_tokens(self):
+        config = self._build_config(["mamba"])
+        config.use_mixture_of_depths = True
+        config.mixture_of_depths_capacity_ratio = 0.5
+        layer = HybridLayer(config, "mamba")
+        with torch.no_grad():
+            layer.depth_router.weight.zero_()
+            layer.depth_router.weight[0, 0] = 1.0
+        x = torch.tensor(
+            [
+                [
+                    [0.1] + [0.0] * 47,
+                    [0.2] + [0.0] * 47,
+                    [10.0] + [0.0] * 47,
+                    [20.0] + [0.0] * 47,
+                ]
+            ],
+            dtype=torch.float32,
+        )
+        y = layer(x)
+        self.assertTrue(torch.allclose(y[:, :2, :], x[:, :2, :]))
+        self.assertEqual(layer.last_mixture_of_depths_capacity, 2)
+
+    def test_mixture_of_depths_collects_auxiliary_stats(self):
+        config = self._build_config(["standard_attn"])
+        config.use_mixture_of_depths = True
+        config.mixture_of_depths_capacity_ratio = 0.5
+        config.mixture_of_depths_router_aux_loss_weight = 0.25
+        model = TormentedBertFrankenstein(config)
+        x = torch.randint(0, config.vocab_size, (2, 6))
+        y = model(x)
+        self.assertEqual(y.shape, (2, 6, config.vocab_size))
+        self.assertIn("mixture_of_depths_router_loss", model.last_auxiliary_losses)
+        self.assertIn("average_selected_fraction", model.last_mixture_of_depths_stats)
+        self.assertAlmostEqual(model.last_mixture_of_depths_stats["average_selected_fraction"], 0.5)
+        self.assertGreater(
+            float(model.last_auxiliary_losses["mixture_of_depths_router_loss"].detach().item()),
+            0.0,
+        )
 
 
 if __name__ == "__main__":
