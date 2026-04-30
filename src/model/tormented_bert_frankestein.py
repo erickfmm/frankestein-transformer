@@ -290,7 +290,7 @@ class HybridLayer(nn.Module):
         return x
 
     def _mixture_of_depths_capacity(self, seq_len: int) -> int:
-        return max(1, min(seq_len, int(math.ceil(seq_len * self.mixture_of_depths_capacity_ratio))))
+        return max(1, int(math.ceil(seq_len * self.mixture_of_depths_capacity_ratio)))
 
     def forward(self, x, logical_layer_idx: Optional[int] = None):
         if not self.use_mixture_of_depths:
@@ -300,12 +300,15 @@ class HybridLayer(nn.Module):
             return self._forward_dense(x, logical_layer_idx=logical_layer_idx)
 
         batch_size, seq_len, hidden_size = x.shape
+        if seq_len <= 0:
+            raise ValueError("Mixture-of-Depths requires a non-empty token sequence")
         capacity = self._mixture_of_depths_capacity(seq_len)
         self.last_mixture_of_depths_capacity = capacity
-        self.last_mixture_of_depths_selected_fraction = capacity / max(seq_len, 1)
+        self.last_mixture_of_depths_selected_fraction = capacity / seq_len
 
         router_logits = self.depth_router(x).squeeze(-1)
         router_probs = torch.sigmoid(router_logits)
+        # Regularize average router activation to match the configured token budget.
         self.last_mixture_of_depths_aux_loss = (
             (router_probs.mean(dim=1) - self.mixture_of_depths_capacity_ratio).pow(2).mean()
         )

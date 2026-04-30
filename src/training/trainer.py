@@ -1202,6 +1202,8 @@ class TitanTrainer:
         if isinstance(auxiliary_losses, dict):
             for aux_loss in auxiliary_losses.values():
                 if torch.is_tensor(aux_loss) and aux_loss.requires_grad:
+                    if not torch.isfinite(aux_loss):
+                        raise RuntimeError("Non-finite auxiliary loss detected during forward pass")
                     loss = loss + aux_loss
         
         # Compute accuracy on masked tokens
