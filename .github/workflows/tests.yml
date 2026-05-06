@@ -38,6 +38,10 @@ jobs:
         run: |
           pip install -e ".[train]"
 
+      - name: Install test dependencies
+        run: |
+          pip install pytest
+
       - name: Run tests
         run: |
           python -m pytest tests/ \

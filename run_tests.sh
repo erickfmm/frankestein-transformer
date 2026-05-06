@@ -35,8 +35,8 @@ if ! command -v python &>/dev/null; then
 fi
 
 if ! python -c "import pytest" &>/dev/null; then
-    error "pytest is not installed. Run: pip install pytest"
-    exit 1
+    info "pytest not found — installing..."
+    pip install pytest -q || { error "Failed to install pytest. Run: pip install pytest"; exit 1; }
 fi
 
 TORCH_STATUS="available"
