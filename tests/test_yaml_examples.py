@@ -32,14 +32,17 @@ _EXAMPLES_DIR = os.path.join(_REPO_ROOT, "configs", "examples")
 _CONFIGS_ROOT = os.path.join(_REPO_ROOT, "configs")
 
 
-def _yaml_files_in(directory):
+def _yaml_files_in(directory, exclude=None):
     """Return sorted list of (name, abs_path) tuples for *.yaml/*.yml files."""
+    exclude = set(exclude or [])
     out = []
     if not os.path.isdir(directory):
         return out
     for fname in sorted(os.listdir(directory)):
         if fname.endswith((".yaml", ".yml")):
-            out.append((os.path.splitext(fname)[0], os.path.join(directory, fname)))
+            name = os.path.splitext(fname)[0]
+            if name not in exclude:
+                out.append((name, os.path.join(directory, fname)))
     return out
 
 
@@ -79,7 +82,7 @@ for _name, _path in _yaml_files_in(_EXAMPLES_DIR):
     _method.__name__ = f"test_load_{_name}"
     setattr(YamlExamplesLoadTests, _method.__name__, _method)
 
-for _name, _path in _yaml_files_in(_CONFIGS_ROOT):
+for _name, _path in _yaml_files_in(_CONFIGS_ROOT, exclude={"schema"}):
     _method = _make_load_test(_path)
     _method.__name__ = f"test_load_{_name}"
     setattr(YamlRootConfigsLoadTests, _method.__name__, _method)

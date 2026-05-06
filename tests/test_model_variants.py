@@ -82,7 +82,8 @@ class FrankensteinDecoderTests(unittest.TestCase):
         self.assertEqual(y.shape, (2, 6, 200))
 
     def test_mode_forced_to_decoder(self):
-        cfg = FrankensteinDecoder.build_decoder_config(vocab_size=200, mode="encoder")
+        cfg = FrankensteinDecoder.build_decoder_config(vocab_size=200)
+        cfg.mode = "encoder"  # override to test that the decoder enforces mode
         model = FrankensteinDecoder(cfg)
         self.assertEqual(model.config.mode, "decoder")
 
@@ -145,7 +146,7 @@ class TormentedBertFrankensteinTests(unittest.TestCase):
             num_experts=2,
             top_k_experts=1,
             dropout=0.0,
-            norm_type="layer_norm",
+            norm_type=kw.pop("norm_type", "layer_norm"),
             use_bitnet=False,
             layer_pattern=layer_pattern or ["standard_attn"],
             use_moe=False,
