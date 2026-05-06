@@ -1,0 +1,153 @@
+"""Unit tests for the optimizer factory (build_optimizer)."""
+import unittest
+from importlib.util import find_spec
+
+TORCH_AVAILABLE = find_spec("torch") is not None
+
+if TORCH_AVAILABLE:
+    import torch
+    import torch.nn as nn
+    from src.model.optimizer.factory import build_optimizer, OPTIMIZER_REGISTRY
+
+
+def _param_groups(lr=1e-3, wd=0.01):
+    """Build a minimal single-group param list for a tiny linear layer."""
+    p = nn.Parameter(torch.randn(4, 4))
+    return [{"params": [p], "lr": lr, "weight_decay": wd, "name": "other"}]
+
+
+@unittest.skipUnless(TORCH_AVAILABLE, "torch required")
+class OptimizerRegistryTests(unittest.TestCase):
+    def test_registry_is_nonempty(self):
+        self.assertGreater(len(OPTIMIZER_REGISTRY), 0)
+
+    def test_registry_contains_adamw(self):
+        self.assertIn("adamw", OPTIMIZER_REGISTRY)
+
+    def test_registry_contains_all_required(self):
+        required = {"adamw", "sgd_momentum", "lion", "muon", "lamb"}
+        for name in required:
+            self.assertIn(name, OPTIMIZER_REGISTRY, f"Missing optimizer: {name}")
+
+
+@unittest.skipUnless(TORCH_AVAILABLE, "torch required")
+class BuildOptimizerUnknownTests(unittest.TestCase):
+    def test_unknown_class_raises(self):
+        with self.assertRaises(ValueError) as ctx:
+            build_optimizer("totally_unknown", _param_groups(), {})
+        self.assertIn("totally_unknown", str(ctx.exception))
+
+    def test_empty_class_raises(self):
+        with self.assertRaises(ValueError):
+            build_optimizer("", _param_groups(), {})
+
+    def test_unknown_parameters_raise(self):
+        with self.assertRaises(ValueError) as ctx:
+            build_optimizer("adamw", _param_groups(), {"adamw-bad_param": 1.0})
+        self.assertIn("bad_param", str(ctx.exception))
+
+
+@unittest.skipUnless(TORCH_AVAILABLE, "torch required")
+class BuildOptimizerAdamWTests(unittest.TestCase):
+    def test_builds_without_error(self):
+        opt = build_optimizer("adamw", _param_groups(), {})
+        self.assertIsNotNone(opt)
+
+    def test_step_runs(self):
+        p = nn.Parameter(torch.randn(4, 4))
+        groups = [{"params": [p], "lr": 1e-3, "name": "other"}]
+        opt = build_optimizer("adamw", groups, {})
+        loss = p.sum()
+        loss.backward()
+        opt.step()
+
+    def test_per_group_lr_override(self):
+        p = nn.Parameter(torch.randn(4, 4))
+        groups = [{"params": [p], "lr": 1e-4, "name": "embeddings"}]
+        params = {"adamw-lr_embeddings": 5e-5}
+        opt = build_optimizer("adamw", groups, params)
+        self.assertAlmostEqual(opt.param_groups[0]["lr"], 5e-5)
+
+
+@unittest.skipUnless(TORCH_AVAILABLE, "torch required")
+class BuildOptimizerSGDTests(unittest.TestCase):
+    def test_builds_without_error(self):
+        opt = build_optimizer("sgd_momentum", _param_groups(), {})
+        self.assertIsNotNone(opt)
+
+    def test_step_runs(self):
+        p = nn.Parameter(torch.randn(4, 4))
+        groups = [{"params": [p], "lr": 1e-2, "name": "other"}]
+        opt = build_optimizer("sgd_momentum", groups, {})
+        loss = p.sum()
+        loss.backward()
+        opt.step()
+
+    def test_custom_momentum(self):
+        groups = _param_groups()
+        opt = build_optimizer("sgd_momentum", groups, {"sgd_momentum-momentum": 0.8})
+        self.assertAlmostEqual(opt.defaults.get("momentum", opt.param_groups[0].get("momentum")), 0.8)
+
+
+@unittest.skipUnless(TORCH_AVAILABLE, "torch required")
+class BuildOptimizerLionTests(unittest.TestCase):
+    def test_builds_without_error(self):
+        opt = build_optimizer("lion", _param_groups(), {})
+        self.assertIsNotNone(opt)
+
+
+@unittest.skipUnless(TORCH_AVAILABLE, "torch required")
+class BuildOptimizerLAMBTests(unittest.TestCase):
+    def test_builds_without_error(self):
+        opt = build_optimizer("lamb", _param_groups(), {})
+        self.assertIsNotNone(opt)
+
+
+@unittest.skipUnless(TORCH_AVAILABLE, "torch required")
+class BuildOptimizerMuonTests(unittest.TestCase):
+    def test_builds_without_error(self):
+        opt = build_optimizer("muon", _param_groups(), {})
+        self.assertIsNotNone(opt)
+
+
+@unittest.skipUnless(TORCH_AVAILABLE, "torch required")
+class BuildOptimizerRAdamTests(unittest.TestCase):
+    def test_builds_without_error(self):
+        opt = build_optimizer("radam", _param_groups(), {})
+        self.assertIsNotNone(opt)
+
+
+@unittest.skipUnless(TORCH_AVAILABLE, "torch required")
+class BuildOptimizerProdigyTests(unittest.TestCase):
+    def test_builds_without_error(self):
+        opt = build_optimizer("prodigy", _param_groups(), {})
+        self.assertIsNotNone(opt)
+
+
+@unittest.skipUnless(TORCH_AVAILABLE, "torch required")
+class BuildOptimizerAdafactorTests(unittest.TestCase):
+    def test_builds_without_error(self):
+        opt = build_optimizer("adafactor", _param_groups(), {})
+        self.assertIsNotNone(opt)
+
+
+@unittest.skipUnless(TORCH_AVAILABLE, "torch required")
+class BuildOptimizerAdanTests(unittest.TestCase):
+    def test_builds_without_error(self):
+        opt = build_optimizer("adan", _param_groups(), {})
+        self.assertIsNotNone(opt)
+
+
+@unittest.skipUnless(TORCH_AVAILABLE, "torch required")
+class BuildOptimizerSophiaTests(unittest.TestCase):
+    def test_builds_without_error(self):
+        opt = build_optimizer("sophia", _param_groups(), {})
+        self.assertIsNotNone(opt)
+
+    def test_custom_rho(self):
+        opt = build_optimizer("sophia", _param_groups(), {"sophia-rho": 0.02})
+        self.assertIsNotNone(opt)
+
+
+if __name__ == "__main__":
+    unittest.main()
