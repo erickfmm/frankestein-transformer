@@ -44,7 +44,7 @@ This work is not affiliated \\
 \maketitle
 
 \begin{abstract}
-Frankestein Transformer presents a unified configuration-driven toolkit for systematic experimentation with modern transformer architectures, spanning seventeen sequence mixer variants and twenty-two optimizer families. The system supports both encoder-style masked language modeling (MLM) and decoder-style autoregressive (AR) next-token prediction through flexible model class and mode configuration, with specialized fine-tuning workflows for both architectures. The research contributions are threefold: (i) a strict schema-based configuration contract that enables reproducible experimentation across diverse attention mechanisms, including standard softmax attention, sigmoid attention, retentive networks, selective state-space models, continuous-depth transformers, adaptive depth routing (Mixture-of-Depths) \citep{zhu2026mixtureofdepthsattention}, conditional memory augmentation (Engram) \citep{cheng2026conditionalmemoryscalablelookup}, sparse attention patterns, and gated mechanisms; (ii) a comprehensive optimizer routing framework supporting variance-reduction methods (MARS, Adan, AdEMAMix), memory-efficient variants (Adafactor, GaLore, Lion), schedule-free approaches, second-order preconditioners (Shampoo, SOAP, Sophia), and low-rank APOLLO-family optimizers (Apollo, Apollo-Mini, Q-Apollo) \citep{zhu2025apollosgdlikememoryadamwlevel}; and (iii) end-to-end workflows spanning quantized deployment via ternary weight packing and sentence-embedding training inspired by SBERT, backed by an expanded quality-assurance stack with broad unit test coverage, YAML example validation, and continuous integration execution. The toolkit implements a web-based configuration interface that provides schema-driven form rendering with inline documentation and real-time validation. This technical reference document includes architectural diagrams, execution-flow visualizations, decision tables, and comprehensive appendices synthesizing literature on transformer architectures, sparse attention mechanisms, gated attention variants, and optimization algorithms. The system enables rapid iteration while maintaining reproducible experimental conditions through its schema-first design philosophy.
+Frankestein Transformer presents a unified configuration-driven toolkit for systematic experimentation with modern transformer architectures, spanning seventeen sequence mixer variants and twenty-three optimizer families. The system supports both encoder-style masked language modeling (MLM) and decoder-style autoregressive (AR) next-token prediction through flexible model class and mode configuration, with specialized fine-tuning workflows for both architectures. The research contributions are threefold: (i) a strict schema-based configuration contract that enables reproducible experimentation across diverse attention mechanisms, including standard softmax attention, sigmoid attention, retentive networks, selective state-space models, continuous-depth transformers, adaptive depth routing (Mixture-of-Depths) \citep{zhu2026mixtureofdepthsattention}, conditional memory augmentation (Engram) \citep{cheng2026conditionalmemoryscalablelookup}, sparse attention patterns, and gated mechanisms; (ii) a comprehensive optimizer routing framework supporting variance-reduction methods (MARS, Adan, AdEMAMix), memory-efficient variants (Adafactor, GaLore, Lion), schedule-free approaches, second-order preconditioners (Shampoo, SOAP, Sophia), and low-rank APOLLO-family optimizers (Apollo, Apollo-Mini, Q-Apollo) \citep{zhu2025apollosgdlikememoryadamwlevel}; and (iii) end-to-end workflows spanning quantized deployment via ternary weight packing and sentence-embedding training inspired by SBERT, backed by an expanded quality-assurance stack with broad unit test coverage, YAML example validation, and continuous integration execution. The toolkit implements a web-based configuration interface that provides schema-driven form rendering with inline documentation and real-time validation. This technical reference document includes architectural diagrams, execution-flow visualizations, decision tables, and comprehensive appendices synthesizing literature on transformer architectures, sparse attention mechanisms, gated attention variants, and optimization algorithms. The system enables rapid iteration while maintaining reproducible experimental conditions through its schema-first design philosophy.
 \end{abstract}
 
 \tableofcontents
@@ -62,7 +62,7 @@ The practical consequence is a fragmented research ecosystem where experimental 
 
 This work addresses these challenges through a unified, configuration-driven experimentation toolkit available at \url{https://github.com/erickfmm/frankestein-transformer} that provides:
 \begin{enumerate}[leftmargin=*]
-    \item \textbf{Schema-First Design}: A strict, validated configuration contract that enforces reproducibility while supporting seventeen distinct sequence mixer architectures and twenty-two optimizer families.
+    \item \textbf{Schema-First Design}: A strict, validated configuration contract that enforces reproducibility while supporting seventeen distinct sequence mixer architectures and twenty-three optimizer families.
     \item \textbf{Architecture Agnostic Training}: Common training infrastructure supporting dense attention baselines (standard, sigmoid), recurrent alternatives (RetNet, Mamba, ODE-style blocks), adaptive depth routing (Mixture-of-Depths) \citep{zhu2026mixtureofdepthsattention}, conditional memory blocks (Engram) \citep{cheng2026conditionalmemoryscalablelookup}, sparse attention patterns (Sparse Transformer, Longformer, BigBird, SparseK, NSA, SpargeAttn, FASA), and gated mechanisms (GLA, DeltaNet, Gated DeltaNet, HGRN2, FoX, Gated Softmax).
     \item \textbf{Optimizer Routing Framework}: Prefixed hyperparameter groups enabling fine-grained control over embeddings, normalization layers, recurrent blocks, attention blocks, and other parameter subsets across diverse optimizers, including the APOLLO family (Apollo, Apollo-Mini, Q-Apollo) \citep{zhu2025apollosgdlikememoryadamwlevel}.
     \item \textbf{End-to-End Workflows}: Integrated deployment via quantization (ternary weight packing, INT8 activations) and sentence-embedding capabilities inspired by SBERT \citep{reimers_sentence-bert_2019}.
@@ -93,7 +93,7 @@ This work makes the following primary contributions:
 \begin{enumerate}[leftmargin=*]
     \item \textbf{Unified Configuration Schema}: A YAML-based schema contract with strict validation that supports seventeen distinct sequence mixer architectures across four categories (dense baselines, recurrent/retentive blocks, sparse attention patterns, and gated mechanisms), alongside adaptive depth and conditional memory controls, while enforcing reproducibility through \texttt{additionalProperties: false} constraints.
     \item \textbf{Comprehensive Architecture Support}: Implementation of modern transformer variants including standard softmax attention \citep{vaswani_attention_2017}, sigmoid attention \citep{ramapuram_theory_2024}, RetNet \citep{sun_retentive_2023}, Mamba \citep{gu_mamba_2023}, ODE-style continuous transformers \citep{zhang_continuous_2021}, Titans memory-augmented attention \citep{behrouz_titans_2025}, Engram conditional memory layers \citep{cheng2026conditionalmemoryscalablelookup}, Mixture-of-Depths token routing \citep{zhu2026mixtureofdepthsattention}, sparse attention mechanisms \citep{child_sparse_transformer_2019,beltagy_longformer_2020,zaheer_bigbird_2020,lou_sparsek_2024,yuan_nsa_2025,zhang_spargeattn_2025,wang_fasa_2026}, and gated attention architectures \citep{yang_gla_2023,yang_deltanet_2024,yang_gated_deltanet_2024,qin_hgrn2_2024,lin_forgetting_transformer_2025,qiu_gated_attention_2025}. System supports both encoder-mode training with bidirectional attention for masked language modeling (MLM) and decoder-mode training with causal masking for autoregressive next-token prediction.
-    \item \textbf{Optimizer Routing Framework}: Prefixed hyperparameter system enabling per-parameter-group control across twenty-two optimizers, including variance-reduction methods (MARS, Adan, AdEMAMix, Cautious AdamW), memory-efficient variants (Adafactor, GaLore, Lion), schedule-free approaches (Schedule-Free AdamW), curvature-aware methods (Sophia), second-order preconditioners (Shampoo, SOAP), orthogonality-oriented optimizers (Muon, Turbo-Muon), large-batch scaling (LAMB), and the APOLLO family (Apollo, Apollo-Mini, Q-Apollo) \citep{zhu2025apollosgdlikememoryadamwlevel}.
+    \item \textbf{Optimizer Routing Framework}: Prefixed hyperparameter system enabling per-parameter-group control across twenty-three optimizers, including the adaptivity-tunable Anon \citep{anon2026anon}, variance-reduction methods (MARS, Adan, AdEMAMix, Cautious AdamW), memory-efficient variants (Adafactor, GaLore, Lion), schedule-free approaches (Schedule-Free AdamW), curvature-aware methods (Sophia), second-order preconditioners (Shampoo, SOAP), orthogonality-oriented optimizers (Muon, Turbo-Muon), large-batch scaling (LAMB), and the APOLLO family (Apollo, Apollo-Mini, Q-Apollo) \citep{zhu2025apollosgdlikememoryadamwlevel}.
     \item \textbf{Quantization and Deployment}: Integrated deployment pipeline supporting ternary weight packing and INT8 activation quantization with size estimates following $1.58$-bit storage approximation.
     \item \textbf{Sentence-Embedding Workflows}: SBERT-inspired training and inference pipelines supporting similarity scoring, retrieval, clustering, and persistent embedding export.
     \item \textbf{Interactive Configuration Interface}: Streamlit-based web server providing schema-driven form generation, real-time validation, inline documentation, and CLI command generation.
@@ -241,7 +241,7 @@ The \texttt{model.layer\_pattern} supports legacy, sparse, and gated blocks:
 which corresponds to current attention and sequence-mixer literature \citep{sun_retentive_2023,gu_mamba_2023,zhang_continuous_2021,behrouz_titans_2025,ramapuram_theory_2024,vaswani_attention_2017,child_sparse_transformer_2019,beltagy_longformer_2020,zaheer_bigbird_2020,lou_sparsek_2024,yuan_nsa_2025,zhang_spargeattn_2025,wang_fasa_2026,yang_gla_2023,yang_deltanet_2024,yang_gated_deltanet_2024,qin_hgrn2_2024,lin_forgetting_transformer_2025,qiu_gated_attention_2025}
 
 The \texttt{training.optimizer.optimizer\_class} supports a broad optimizer family:
-\texttt{sgd\_momentum}, \texttt{adamw}, \texttt{adafactor}, \texttt{galore\_adamw}, \texttt{prodigy}, \texttt{lion}, \texttt{sophia}, \texttt{muon}, \texttt{turbo\_muon}, \texttt{radam}, \texttt{adan}, \texttt{adopt}, \texttt{ademamix}, \texttt{mars\_adamw}, \texttt{cautious\_adamw}, \texttt{lamb}, \texttt{schedulefree\_adamw}, \texttt{shampoo}, \texttt{soap}, \texttt{apollo}, \texttt{apollo\_mini}, and \texttt{q\_apollo}.
+\texttt{sgd\_momentum}, \texttt{adamw}, \texttt{adafactor}, \texttt{galore\_adamw}, \texttt{prodigy}, \texttt{lion}, \texttt{sophia}, \texttt{muon}, \texttt{turbo\_muon}, \texttt{radam}, \texttt{adan}, \texttt{adopt}, \texttt{ademamix}, \texttt{mars\_adamw}, \texttt{cautious\_adamw}, \texttt{lamb}, \texttt{schedulefree\_adamw}, \texttt{shampoo}, \texttt{soap}, \texttt{anon}, \texttt{apollo}, \texttt{apollo\_mini}, and \texttt{q\_apollo}.
 
 \begin{figure}[t]
 \centering
@@ -876,7 +876,7 @@ Gated Softmax & full attention matrix & post-attention sigmoid gate & Yes & Sigm
 \section{Optimizer Families and Training Dynamics}
 \label{sec:optimizer-families}
 
-Optimization of highly parameterized transformer architectures presents significant challenges due to non-convex loss landscapes, saddle points, and block heterogeneity across parameter groups. This system addresses these challenges through a unified framework supporting twenty-two optimizer families spanning six algorithmic categories: (1) classical baselines (SGD, AdamW), (2) advanced momentum and variance reduction (Adan, ADOPT, AdEMAMix, MARS, Cautious), (3) memory-efficient variants (Adafactor, GaLore, Lion, APOLLO, APOLLO-Mini, Q-APOLLO), (4) schedule-free and parameter-free methods (Schedule-Free AdamW, Prodigy) plus large-batch scaling through LAMB, (5) curvature-aware and second-order (Sophia, Shampoo, SOAP), and (6) geometry-oriented (Muon, Turbo-Muon). Detailed algorithmic descriptions, pseudocode, and a memory/complexity comparison table for all optimizers are provided in Appendix~\ref{sec:annex-optimizers}.
+Optimization of highly parameterized transformer architectures presents significant challenges due to non-convex loss landscapes, saddle points, and block heterogeneity across parameter groups. This system addresses these challenges through a unified framework supporting twenty-three optimizer families spanning six algorithmic categories: (1) classical baselines (SGD, AdamW), (2) advanced momentum and variance reduction (Adan, ADOPT, AdEMAMix, MARS, Cautious), (3) memory-efficient variants (Adafactor, GaLore, Lion, APOLLO, APOLLO-Mini, Q-APOLLO), (4) schedule-free and parameter-free methods (Schedule-Free AdamW, Prodigy) plus large-batch scaling through LAMB, (5) curvature-aware and second-order (Sophia, Shampoo, SOAP), (6) geometry-oriented (Muon, Turbo-Muon), and (7) adaptivity-tunable optimizers (Anon). Detailed algorithmic descriptions, pseudocode, and a memory/complexity comparison table for all optimizers are provided in Appendix~\ref{sec:annex-optimizers}.
 
 \begin{figure}[t]
 \centering
@@ -1033,6 +1033,7 @@ GaLore AdamW & Low-rank gradient projection & Medium & Optimize in projected low
 APOLLO & Low-rank adaptive projection & Medium & Structured scaling from projected Adam-style moments & \citep{zhu2025apollosgdlikememoryadamwlevel} \\
 APOLLO-Mini & Rank-1 adaptive projection & Low & Tensor-wise scaled APOLLO variant for extreme memory savings & \citep{zhu2025apollosgdlikememoryadamwlevel} \\
 Q-APOLLO & Quantized low-rank projection & Low & Quantized APOLLO state for ultra-low-memory training & \citep{zhu2025apollosgdlikememoryadamwlevel} \\
+Anon & Adaptivity-tunable Adam-like & High & Continuously tunable adaptivity $\gamma \in \mathbb{R}$ with incremental delay update (IDU) for convergence & \citep{anon2026anon} \\
 Prodigy & Parameter-free adaptation & Medium & Distance-adaptive step calibration & \citep{mishchenko_prodigy_2023} \\
 Lion & Sign momentum & Low & Momentum sign update, reduced state & \citep{chen_symbolic_2023} \\
 Sophia & Approx.\ second-order & Medium & Diagonal Hessian preconditioning with clipping & \citep{liu_sophia_2023} \\
@@ -1088,7 +1089,7 @@ Transformer Encoder Frankenstein presents a unified, configuration-driven experi
 
 The system's primary contributions are:
 \begin{enumerate}[leftmargin=*]
-    \item \textbf{Schema-First Design}: A strict YAML-based configuration contract with validation and prefixed hyperparameter routing enabling reproducible experiments across seventeen mixer architectures and twenty-two optimizer families.
+    \item \textbf{Schema-First Design}: A strict YAML-based configuration contract with validation and prefixed hyperparameter routing enabling reproducible experiments across seventeen mixer architectures and twenty-three optimizer families.
     \item \textbf{Comprehensive Architecture Support}: Implementation spanning major research categories including dense baselines (standard, sigmoid attention), recurrent alternatives (RetNet, Mamba, ODE-style, Titans), sparse attention (Sparse Transformer, Longformer, BigBird, SparseK, NSA, SpargeAttn, FASA), and gated mechanisms (GLA, DeltaNet, Gated DeltaNet, HGRN2, FoX, Gated Softmax).
     \item \textbf{Unified Optimizer Framework}: Prefixed hyperparameter groups enabling fine-grained control over embeddings, normalization layers, recurrent blocks, attention weights, and FFN parameters across classical baselines (SGD+Momentum, AdamW), variance-reduction (Adan, ADOPT, AdEMAMix, MARS, Cautious), memory-efficient (Adafactor, GaLore, Lion, APOLLO, APOLLO-Mini, Q-APOLLO), large-batch and schedule simplification (LAMB, Schedule-Free AdamW, Prodigy), curvature-aware (Sophia), second-order (Shampoo, SOAP), and geometry-oriented (Muon, Turbo-Muon) optimizers.
     \item \textbf{End-to-End Workflows}: Integrated deployment pipeline supporting ternary weight packing and INT8 activation quantization; SBERT-inspired training and inference for semantic similarity, retrieval, and clustering tasks.
@@ -1171,6 +1172,7 @@ Turbo-Muon & 2 ($m$, $v$) & $\mathcal{O}(n \cdot k)$ & lr, momentum, wd, NS step
 APOLLO & 2 low-rank ($m_R$, $v_R$) + proj & $\mathcal{O}(nr)$ & lr, rank $r$, update gap, scale, betas, eps, wd \\
 APOLLO-Mini & 2 rank-1 ($m_R$, $v_R$) + proj & $\mathcal{O}(n)$ & lr, update gap, scale, betas, eps, wd \\
 Q-APOLLO & 2 quantized low-rank + proj & $\mathcal{O}(nr)$ & lr, rank $r$, update gap, scale, quant bits, betas, eps, wd \\
+Anon & 3 ($m$, $v$, fixed\_lr) & $\mathcal{O}(n)$ & lr, $\beta_1$, $\beta_2$, eps, wd, $\gamma$ \\
 \end{longtable}
 
 \subsection{The Evolution of Optimization in Neural Networks}
@@ -1608,6 +1610,51 @@ APOLLO-Mini is the family member optimized for \textbf{extreme memory efficiency
 
 \paragraph{Q-APOLLO.}
 The APOLLO paper also stresses that the family combines naturally with \textbf{quantization} for ultra-low-memory training. This repository turns that systems observation into a concrete optimizer variant, \texttt{q\_apollo}. In the implementation, APOLLO's low-rank first and second moments are stored in quantized form together with per-tensor scales and offsets, and are dequantized only when needed for the next step. Q-APOLLO therefore preserves APOLLO's projected-gradient logic while reducing the precision of the remaining optimizer state, making it the most aggressive memory-saving member of the local optimizer stack.
+
+\paragraph{Anon (Adaptivity Non-restricted Optimizer with Novel convergence technique).}
+Anon \citep{anon2026anon} introduces continuously tunable adaptivity via a single parameter $\gamma \in \mathbb{R}$, bridging the gap between SGD-like ($\gamma=0$) and Adam-like ($\gamma=1$) behaviors, and extrapolating beyond both. The core innovation is the Incremental Delay Update (IDU) mechanism, which enables stable convergence across the entire real-valued adaptivity spectrum:
+
+\begin{align}
+m_t &= \beta_1 m_{t-1} + (1-\beta_1) g_t \quad\text{(first moment)}\\
+v_t &= \beta_2 v_{t-1} + (1-\beta_2) g_t^2 \quad\text{(second moment)}\\
+\bar{v}_t &= \frac{v_t}{1-\beta_2^{\max(t,1)}} + \epsilon \quad\text{(bias-corrected second moment)}\\
+\text{fixed\_lr}_k &= \begin{cases}
+\bar{v}_k^{-\gamma/2} & \text{if } k = 0 \\
+\sqrt{2 / \left(\frac{1}{\text{fixed\_lr}_{k-1}^2} + \bar{v}_k^\gamma\right)} & \text{if } k > 0
+\end{cases}\\
+\theta_{t+1} &= \theta_t - \frac{\eta}{1-\beta_1^t} \cdot m_t \odot \text{fixed\_lr}_{\lfloor\log_2 t\rfloor}
+\end{align}
+
+Unlike standard adaptive optimizers, IDU updates the preconditioner only at powers of two ($t = 2^k$), accumulating gradient statistics between updates and aggregating them recursively. This soft, multi-scale accumulator avoids the hard max-tracking of AMSGrad while provably stabilizing convergence for any $\gamma \in \mathbb{R}$. The parameter $\gamma$ directly controls adaptivity: $\gamma > 1$ accelerates escape from saddle points (favorable for complex architectures), $\gamma = 1$ recovers Adam-like behavior, $\gamma = 0$ yields SGD-like scaling, and $\gamma < 0$ biases toward flatter minima (beneficial for classical architectures like CNNs).
+
+Anon maintains three state buffers ($m$, $v$, fixed\_lr) with $\mathcal{O}(n)$ per-step cost, placing it in the same complexity class as AdamW but with the added flexibility of tunable adaptivity. The IDU technique provably converges at $\mathcal{O}(\sqrt{T})$ regret for convex problems and $\mathcal{O}(\ln T / \sqrt{T})$ for non-convex settings, matching the guarantees of mainstream adaptive optimizers while supporting the full real-valued adaptivity range.
+
+\begin{algorithm}[H]
+\caption{Anon (Adaptivity Non-restricted Optimizer with IDU)}
+\label{alg:anon}
+\begin{algorithmic}[1]
+\Require Initial parameters $\theta_0$, learning rate $\eta$, $\beta_1, \beta_2$, tolerance $\epsilon$, adaptivity $\gamma \in \mathbb{R}$
+\Ensure Updated parameters $\theta_T$
+\State Initialize: $m \gets 0$, $v \gets 0$, fixed\_lr $\gets 0$, step $t \gets 0$, IDU counter $k \gets -1$
+\For{$t = 1, 2, \ldots, T$}
+    \State $g_t \gets \nabla f(\theta_{t-1})$
+    \State $m \gets \beta_1 m + (1-\beta_1) g_t$
+    \State $v \gets \beta_2 v + (1-\beta_2) g_t^2$
+    \If{$t = 2^k$}
+        \State $k \gets k+1$
+        \State $\bar{v} \gets v/(1 - \beta_2^{\max(t/2,1)}) + \epsilon$
+        \If{$k = 0$}
+            \State fixed\_lr $\gets \bar{v}^{-\gamma/2}$
+        \Else
+            \State fixed\_lr $\gets \sqrt{2 / (1/\text{fixed\_lr}^2 + \bar{v}^\gamma)}$
+        \EndIf
+        \State $v \gets 0$
+    \EndIf
+    \State $\theta_t \gets \theta_{t-1} - \frac{\eta}{1-\beta_1^t} \cdot m \odot \text{fixed\_lr}$
+\EndFor
+\Return $\theta_T$
+\end{algorithmic}
+\end{algorithm}
 
 \paragraph{Prodigy (Approximating the Distance Estimate).}
 Prodigy adapts the effective step scale through a running distance-like statistic, eliminating the need for explicit learning-rate tuning. The algorithm maintains a cumulative distance estimate:

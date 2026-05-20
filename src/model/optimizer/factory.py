@@ -9,6 +9,7 @@ from .adafactor import Adafactor
 from .adan import Adan
 from .ademamix import AdEMAMix
 from .adopt import ADOPT
+from .anon import Anon
 from .apollo import Apollo
 from .apollo_mini import ApolloMini
 from .base import (
@@ -57,6 +58,7 @@ OPTIMIZER_REGISTRY = {
     "schedulefree_adamw": ScheduleFreeAdamW,
     "shampoo": Shampoo,
     "soap": SOAP,
+    "anon": Anon,
     "apollo": Apollo,
     "apollo_mini": ApolloMini,
     "q_apollo": QApollo,
@@ -94,6 +96,7 @@ OPTIMIZER_ALLOWED_KEYS = {
     "soap": _COMMON_PER_GROUP_KEYS,
     "apollo": _COMMON_PER_GROUP_KEYS | {"rank", "update_proj_gap", "scale", "scale_type", "proj_type", "scale_front", "disable_nl"},
     "apollo_mini": _COMMON_PER_GROUP_KEYS | {"update_proj_gap", "scale", "proj_type", "scale_front", "disable_nl"},
+    "anon": _COMMON_PER_GROUP_KEYS | {"gamma"},
     "q_apollo": _COMMON_PER_GROUP_KEYS | {"rank", "update_proj_gap", "scale", "scale_type", "proj_type", "scale_front", "disable_nl", "quant_bits"},
 }
 
@@ -166,6 +169,10 @@ def build_optimizer(
         rank = int(to_float(scoped.get("rank"), 128))
         update_proj_gap = int(to_float(scoped.get("update_proj_gap"), 200))
         return optimizer_cls(converted_groups, rank=rank, update_proj_gap=update_proj_gap)
+
+    if optimizer_name == "anon":
+        gamma = to_float(scoped.get("gamma"), 0.0)
+        return optimizer_cls(converted_groups, gamma=gamma)
 
     if optimizer_name == "prodigy":
         d_coef = to_float(scoped.get("d_coef"), 0.8)

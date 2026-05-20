@@ -25,7 +25,7 @@ class OptimizerRegistryTests(unittest.TestCase):
         self.assertIn("adamw", OPTIMIZER_REGISTRY)
 
     def test_registry_contains_all_required(self):
-        required = {"adamw", "sgd_momentum", "lion", "muon", "lamb", "apollo", "apollo_mini", "q_apollo"}
+        required = {"adamw", "sgd_momentum", "lion", "muon", "lamb", "anon", "apollo", "apollo_mini", "q_apollo"}
         for name in required:
             self.assertIn(name, OPTIMIZER_REGISTRY, f"Missing optimizer: {name}")
 
@@ -222,6 +222,45 @@ class BuildOptimizerSophiaTests(unittest.TestCase):
     def test_custom_rho(self):
         opt = build_optimizer("sophia", _param_groups(), {"sophia-rho": 0.02})
         self.assertIsNotNone(opt)
+
+
+@unittest.skipUnless(TORCH_AVAILABLE, "torch required")
+class BuildOptimizerAnonTests(unittest.TestCase):
+    def test_builds_without_error(self):
+        opt = build_optimizer("anon", _param_groups(), {})
+        self.assertIsNotNone(opt)
+
+    def test_step_runs(self):
+        p = nn.Parameter(torch.randn(4, 4))
+        groups = [{"params": [p], "lr": 1e-3, "name": "other"}]
+        opt = build_optimizer("anon", groups, {})
+        loss = p.square().mean()
+        loss.backward()
+        opt.step()
+
+    def test_step_runs_negative_gamma(self):
+        p = nn.Parameter(torch.randn(4, 4))
+        groups = [{"params": [p], "lr": 1e-3, "name": "other"}]
+        opt = build_optimizer("anon", groups, {"anon-gamma": -0.5})
+        loss = p.square().mean()
+        loss.backward()
+        opt.step()
+
+    def test_custom_gamma(self):
+        opt = build_optimizer("anon", _param_groups(), {"anon-gamma": 1.5})
+        self.assertAlmostEqual(opt.defaults["gamma"], 1.5)
+
+    def test_gamma_default_zero(self):
+        opt = build_optimizer("anon", _param_groups(), {})
+        self.assertAlmostEqual(opt.defaults["gamma"], 0.0)
+
+    def test_string_gamma_fallback(self):
+        opt = build_optimizer("anon", _param_groups(), {"anon-gamma": "0.75"})
+        self.assertAlmostEqual(opt.defaults["gamma"], 0.75)
+
+    def test_non_convertible_gamma_fallback(self):
+        opt = build_optimizer("anon", _param_groups(), {"anon-gamma": "bad"})
+        self.assertAlmostEqual(opt.defaults["gamma"], 0.0)
 
 
 if __name__ == "__main__":
