@@ -11,7 +11,7 @@ import streamlit as st
 import yaml
 
 # Constants
-SCHEMA_PATH = Path(__file__).parent.parent / "training" / "configs" / "schema.yaml"
+SCHEMA_PATH = Path(__file__).parent.parent / "schema.yaml"
 AVAILABLE_COMMANDS = [
     {"id": "train", "name": "Train", "description": "Run main training"},
     {"id": "deploy", "name": "Deploy", "description": "Convert checkpoint to deployment artifacts"},

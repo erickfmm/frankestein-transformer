@@ -6,7 +6,7 @@ import yaml
 
 class SchemaAttentionLayerTests(unittest.TestCase):
     def test_schema_includes_all_attention_layer_names(self):
-        schema_path = pathlib.Path("configs/schema.yaml")
+        schema_path = pathlib.Path(__file__).parent.parent / "src" / "schema.yaml"
         with schema_path.open("r", encoding="utf-8") as handle:
             schema = yaml.safe_load(handle)
 
@@ -41,7 +41,7 @@ class SchemaAttentionLayerTests(unittest.TestCase):
         self.assertTrue(expected.issubset(set(enum_values)))
 
     def test_schema_includes_mixture_of_depths_fields(self):
-        schema_path = pathlib.Path("configs/schema.yaml")
+        schema_path = pathlib.Path(__file__).parent.parent / "src" / "schema.yaml"
         with schema_path.open("r", encoding="utf-8") as handle:
             schema = yaml.safe_load(handle)
 
