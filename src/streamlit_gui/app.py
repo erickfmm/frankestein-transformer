@@ -743,10 +743,11 @@ def main(argv=None):
     if "ui_language" not in st.session_state:
         st.session_state["ui_language"] = LANG_EN
 
+    language_options = list(LANGUAGE_LABELS.keys())
     st.sidebar.selectbox(
         get_ui_text("language_selector"),
-        list(LANGUAGE_LABELS.keys()),
-        index=0 if get_current_language() == LANG_EN else 1,
+        language_options,
+        index=language_options.index(get_current_language()),
         key="ui_language",
         format_func=lambda language_code: LANGUAGE_LABELS[language_code],
     )
