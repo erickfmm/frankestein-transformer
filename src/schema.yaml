@@ -1,6 +1,7 @@
 $schema: "https://json-schema.org/draft/2020-12/schema"
 $id: "training-config.schema.json"
 title: "Training Config Schema"
+title_es: "Esquema de Configuración de Entrenamiento"
 type: object
 additionalProperties: false
 required:
@@ -9,15 +10,19 @@ required:
 properties:
   base_model:
     type: string
-    title: "Base Model / Modelo Base"
+    title: "Base Model"
+    title_es: "Modelo Base"
     description: |
-      **EN:** HuggingFace model identifier or local path for continual pretraining or SBERT fine-tuning.
+      HuggingFace model identifier or local path for continual pretraining or SBERT fine-tuning.
       When specified, an existing pre-trained model is used instead of building from scratch. This enables
       transfer learning from models like ModernBERT, BERT, RoBERTa, etc. The model architecture is loaded
       automatically from the provided path/id. When `base_model` is set, `model_class` and `model` are not
       required (the architecture is inferred from the checkpoint).
 
-      **ES:** Identificador de modelo de HuggingFace o ruta local para preentrenamiento continuo o fine-tuning SBERT.
+      **Impacto:** Usar un modelo base acelera drásticamente la convergencia y reduce los datos necesarios.
+      El modelo hereda el vocabulario y tokenizador del checkpoint original.
+    description_es: |
+      Identificador de modelo de HuggingFace o ruta local para preentrenamiento continuo o fine-tuning SBERT.
       Cuando se especifica, se usa un modelo preentrenado existente en lugar de construir uno desde cero. Esto
       permite el aprendizaje por transferencia desde modelos como ModernBERT, BERT, RoBERTa, etc. La arquitectura
       del modelo se carga automáticamente desde la ruta/id proporcionada. Cuando `base_model` está configurado,
@@ -31,13 +36,17 @@ properties:
 
   tokenizer:
     type: object
-    title: "Tokenizer Settings / Configuración del Tokenizador"
+    title: "Tokenizer Settings"
+    title_es: "Configuración del Tokenizador"
     description: |
-      **EN:** Configuration for the tokenizer used when `base_model` is specified for MLM training.
+      Configuration for the tokenizer used when `base_model` is specified for MLM training.
       Controls how raw text is tokenized into input IDs consumable by the pre-trained model.
       Required when using `base_model` with the `mlm` task.
 
-      **ES:** Configuración del tokenizador utilizado cuando se especifica `base_model` para entrenamiento MLM.
+      **Impacto:** Un tokenizador incorrecto (que no coincida con el del modelo base) produce embeddings
+      sin sentido y pérdida irrecuperable. Siempre verificar que `name_or_path` coincida con el modelo base.
+    description_es: |
+      Configuración del tokenizador utilizado cuando se especifica `base_model` para entrenamiento MLM.
       Controla cómo el texto crudo se convierte en IDs de entrada consumibles por el modelo preentrenado.
       Obligatorio al usar `base_model` con la tarea `mlm`.
 
@@ -47,13 +56,17 @@ properties:
     properties:
       name_or_path:
         type: string
-        title: "Tokenizer Path / Ruta del Tokenizador"
+        title: "Tokenizer Path"
+        title_es: "Ruta del Tokenizador"
         description: |
-          **EN:** HuggingFace tokenizer identifier or local path passed to `AutoTokenizer.from_pretrained()`.
+          HuggingFace tokenizer identifier or local path passed to `AutoTokenizer.from_pretrained()`.
           Must match the tokenizer used to train the `base_model`. The tokenizer determines the vocabulary
           and tokenization strategy used during training.
 
-          **ES:** Identificador de tokenizador de HuggingFace o ruta local pasado a `AutoTokenizer.from_pretrained()`.
+          **Impacto:** Si no coincide con el modelo base, los IDs de tokens no corresponderán a las
+          embeddings correctas, resultando en un modelo inutilizable.
+        description_es: |
+          Identificador de tokenizador de HuggingFace o ruta local pasado a `AutoTokenizer.from_pretrained()`.
           Debe coincidir con el tokenizador usado para entrenar `base_model`. El tokenizador determina el
           vocabulario y la estrategia de tokenización durante el entrenamiento.
 
@@ -63,12 +76,16 @@ properties:
           - answerdotai/ModernBERT-base
       use_fast:
         type: boolean
-        title: "Use Fast Tokenizer / Usar Tokenizador Rápido"
+        title: "Use Fast Tokenizer"
+        title_es: "Usar Tokenizador Rápido"
         description: |
-          **EN:** Enable Rust-based fast tokenizer implementation for significantly faster tokenization
+          Enable Rust-based fast tokenizer implementation for significantly faster tokenization
           (5-10x vs Python). Recommended for training. Some custom tokenizers may not support it.
 
-          **ES:** Habilita la implementación rápida del tokenizador basada en Rust para una tokenización
+          **Impacto:** `true` reduce el tiempo de preprocesamiento drásticamente. Usar `false` solo
+          si el tokenizador no soporta la versión rápida o si hay problemas de compatibilidad.
+        description_es: |
+          Habilita la implementación rápida del tokenizador basada en Rust para una tokenización
           significativamente más rápida (5-10x vs Python). Recomendado para entrenamiento. Algunos
           tokenizadores personalizados pueden no soportarlo.
 
@@ -77,12 +94,16 @@ properties:
         examples: [true]
       trust_remote_code:
         type: boolean
-        title: "Trust Remote Code / Confiar en Código Remoto"
+        title: "Trust Remote Code"
+        title_es: "Confiar en Código Remoto"
         description: |
-          **EN:** Allow execution of custom code from the model/tokenizer repository. Required for some
+          Allow execution of custom code from the model/tokenizer repository. Required for some
           models with custom tokenization logic (e.g., T5, FLAN-T5). **Security risk for untrusted sources.**
 
-          **ES:** Permite la ejecución de código personalizado desde el repositorio del modelo/tokenizador.
+          **Impacto:** `false` es seguro pero puede causar errores con modelos que requieren código custom.
+          Solo activar con modelos de fuentes verificadas (HuggingFace oficial, repos propios).
+        description_es: |
+          Permite la ejecución de código personalizado desde el repositorio del modelo/tokenizador.
           Necesario para algunos modelos con lógica de tokenización personalizada (ej. T5, FLAN-T5).
           **Riesgo de seguridad para fuentes no confiables.**
 
@@ -92,14 +113,19 @@ properties:
 
   model_class:
     type: string
-    title: "Model Class / Clase de Modelo"
+    title: "Model Class"
+    title_es: "Clase de Modelo"
     description: |
-      **EN:** Model architecture variant to instantiate. Determines which model implementation class is used.
+      Model architecture variant to instantiate. Determines which model implementation class is used.
       - `frankenstein`: mixed-architecture encoder with various attention mechanisms, MoE, and advanced features.
       - `mini`: simplified encoder variant for smaller-scale training and experimentation.
       - `frankesteindecoder`: autoregressive causal decoder for LLM-style next-token generation. **Automatically forces `mode: decoder`** at runtime.
 
-      **ES:** Variante de arquitectura del modelo a instanciar. Determina qué clase de implementación se usa.
+      **Impacto:** Define toda la familia de modelos. `frankenstein` es la opción más flexible y completa.
+      `mini` es ideal para prototipado rápido con menos parámetros. `frankesteindecoder` es para modelos
+      generativos (tipo GPT), no para embeddings o clasificación.
+    description_es: |
+      Variante de arquitectura del modelo a instanciar. Determina qué clase de implementación se usa.
       - `frankenstein`: encoder de arquitectura mixta con varios mecanismos de atención, MoE y características avanzadas.
       - `mini`: variante de encoder simplificada para entrenamiento a pequeña escala y experimentación.
       - `frankesteindecoder`: decoder causal autorregresivo para generación de siguiente token estilo LLM. **Fuerza automáticamente `mode: decoder`** en tiempo de ejecución.
@@ -119,12 +145,16 @@ properties:
   model:
     type: object
     description: |
-      **EN:** UltraConfig model parameters. All architectural hyperparameters that define the model's
+      UltraConfig model parameters. All architectural hyperparameters that define the model's
       structure, capacity, and behavior. Required when building a model from scratch (i.e., when
       `base_model` is not set). Includes dimensions, layer composition, normalization, and advanced
       features like MoE, factorized embeddings, and positional encodings.
 
-      **ES:** Parámetros UltraConfig del modelo. Todos los hiperparámetros arquitectónicos que definen
+      **Impacto:** Cada parámetro afecta memoria, velocidad y calidad. `hidden_size` y `num_layers`
+      son los que más impactan el tamaño total del modelo. `layer_pattern` define la mezcla de
+      mecanismos de atención — es la decisión arquitectónica más importante.
+    description_es: |
+      Parámetros UltraConfig del modelo. Todos los hiperparámetros arquitectónicos que definen
       la estructura, capacidad y comportamiento del modelo. Obligatorio al construir un modelo desde
       cero (cuando `base_model` no está configurado). Incluye dimensiones, composición de capas,
       normalización y características avanzadas como MoE, embeddings factorizados y codificaciones
@@ -160,13 +190,18 @@ properties:
     properties:
       vocab_size:
         type: integer
-        title: "Vocabulary Size / Tamaño de Vocabulario"
+        title: "Vocabulary Size"
+        title_es: "Tamaño de Vocabulario"
         description: |
-          **EN:** Number of unique tokens in the model's vocabulary. Must match the tokenizer's vocab size.
+          Number of unique tokens in the model's vocabulary. Must match the tokenizer's vocab size.
           Typical values: 30k–100k. Larger vocabularies improve language coverage but increase embedding
           parameters (`vocab_size × hidden_size`).
 
-          **ES:** Número de tokens únicos en el vocabulario del modelo. Debe coincidir con el tamaño del
+          **Impacto:** Con `vocab_size=50000` y `hidden_size=768`, la capa de embedding tiene ~38M parámetros.
+          Usar `use_factorized_embedding=true` para reducir este costo. Si se usa `base_model`, debe coincidir
+          exactamente con el vocabulario original.
+        description_es: |
+          Número de tokens únicos en el vocabulario del modelo. Debe coincidir con el tamaño del
           vocabulario del tokenizador. Valores típicos: 30k–100k. Vocabularios más grandes mejoran la
           cobertura lingüística pero aumentan los parámetros de embedding (`vocab_size × hidden_size`).
 
@@ -176,13 +211,17 @@ properties:
         examples: [50000]
       hidden_size:
         type: integer
-        title: "Hidden Dimension / Dimensión Oculta"
+        title: "Hidden Dimension"
+        title_es: "Dimensión Oculta"
         description: |
-          **EN:** Dimension of the model's hidden representations. Key size parameter affecting capacity
+          Dimension of the model's hidden representations. Key size parameter affecting capacity
           and memory. Typical: 512 (small), 768 (BERT-base), 1024 (BERT-large), 2048+ (large models).
           **Must be divisible by `num_heads`.**
 
-          **ES:** Dimensión de las representaciones ocultas del modelo. Parámetro clave que afecta
+          **Impacto:** Duplicar `hidden_size` ~cuadruplica el costo de atención y ~duplica la memoria.
+          La relación `hidden_size/num_heads` da la dimensión por cabeza de atención (típicamente ≥64).
+        description_es: |
+          Dimensión de las representaciones ocultas del modelo. Parámetro clave que afecta
           capacidad y memoria. Típico: 512 (pequeño), 768 (BERT-base), 1024 (BERT-large), 2048+
           (modelos grandes). **Debe ser divisible por `num_heads`.**
 
@@ -191,12 +230,17 @@ properties:
         examples: [768]
       num_layers:
         type: integer
-        title: "Number of Layers / Número de Capas"
+        title: "Number of Layers"
+        title_es: "Número de Capas"
         description: |
-          **EN:** Number of physical transformer layers in the model stack. Typical: 6 (small), 12 (BERT-base), 24 (BERT-large).
+          Number of physical transformer layers in the model stack. Typical: 6 (small), 12 (BERT-base), 24 (BERT-large).
           More layers increase depth and capacity for hierarchical representations but make training harder (gradient flow).
 
-          **ES:** Número de capas físicas del transformer. Típico: 6 (pequeño), 12 (BERT-base), 24 (BERT-large).
+          **Impacto:** Cada capa añade ~12×`hidden_size²` parámetros (aprox). Combinar con `num_loops` para
+          profundidad lógica sin costo paramétrico. Modelos muy profundos (>24 capas) requieren técnicas
+          como Pre-LN o warmup cuidadoso para entrenar establemente.
+        description_es: |
+          Número de capas físicas del transformer. Típico: 6 (pequeño), 12 (BERT-base), 24 (BERT-large).
           Más capas aumentan la profundidad y capacidad para representaciones jerárquicas pero dificultan el entrenamiento (flujo de gradientes).
 
           **Impacto:** Cada capa añade ~12×`hidden_size²` parámetros (aprox). Combinar con `num_loops` para
@@ -205,13 +249,18 @@ properties:
         examples: [12]
       num_loops:
         type: integer
-        title: "Logical Loops / Bucles Lógicos"
+        title: "Logical Loops"
+        title_es: "Bucles Lógicos"
         description: |
-          **EN:** Number of times to loop through the `layer_pattern` during a single forward pass. When >1,
+          Number of times to loop through the `layer_pattern` during a single forward pass. When >1,
           creates logical layers without increasing parameters. `num_loops=2` with `num_layers=6` behaves
           like 12 layers but with 6-layer parameters. Increases training time linearly.
 
-          **ES:** Número de veces que se recorre `layer_pattern` en una pasada hacia adelante. Cuando >1,
+          **Impacto:** Aumenta el costo de cómputo sin aumentar memoria de parámetros. Ideal para compensar
+          modelos con pocas capas físicas. No mejora la capacidad de representación tanto como capas físicas
+          adicionales (los pesos se comparten entre bucles por posición).
+        description_es: |
+          Número de veces que se recorre `layer_pattern` en una pasada hacia adelante. Cuando >1,
           crea capas lógicas sin aumentar parámetros. `num_loops=2` con `num_layers=6` se comporta como
           12 capas pero con parámetros de 6. Aumenta el tiempo de entrenamiento linealmente.
 
@@ -221,12 +270,17 @@ properties:
         examples: [1, 2]
       num_heads:
         type: integer
-        title: "Attention Heads / Cabezas de Atención"
+        title: "Attention Heads"
+        title_es: "Cabezas de Atención"
         description: |
-          **EN:** Number of parallel attention heads. Must divide `hidden_size` evenly. Typical: 8 (small),
+          Number of parallel attention heads. Must divide `hidden_size` evenly. Typical: 8 (small),
           12 (BERT-base), 16 (BERT-large), 32 (large). Each head learns different attention patterns.
 
-          **ES:** Número de cabezas de atención paralelas. Debe dividir `hidden_size` exactamente. Típico:
+          **Impacto:** Per-head dimension = `hidden_size / num_heads`. Valores <64 por cabeza pueden degradar
+          calidad. Demasiadas cabezas con dimensión pequeña fragmentan la representación. La regla general:
+          mantener dimensión por cabeza entre 64 y 128. Con `hidden_size=768`, `num_heads=12` da 64/cabeza.
+        description_es: |
+          Número de cabezas de atención paralelas. Debe dividir `hidden_size` exactamente. Típico:
           8 (pequeño), 12 (BERT-base), 16 (BERT-large), 32 (grande). Cada cabeza aprende patrones de atención distintos.
 
           **Impacto:** Per-head dimension = `hidden_size / num_heads`. Valores <64 por cabeza pueden degradar
@@ -235,12 +289,17 @@ properties:
         examples: [12]
       retention_heads:
         type: integer
-        title: "Retention Heads / Cabezas de Retención"
+        title: "Retention Heads"
+        title_es: "Cabezas de Retención"
         description: |
-          **EN:** Number of heads for RetentionNet/RetNet layers. Similar to `num_heads` but governs
+          Number of heads for RetentionNet/RetNet layers. Similar to `num_heads` but governs
           retention mechanisms that blend RNN and transformer properties. Must divide `hidden_size` evenly.
 
-          **ES:** Número de cabezas para capas RetentionNet/RetNet. Similar a `num_heads` pero gobierna
+          **Impacto:** Solo afecta capas `retnet`/`retnet_attn` en `layer_pattern`. Generalmente se iguala
+          a `num_heads` para simplicidad. Más cabezas permiten contextos de retención diversos pero
+          reducen capacidad por cabeza.
+        description_es: |
+          Número de cabezas para capas RetentionNet/RetNet. Similar a `num_heads` pero gobierna
           mecanismos de retención que combinan propiedades de RNN y transformer. Debe dividir `hidden_size` exactamente.
 
           **Impacto:** Solo afecta capas `retnet`/`retnet_attn` en `layer_pattern`. Generalmente se iguala
@@ -249,13 +308,18 @@ properties:
         examples: [12]
       num_experts:
         type: integer
-        title: "MoE Expert Count / Número de Expertos MoE"
+        title: "MoE Expert Count"
+        title_es: "Número de Expertos MoE"
         description: |
-          **EN:** Total number of expert networks in the MoE layer. Each expert is a separate FFN.
+          Total number of expert networks in the MoE layer. Each expert is a separate FFN.
           Router selects `top_k_experts` to activate per token. Typical: 4–8 (efficient), up to 64 (scaling).
           Requires `use_moe=true`.
 
-          **ES:** Número total de redes expertas en la capa MoE. Cada experto es una FFN separada.
+          **Impacto:** Aumenta la capacidad del modelo sin aumentar el cómputo proporcionalmente (solo
+          `top_k` activos por token). Expertos inactivos no consumen FLOPs pero sí ocupan memoria.
+          Carga balanceada entre expertos es crítica; routers mal entrenados colapsan en pocos expertos.
+        description_es: |
+          Número total de redes expertas en la capa MoE. Cada experto es una FFN separada.
           El router selecciona `top_k_experts` para activar por token. Típico: 4–8 (eficiente), hasta 64 (escalado).
           Requiere `use_moe=true`.
 
@@ -265,12 +329,17 @@ properties:
         examples: [4]
       top_k_experts:
         type: integer
-        title: "Top-K Expert Selection / Selección Top-K de Expertos"
+        title: "Top-K Expert Selection"
+        title_es: "Selección Top-K de Expertos"
         description: |
-          **EN:** Number of experts activated per token. Router selects the top-k most relevant from
+          Number of experts activated per token. Router selects the top-k most relevant from
           `num_experts`. Typical: 1–2. k=1 maximizes sparsity (only 1/num_experts active). Must be ≤ `num_experts`.
 
-          **ES:** Número de expertos activados por token. El router selecciona los top-k más relevantes
+          **Impacto:** k=1 maximiza eficiencia y especialización de expertos. k=2+ da más capacidad pero
+          reduce la dispersión y puede diluir la especialización. Con k=1 y 8 expertos, cada token solo
+          pasa por 1/8 de los parámetros FFN.
+        description_es: |
+          Número de expertos activados por token. El router selecciona los top-k más relevantes
           de `num_experts`. Típico: 1–2. k=1 maximiza la dispersión (solo 1/num_experts activo). Debe ser ≤ `num_experts`.
 
           **Impacto:** k=1 maximiza eficiencia y especialización de expertos. k=2+ da más capacidad pero
@@ -279,13 +348,18 @@ properties:
         examples: [2]
       dropout:
         type: integer
-        title: "Dropout Probability / Probabilidad de Dropout"
+        title: "Dropout Probability"
+        title_es: "Probabilidad de Dropout"
         description: |
-          **EN:** Global dropout rate applied throughout the model (attention, FFN, embeddings). Typical:
+          Global dropout rate applied throughout the model (attention, FFN, embeddings). Typical:
           0.1 (BERT), 0.3 (small datasets). Higher = more regularization, lower = less. Tune based on
           overfitting: increase if validation loss >> train loss.
 
-          **ES:** Tasa global de dropout aplicada en todo el modelo (atención, FFN, embeddings). Típico:
+          **Impacto:** Dropout actúa como regularizador implícito. Con datasets grandes (>100M tokens)
+          usar 0.05–0.1. Con datasets pequeños (<10M tokens) usar 0.2–0.3. Demasiado dropout en modelos
+          grandes puede causar subajuste.
+        description_es: |
+          Tasa global de dropout aplicada en todo el modelo (atención, FFN, embeddings). Típico:
           0.1 (BERT), 0.3 (datasets pequeños). Mayor = más regularización, menor = menos. Ajustar según
           sobreajuste: aumentar si pérdida de validación >> pérdida de entrenamiento.
 
@@ -295,9 +369,10 @@ properties:
         examples: [0.1]
       layer_pattern:
         type: array
-        title: "Layer Pattern / Patrón de Capas"
+        title: "Layer Pattern"
+        title_es: "Patrón de Capas"
         description: |
-          **EN:** Ordered sequence of layer types stacked in the model. Each element defines one physical
+          Ordered sequence of layer types stacked in the model. Each element defines one physical
           layer. Pattern length must equal `num_layers`. Available types:
 
           | Type | Description | Training | Inference |
@@ -322,7 +397,12 @@ properties:
           | `sparge_attn` ⚠️ | Sparge attention — **eval-only** | ❌ | ✅ |
           | `fasa_attn` ⚠️ | FASA attention — **eval-only** | ❌ | ✅ |
 
-          **ES:** Secuencia ordenada de tipos de capa apilados en el modelo. Cada elemento define una
+          **Impacto:** Esta es la decisión arquitectónica más importante. Mezclar mecanismos complementarios
+          (ej. `retnet` para contexto largo + `standard_attn` para precisión local) suele dar mejores
+          resultados que usar un solo tipo. `ode` agrega profundidad continua entre capas discretas.
+          ⚠️ No usar `sparge_attn` ni `fasa_attn` durante entrenamiento.
+        description_es: |
+          Secuencia ordenada de tipos de capa apilados en el modelo. Cada elemento define una
           capa física. La longitud del patrón debe igualar `num_layers`. Tipos disponibles:
           (ver tabla arriba — `sparge_attn` y `fasa_attn` son **solo evaluación**, lanzan error en entrenamiento).
 
@@ -359,13 +439,17 @@ properties:
           - [standard_attn]
       ode_solver:
         type: string
-        title: "ODE Solver / Solucionador ODE"
+        title: "ODE Solver"
+        title_es: "Solucionador ODE"
         description: |
-          **EN:** Numerical integration method for ODE layers. Only applies when `ode` appears in `layer_pattern`.
+          Numerical integration method for ODE layers. Only applies when `ode` appears in `layer_pattern`.
           - `rk4`: Runge-Kutta 4th order — higher accuracy and stability, but 4× slower than `euler`.
           - `euler`: Euler method — faster but may require smaller `ode_steps` or careful tuning.
 
-          **ES:** Método de integración numérica para capas ODE. Solo aplica cuando `ode` aparece en `layer_pattern`.
+          **Impacto:** Usar `rk4` para tareas críticas de calidad o si hay inestabilidad. Usar `euler` para
+          prototipado rápido o cuando la precisión extra no justifica el costo computacional.
+        description_es: |
+          Método de integración numérica para capas ODE. Solo aplica cuando `ode` aparece en `layer_pattern`.
           - `rk4`: Runge-Kutta orden 4 — mayor precisión y estabilidad, pero 4× más lento que `euler`.
           - `euler`: Método de Euler — más rápido pero puede requerir `ode_steps` más pequeños o ajuste cuidadoso.
 
@@ -375,13 +459,17 @@ properties:
         examples: [rk4]
       ode_steps:
         type: integer
-        title: "ODE Integration Steps / Pasos de Integración ODE"
+        title: "ODE Integration Steps"
+        title_es: "Pasos de Integración ODE"
         description: |
-          **EN:** Number of integration steps for ODE layers between consecutive transformer layers.
+          Number of integration steps for ODE layers between consecutive transformer layers.
           Typical: 2–4. More steps = more accurate continuous dynamics approximation at linear compute cost.
           With `rk4` solver, fewer steps often suffice vs `euler`.
 
-          **ES:** Número de pasos de integración para capas ODE entre capas consecutivas del transformer.
+          **Impacto:** Multiplica el costo de la capa ODE por este factor. Para secuencias largas, valores
+          altos (4–8) pueden mejorar calidad. Para eficiencia, empezar con 2 e incrementar si es necesario.
+        description_es: |
+          Número de pasos de integración para capas ODE entre capas consecutivas del transformer.
           Típico: 2–4. Más pasos = aproximación más precisa de dinámicas continuas con costo lineal.
           Con solver `rk4`, menos pasos suelen ser suficientes vs `euler`.
 
@@ -390,13 +478,18 @@ properties:
         examples: [2]
       use_bitnet:
         type: boolean
-        title: "Enable BitNet / Habilitar BitNet"
+        title: "Enable BitNet"
+        title_es: "Habilitar BitNet"
         description: |
-          **EN:** Enable BitLinear (binary quantization) layers using -1/+1 weights instead of float32.
+          Enable BitLinear (binary quantization) layers using -1/+1 weights instead of float32.
           Enables significant compression and speedup. **Experimental** — may affect model quality.
           Best suited for inference deployment. Requires careful LR tuning (gradients flow through binary weights).
 
-          **ES:** Habilita capas BitLinear (cuantización binaria) usando pesos -1/+1 en lugar de float32.
+          **Impacto:** Reduce memoria ~32× para pesos cuantizados pero puede degradar calidad significativamente.
+          No recomendado como configuración inicial; probar primero sin BitNet y activar solo para
+          optimización de inferencia.
+        description_es: |
+          Habilita capas BitLinear (cuantización binaria) usando pesos -1/+1 en lugar de float32.
           Permite compresión y aceleración significativas. **Experimental** — puede afectar calidad.
           Ideal para despliegue de inferencia. Requiere ajuste cuidadoso del learning rate.
 
@@ -406,14 +499,18 @@ properties:
         examples: [false]
       norm_type:
         type: string
-        title: "Normalization Type / Tipo de Normalización"
+        title: "Normalization Type"
+        title_es: "Tipo de Normalización"
         description: |
-          **EN:** Normalization strategy used throughout the model.
+          Normalization strategy used throughout the model.
           - `layer_norm`: Standard Layer Normalization — stable, widely used. **Recommended.**
           - `dynamic_tanh`: Dynamic tanh normalization — experimental, may improve training dynamics.
           - `derf`: Custom normalization scheme — experimental.
 
-          **ES:** Estrategia de normalización usada en todo el modelo.
+          **Impacto:** ⚠️ `rms_norm` NO es válido. `layer_norm` es la opción más segura y probada.
+          Las alternativas experimentales pueden causar inestabilidad o requerir ajustes adicionales.
+        description_es: |
+          Estrategia de normalización usada en todo el modelo.
           - `layer_norm`: Layer Normalization estándar — estable, ampliamente usada. **Recomendada.**
           - `dynamic_tanh`: Normalización tanh dinámica — experimental, puede mejorar dinámicas de entrenamiento.
           - `derf`: Esquema de normalización personalizado — experimental.
@@ -424,13 +521,18 @@ properties:
         examples: [layer_norm]
       use_factorized_embedding:
         type: boolean
-        title: "Factorized Embeddings / Embeddings Factorizados"
+        title: "Factorized Embeddings"
+        title_es: "Embeddings Factorizados"
         description: |
-          **EN:** Enable embedding matrix factorization to reduce parameters. Instead of full
+          Enable embedding matrix factorization to reduce parameters. Instead of full
           `(vocab_size × hidden_size)`, uses two smaller matrices. Reduces from O(V×H) to O(V×R + R×H)
           where R = `factorized_embedding_dim`. **Recommended when `vocab_size × hidden_size > 100M`.**
 
-          **ES:** Habilita factorización de matriz de embedding para reducir parámetros. En lugar de
+          **Impacto:** Ejemplo: vocab=50k, hidden=768 → 38.4M params sin factorizar → ~8.4M con dim=128
+          (reducción 4.5×). Puede impactar levemente la calidad, pero típicamente insignificante
+          para vocabularios grandes.
+        description_es: |
+          Habilita factorización de matriz de embedding para reducir parámetros. En lugar de
           `(vocab_size × hidden_size)` completo, usa dos matrices más pequeñas. Reduce de O(V×H) a
           O(V×R + R×H) donde R = `factorized_embedding_dim`. **Recomendado cuando `vocab_size × hidden_size > 100M`.**
 
@@ -440,12 +542,16 @@ properties:
         examples: [false]
       factorized_embedding_dim:
         type: integer
-        title: "Factorized Embedding Dim / Dim de Embedding Factorizado"
+        title: "Factorized Embedding Dim"
+        title_es: "Dim de Embedding Factorizado"
         description: |
-          **EN:** Intermediate dimension for factorized embeddings (only when `use_factorized_embedding=true`).
+          Intermediate dimension for factorized embeddings (only when `use_factorized_embedding=true`).
           Typical: 64–256. Rule of thumb: `factorized_embedding_dim ≈ sqrt(vocab_size)` or `hidden_size/6`.
 
-          **ES:** Dimensión intermedia para embeddings factorizados (solo cuando `use_factorized_embedding=true`).
+          **Impacto:** Menor = más compresión pero posible pérdida de calidad. <32 degrada calidad;
+          >512 reduce beneficios de compresión. Para vocab=50k y hidden=768: probar 128–224.
+        description_es: |
+          Dimensión intermedia para embeddings factorizados (solo cuando `use_factorized_embedding=true`).
           Típico: 64–256. Regla general: `factorized_embedding_dim ≈ sqrt(vocab_size)` o `hidden_size/6`.
 
           **Impacto:** Menor = más compresión pero posible pérdida de calidad. <32 degrada calidad;
@@ -453,12 +559,16 @@ properties:
         examples: [128]
       use_embedding_conv:
         type: boolean
-        title: "Embedding Convolution / Convolución de Embeddings"
+        title: "Embedding Convolution"
+        title_es: "Convolución de Embeddings"
         description: |
-          **EN:** Apply 1D convolution over token embeddings to capture local n-gram patterns
+          Apply 1D convolution over token embeddings to capture local n-gram patterns
           before the transformer. Experimental — may help with code or n-gram-heavy languages.
 
-          **ES:** Aplica convolución 1D sobre embeddings de tokens para capturar patrones locales
+          **Impacto:** Agrega `hidden_size × embedding_conv_kernel` parámetros. Poca ganancia para
+          lenguajes donde el contexto global es más importante que patrones locales. Probar con kernel=3.
+        description_es: |
+          Aplica convolución 1D sobre embeddings de tokens para capturar patrones locales
           de n-gramas antes del transformer. Experimental — puede ayudar con código o idiomas
           con fuerte estructura de n-gramas.
 
@@ -467,12 +577,16 @@ properties:
         examples: [false]
       embedding_conv_kernel:
         type: integer
-        title: "Embedding Conv Kernel / Kernel de Conv de Embeddings"
+        title: "Embedding Conv Kernel"
+        title_es: "Kernel de Conv de Embeddings"
         description: |
-          **EN:** Kernel size for embedding Conv1d when `use_embedding_conv=true`. Typical: 3 (trigram), 5, 7.
+          Kernel size for embedding Conv1d when `use_embedding_conv=true`. Typical: 3 (trigram), 5, 7.
           Larger = wider local context but more params (`kernel_size × hidden_size`).
 
-          **ES:** Tamaño de kernel para Conv1d de embeddings cuando `use_embedding_conv=true`. Típico: 3 (trigrama), 5, 7.
+          **Impacto:** Kernel=3 es el punto de partida seguro. Valores >15 anulan el beneficio de la
+          atención global del transformer. Solo aplica si `use_embedding_conv=true`.
+        description_es: |
+          Tamaño de kernel para Conv1d de embeddings cuando `use_embedding_conv=true`. Típico: 3 (trigrama), 5, 7.
           Mayor = contexto local más amplio pero más parámetros (`kernel_size × hidden_size`).
 
           **Impacto:** Kernel=3 es el punto de partida seguro. Valores >15 anulan el beneficio de la
@@ -480,13 +594,17 @@ properties:
         examples: [3]
       positional_encoding:
         type: string
-        title: "Titan Positional Encoding / Codificación Posicional Titan"
+        title: "Titan Positional Encoding"
+        title_es: "Codificación Posicional Titan"
         description: |
-          **EN:** Positional encoding method for `titan_attn` layers.
+          Positional encoding method for `titan_attn` layers.
           - `hope`: Higher-Order Position Encoding — analytic, efficient, tunable via `hope_base`/`hope_damping`.
           - `rope`: Rotary Position Embedding — standard in Llama/GPT-3.5, better long-range generalization via `rope_base`/`rope_scaling`.
 
-          **ES:** Método de codificación posicional para capas `titan_attn`.
+          **Impacto:** Solo afecta capas `titan_attn`. RoPE es más adoptado y predecible. HoPE ofrece más
+          flexibilidad para tuning específico. La elección depende de la tarea y preferencia.
+        description_es: |
+          Método de codificación posicional para capas `titan_attn`.
           - `hope`: Higher-Order Position Encoding — analítica, eficiente, ajustable con `hope_base`/`hope_damping`.
           - `rope`: Rotary Position Embedding — estándar en Llama/GPT-3.5, mejor generalización de largo alcance con `rope_base`/`rope_scaling`.
 
@@ -496,13 +614,17 @@ properties:
         examples: [hope, rope]
       hope_base:
         type: number
-        title: "HoPE Base / Base de HoPE"
+        title: "HoPE Base"
+        title_es: "Base de HoPE"
         description: |
-          **EN:** Base frequency scale for HoPE positional encoding. Controls wavelength of positional
+          Base frequency scale for HoPE positional encoding. Controls wavelength of positional
           sin/cos functions. Typical: 10000 (standard), 100000 (very long-range), 1000 (short-range).
           Only when `positional_encoding=hope`.
 
-          **ES:** Escala de frecuencia base para codificación posicional HoPE. Controla la longitud de
+          **Impacto:** Valores más altos = sensibilidad posicional de más largo alcance. Útil para documentos
+          largos. Demasiado alto puede causar confusión posicional; demasiado bajo limita discriminación.
+        description_es: |
+          Escala de frecuencia base para codificación posicional HoPE. Controla la longitud de
           onda de funciones sin/cos posicionales. Típico: 10000 (estándar), 100000 (alcance muy largo),
           1000 (alcance corto). Solo cuando `positional_encoding=hope`.
 
@@ -511,13 +633,17 @@ properties:
         examples: [10000.0]
       hope_damping:
         type: number
-        title: "HoPE Damping / Amortiguación HoPE"
+        title: "HoPE Damping"
+        title_es: "Amortiguación HoPE"
         description: |
-          **EN:** Damping coefficient for HoPE to control attention decay over distance. Range 0–1+.
+          Damping coefficient for HoPE to control attention decay over distance. Range 0–1+.
           Typical: 0.01 (strong damping, local focus), 0.1 (moderate), 1.0 (no damping).
           Only when `positional_encoding=hope`.
 
-          **ES:** Coeficiente de amortiguación para HoPE que controla decaimiento de atención con la
+          **Impacto:** Tareas locales (NER, código) se benefician de valores bajos (<0.1). Tareas de
+          largo alcance (QA, razonamiento) se benefician de valores altos (>0.5).
+        description_es: |
+          Coeficiente de amortiguación para HoPE que controla decaimiento de atención con la
           distancia. Rango 0–1+. Típico: 0.01 (amortiguación fuerte, enfoque local), 0.1 (moderado),
           1.0 (sin amortiguación). Solo cuando `positional_encoding=hope`.
 
@@ -526,12 +652,16 @@ properties:
         examples: [0.01]
       rope_base:
         type: number
-        title: "RoPE Base / Base de RoPE"
+        title: "RoPE Base"
+        title_es: "Base de RoPE"
         description: |
-          **EN:** Base frequency for RoPE positional encoding. Standard: 10000 (Llama). Extended: 100000–1000000
+          Base frequency for RoPE positional encoding. Standard: 10000 (Llama). Extended: 100000–1000000
           for longer contexts (100k+ tokens). Only when `positional_encoding=rope`.
 
-          **ES:** Frecuencia base para codificación posicional RoPE. Estándar: 10000 (Llama).
+          **Impacto:** Combinar con `rope_scaling` para extrapolación de ventana de contexto.
+          Entrenar en secuencias cortas e inferir en largas requiere aumentar `rope_base`.
+        description_es: |
+          Frecuencia base para codificación posicional RoPE. Estándar: 10000 (Llama).
           Extendido: 100000–1000000 para contextos más largos (100k+ tokens). Solo cuando `positional_encoding=rope`.
 
           **Impacto:** Combinar con `rope_scaling` para extrapolación de ventana de contexto.
@@ -539,13 +669,17 @@ properties:
         examples: [10000.0]
       rope_scaling:
         type: number
-        title: "RoPE Scaling / Escalado RoPE"
+        title: "RoPE Scaling"
+        title_es: "Escalado RoPE"
         description: |
-          **EN:** Multiplier for RoPE position indices to enable longer context windows.
+          Multiplier for RoPE position indices to enable longer context windows.
           Train on sequence length L while generalizing to L × `rope_scaling` at inference.
           Typical: 1.0 (no scaling), 2–8 (moderate), 16+ (aggressive). Only when `positional_encoding=rope`.
 
-          **ES:** Multiplicador para índices de posición RoPE que permite ventanas de contexto más largas.
+          **Impacto:** Escalado >8× puede degradar calidad. Combinar con aumento de `rope_base`.
+          Ideal cuando hay límite de cómputo para entrenar con secuencias cortas pero necesitas contexto largo.
+        description_es: |
+          Multiplicador para índices de posición RoPE que permite ventanas de contexto más largas.
           Entrena en longitud L generalizando a L × `rope_scaling` en inferencia.
           Típico: 1.0 (sin escalado), 2–8 (moderado), 16+ (agresivo). Solo cuando `positional_encoding=rope`.
 
@@ -554,13 +688,16 @@ properties:
         examples: [1.0]
       use_hope:
         type: boolean
-        title: "Legacy HoPE Flag / Flag Legado de HoPE"
+        title: "Legacy HoPE Flag"
+        title_es: "Flag Legado de HoPE"
         description: |
-          **EN:** **Deprecated.** Legacy fallback for backward compatibility. When `positional_encoding` is not
+          **Deprecated.** Legacy fallback for backward compatibility. When `positional_encoding` is not
           set and `use_hope=true`, `titan_attn` layers use HoPE. Prefer setting `positional_encoding` explicitly.
           Will be removed in future versions.
 
-          **ES:** **Obsoleto.** Fallback legado para compatibilidad hacia atrás. Cuando `positional_encoding`
+          **Impacto:** No usar en configuraciones nuevas. Usar `positional_encoding: hope` o `positional_encoding: rope`.
+        description_es: |
+          **Obsoleto.** Fallback legado para compatibilidad hacia atrás. Cuando `positional_encoding`
           no está configurado y `use_hope=true`, las capas `titan_attn` usan HoPE. Preferir configurar
           `positional_encoding` explícitamente. Se eliminará en versiones futuras.
 
@@ -568,13 +705,17 @@ properties:
         examples: [true]
       use_moe:
         type: boolean
-        title: "Enable MoE / Habilitar Mixture of Experts"
+        title: "Enable MoE"
+        title_es: "Habilitar Mixture of Experts"
         description: |
-          **EN:** Enable Mixture of Experts in FFN layers. Replaces standard FFN with a router selecting
+          Enable Mixture of Experts in FFN layers. Replaces standard FFN with a router selecting
           `top_k_experts` from `num_experts` specialized sub-networks. Scales model capacity without
           proportional compute increase (only `top_k` active per token). Requires `num_experts` and `top_k_experts`.
 
-          **ES:** Habilita Mixture of Experts en capas FFN. Reemplaza FFN estándar con un router que
+          **Impacto:** Más efectivo con modelos grandes y datos diversos. En modelos pequeños o dominios
+          estrechos puede no haber beneficio. Agrega overhead de ruteo y requiere balance de carga entre expertos.
+        description_es: |
+          Habilita Mixture of Experts en capas FFN. Reemplaza FFN estándar con un router que
           selecciona `top_k_experts` de `num_experts` sub-redes especializadas. Escala capacidad del modelo
           sin aumento proporcional de cómputo (solo `top_k` activos por token). Requiere `num_experts` y `top_k_experts`.
 
@@ -583,13 +724,17 @@ properties:
         examples: [true]
       use_mixture_of_depths:
         type: boolean
-        title: "Enable Mixture of Depths / Habilitar Mixture of Depths"
+        title: "Enable Mixture of Depths"
+        title_es: "Habilitar Mixture of Depths"
         description: |
-          **EN:** Enable Mixture-of-Depths token routing inside each transformer block. Each layer scores
+          Enable Mixture-of-Depths token routing inside each transformer block. Each layer scores
           tokens with a lightweight router and only the top `capacity_ratio` subset is updated; skipped
           tokens pass through unchanged. Allocates more depth to salient tokens, reducing per-layer compute.
 
-          **ES:** Habilita ruteo de tokens Mixture-of-Depths dentro de cada bloque transformer. Cada capa
+          **Impacto:** Mejor con atención densa y FFN. Ahorra cómputo pero puede degradar calidad si
+          demasiados tokens se omiten. Configurar `mixture_of_depths_capacity_ratio` para controlar el balance.
+        description_es: |
+          Habilita ruteo de tokens Mixture-of-Depths dentro de cada bloque transformer. Cada capa
           puntúa tokens con un router ligero y solo el subconjunto `capacity_ratio` superior se actualiza;
           los tokens omitidos pasan sin cambios. Asigna más profundidad a tokens salientes, reduciendo cómputo por capa.
 
@@ -598,13 +743,17 @@ properties:
         examples: [false]
       mixture_of_depths_capacity_ratio:
         type: number
-        title: "MoD Capacity Ratio / Ratio de Capacidad MoD"
+        title: "MoD Capacity Ratio"
+        title_es: "Ratio de Capacidad MoD"
         description: |
-          **EN:** Fraction of tokens each layer updates when `use_mixture_of_depths=true`.
+          Fraction of tokens each layer updates when `use_mixture_of_depths=true`.
           Effective capacity = `ceil(seq_len × ratio)`, min 1 token. Typical: 0.125–0.5 (aggressive),
           0.5–1.0 (conservative).
 
-          **ES:** Fracción de tokens que cada capa actualiza cuando `use_mixture_of_depths=true`.
+          **Impacto:** Menor = más ahorro de cómputo pero más riesgo de degradación. Empezar con 0.5
+          y reducir gradualmente monitoreando calidad.
+        description_es: |
+          Fracción de tokens que cada capa actualiza cuando `use_mixture_of_depths=true`.
           Capacidad efectiva = `ceil(seq_len × ratio)`, min 1 token. Típico: 0.125–0.5 (agresivo),
           0.5–1.0 (conservador).
 
@@ -615,13 +764,17 @@ properties:
         examples: [0.5]
       mixture_of_depths_router_aux_loss_weight:
         type: number
-        title: "MoD Router Aux Loss Weight / Peso de Pérdida Auxiliar del Router MoD"
+        title: "MoD Router Aux Loss Weight"
+        title_es: "Peso de Pérdida Auxiliar del Router MoD"
         description: |
-          **EN:** Weight for the auxiliary router regularizer in Mixture-of-Depths. Encourages the average
+          Weight for the auxiliary router regularizer in Mixture-of-Depths. Encourages the average
           router activation probability to match `mixture_of_depths_capacity_ratio`, stabilizing token
           selection during training. Set to 0 to disable.
 
-          **ES:** Peso para el regularizador auxiliar del router en Mixture-of-Depths. Incentiva que la
+          **Impacto:** Valores típicos: 0.0 (sin regularización) o 0.01–0.1. Ayuda a prevenir colapso
+          del router donde todas las capas seleccionan los mismos tokens.
+        description_es: |
+          Peso para el regularizador auxiliar del router en Mixture-of-Depths. Incentiva que la
           probabilidad promedio de activación del router coincida con `mixture_of_depths_capacity_ratio`,
           estabilizando la selección de tokens durante el entrenamiento. 0 para deshabilitar.
 
@@ -631,12 +784,17 @@ properties:
         examples: [0.0]
       ffn_hidden_size:
         type: integer
-        title: "FFN Hidden Dimension / Dimensión Oculta de FFN"
+        title: "FFN Hidden Dimension"
+        title_es: "Dimensión Oculta de FFN"
         description: |
-          **EN:** Intermediate dimension of feed-forward layers. Typical ratio: 4× `hidden_size`
+          Intermediate dimension of feed-forward layers. Typical ratio: 4× `hidden_size`
           (e.g., 768→3072 for BERT-base). When `use_moe=true`, this is each expert's hidden size.
 
-          **ES:** Dimensión intermedia de capas feed-forward. Ratio típico: 4× `hidden_size`
+          **Impacto:** Parámetros FFN ≈ `hidden_size × ffn_hidden_size × 2` (dos proyecciones).
+          Con `hidden_size=768`, `ffn_hidden_size=3072` → ~4.7M params/capa FFN. Aumentar a 4×–6×
+          para tareas complejas; reducir a 2×–3× para eficiencia.
+        description_es: |
+          Dimensión intermedia de capas feed-forward. Ratio típico: 4× `hidden_size`
           (ej., 768→3072 para BERT-base). Cuando `use_moe=true`, es el tamaño oculto de cada experto.
 
           **Impacto:** Parámetros FFN ≈ `hidden_size × ffn_hidden_size × 2` (dos proyecciones).
@@ -645,13 +803,17 @@ properties:
         examples: [3072]
       ffn_activation:
         type: string
-        title: "FFN Activation / Activación de FFN"
+        title: "FFN Activation"
+        title_es: "Activación de FFN"
         description: |
-          **EN:** Non-linear activation for feed-forward networks.
+          Non-linear activation for feed-forward networks.
           - `silu`: Sigmoid Linear Unit — smoother, used in Llama/PaLM. **Recommended for new models.**
           - `gelu`: Gaussian Error Linear Unit — classic, used in BERT/GPT-2/GPT-3. More stable for very small models.
 
-          **ES:** Activación no lineal para redes feed-forward.
+          **Impacto:** La diferencia es sutil en la práctica. `silu` tiende a converger más rápido.
+          Con BitNet o cuantización, `silu` puede ser más robusta.
+        description_es: |
+          Activación no lineal para redes feed-forward.
           - `silu`: Sigmoid Linear Unit — más suave, usada en Llama/PaLM. **Recomendada para nuevos modelos.**
           - `gelu`: Gaussian Error Linear Unit — clásica, usada en BERT/GPT-2/GPT-3. Más estable para modelos muy pequeños.
 
@@ -661,12 +823,16 @@ properties:
         examples: [gelu]
       mode:
         type: string
-        title: "Transformer Mode / Modo Transformer"
+        title: "Transformer Mode"
+        title_es: "Modo Transformer"
         description: |
-          **EN:** Controls attention masking. `encoder` = bidirectional attention. `decoder` = causal masking
+          Controls attention masking. `encoder` = bidirectional attention. `decoder` = causal masking
           for autoregressive next-token prediction. When `model_class=frankesteindecoder`, runtime forces `decoder`.
 
-          **ES:** Controla el enmascaramiento de atención. `encoder` = atención bidireccional. `decoder` = máscara
+          **Impacto:** `encoder` permite que cada token atienda a todos los demás (tipo BERT). `decoder` solo
+          permite atender a tokens previos (tipo GPT). Cambiar entre modos cambia fundamentalmente la tarea.
+        description_es: |
+          Controla el enmascaramiento de atención. `encoder` = atención bidireccional. `decoder` = máscara
           causal para predicción autorregresiva de siguiente token. Con `model_class=frankesteindecoder`,
           se fuerza `decoder` en ejecución.
 
@@ -676,13 +842,17 @@ properties:
         examples: [encoder, decoder]
       engram_max_ngram_size:
         type: integer
-        title: "Engram Max N-gram Size / Tamaño Máximo de N-grama Engram"
+        title: "Engram Max N-gram Size"
+        title_es: "Tamaño Máximo de N-grama Engram"
         description: |
-          **EN:** Highest N-gram order for the Engram conditional memory module (arXiv:2601.07372).
+          Highest N-gram order for the Engram conditional memory module (arXiv:2601.07372).
           Builds lookup tables for all N-gram sizes from 2 up to this value. 3 = bigrams + trigrams.
           Only when `engram_attn` appears in `layer_pattern`.
 
-          **ES:** Orden máximo de N-grama para el módulo de memoria condicional Engram (arXiv:2601.07372).
+          **Impacto:** Valores mayores dan claves de contexto más ricas pero aumentan el número de
+          tablas de embedding cuadráticamente.
+        description_es: |
+          Orden máximo de N-grama para el módulo de memoria condicional Engram (arXiv:2601.07372).
           Construye tablas de búsqueda para todos los tamaños de N-grama desde 2 hasta este valor.
           3 = bigramas + trigramas. Solo cuando `engram_attn` aparece en `layer_pattern`.
 
@@ -691,13 +861,16 @@ properties:
         examples: [3]
       engram_n_heads_per_ngram:
         type: integer
-        title: "Engram Hash Heads per N-gram / Cabezas Hash Engram por N-grama"
+        title: "Engram Hash Heads per N-gram"
+        title_es: "Cabezas Hash Engram por N-grama"
         description: |
-          **EN:** Independent hash functions (heads) per N-gram order in the Engram module. Each head uses
+          Independent hash functions (heads) per N-gram order in the Engram module. Each head uses
           a different prime modulus for statistically independent collisions. More heads = more retrieval
           diversity, more embedding params. Only when `engram_attn` in `layer_pattern`.
 
-          **ES:** Funciones hash independientes (cabezas) por orden de N-grama en el módulo Engram. Cada
+          **Impacto:** Típico: 4–8. Total Engram params crecen con: (max_ngram-1) × n_heads × embed_dim.
+        description_es: |
+          Funciones hash independientes (cabezas) por orden de N-grama en el módulo Engram. Cada
           cabeza usa un módulo primo diferente para colisiones estadísticamente independientes. Más cabezas
           = más diversidad de recuperación, más parámetros de embedding. Solo con `engram_attn` en `layer_pattern`.
 
@@ -705,13 +878,17 @@ properties:
         examples: [4]
       engram_embed_dim_per_head:
         type: integer
-        title: "Engram Embed Dim per Head / Dim de Embedding Engram por Cabeza"
+        title: "Engram Embed Dim per Head"
+        title_es: "Dim de Embedding Engram por Cabeza"
         description: |
-          **EN:** Dimensionality of each per-head N-gram embedding. Total Engram hidden size =
+          Dimensionality of each per-head N-gram embedding. Total Engram hidden size =
           `(max_ngram_size-1) × n_heads_per_ngram × embed_dim_per_head`. Typical: 16–64 (small), 128+ (large).
           Only when `engram_attn` in `layer_pattern`.
 
-          **ES:** Dimensionalidad de cada embedding N-grama por cabeza. Tamaño total oculto de Engram =
+          **Impacto:** Menor = ahorro de memoria. Mayor = más expresividad. Con max_ngram=3, heads=4, dim=32:
+          total = 2 × 4 × 32 = 256 canales.
+        description_es: |
+          Dimensionalidad de cada embedding N-grama por cabeza. Tamaño total oculto de Engram =
           `(max_ngram_size-1) × n_heads_per_ngram × embed_dim_per_head`. Típico: 16–64 (pequeño), 128+ (grande).
           Solo con `engram_attn` en `layer_pattern`.
 
@@ -720,13 +897,16 @@ properties:
         examples: [32]
       engram_kernel_size:
         type: integer
-        title: "Engram ShortConv Kernel / Kernel de ShortConv Engram"
+        title: "Engram ShortConv Kernel"
+        title_es: "Kernel de ShortConv Engram"
         description: |
-          **EN:** Kernel width of causal depthwise conv on retrieved N-gram embeddings. Typical: 3–8.
+          Kernel width of causal depthwise conv on retrieved N-gram embeddings. Typical: 3–8.
           Dilated by `max_ngram_size` → effective receptive field = `kernel_size × max_ngram_size` tokens.
           Only when `engram_attn` in `layer_pattern`.
 
-          **ES:** Ancho del kernel de convolución causal depthwise sobre embeddings N-grama recuperados.
+          **Impacto:** Kernels más grandes capturan contexto local más amplio en el espacio de embedding.
+        description_es: |
+          Ancho del kernel de convolución causal depthwise sobre embeddings N-grama recuperados.
           Típico: 3–8. Dilatado por `max_ngram_size` → campo receptivo efectivo = `kernel_size × max_ngram_size` tokens.
           Solo con `engram_attn` en `layer_pattern`.
 
@@ -734,13 +914,17 @@ properties:
         examples: [4]
       engram_seed:
         type: integer
-        title: "Engram Hash Seed / Semilla de Hash Engram"
+        title: "Engram Hash Seed"
+        title_es: "Semilla de Hash Engram"
         description: |
-          **EN:** Random seed for generating odd multipliers for N-gram hashing in the Engram module.
+          Random seed for generating odd multipliers for N-gram hashing in the Engram module.
           Changing produces a different but equally valid hash mapping. Fixed value for reproducibility.
           Only when `engram_attn` in `layer_pattern`.
 
-          **ES:** Semilla aleatoria para generar multiplicadores impares para hashing de N-gramas en el
+          **Impacto:** Afecta qué tokens colisionan en el espacio hash. Usar 42 para reproducibilidad
+          estándar. Cambiar si se sospecha de colisiones adversas.
+        description_es: |
+          Semilla aleatoria para generar multiplicadores impares para hashing de N-gramas en el
           módulo Engram. Cambiarla produce un mapeo hash diferente pero igualmente válido. Valor fijo para
           reproducibilidad. Solo con `engram_attn` en `layer_pattern`.
 
@@ -750,13 +934,14 @@ properties:
 
   training:
     type: object
-    title: "Training Configuration / Configuración de Entrenamiento"
+    title: "Training Configuration"
+    title_es: "Configuración de Entrenamiento"
     description: |
-      **EN:** Training hyperparameters and runtime configuration. Includes task-specific settings
+      Training hyperparameters and runtime configuration. Includes task-specific settings
       (MLM/SBERT), data loading, optimization, checkpointing, logging, and hardware management.
       Controls the entire training pipeline from data ingestion to model saving.
-
-      **ES:** Hiperparámetros de entrenamiento y configuración de ejecución. Incluye configuraciones
+    description_es: |
+      Hiperparámetros de entrenamiento y configuración de ejecución. Incluye configuraciones
       específicas de tarea (MLM/SBERT), carga de datos, optimización, checkpointing, logging y gestión
       de hardware. Controla todo el pipeline de entrenamiento desde ingesta de datos hasta guardado del modelo.
     additionalProperties: false
@@ -765,15 +950,19 @@ properties:
     properties:
       task:
         type: string
-        title: "Training Task / Tarea de Entrenamiento"
+        title: "Training Task"
+        title_es: "Tarea de Entrenamiento"
         description: |
-          **EN:** Training task type.
+          Training task type.
           - `mlm`: Masked Language Modeling — tokens are masked and predicted (BERT-style pre-training).
             Requires `training.optimizer` configuration.
           - `sbert`: Sentence-BERT fine-tuning — contrastive learning on sentence pairs/triplets for
             semantic embeddings. Requires `training.sbert` subsection.
 
-          **ES:** Tipo de tarea de entrenamiento.
+          **Impacto:** Define el objetivo de entrenamiento. `mlm` es para comprensión de lenguaje;
+          `sbert` es para similitud semántica y recuperación.
+        description_es: |
+          Tipo de tarea de entrenamiento.
           - `mlm`: Masked Language Modeling — los tokens se enmascaran y predicen (preentrenamiento estilo BERT).
             Requiere configuración `training.optimizer`.
           - `sbert`: Sentence-BERT fine-tuning — aprendizaje contrastivo en pares/tripletes para
@@ -785,23 +974,29 @@ properties:
         examples: [mlm]
       num_epochs:
         type: integer
-        title: "Training Epochs / Épocas de Entrenamiento"
+        title: "Training Epochs"
+        title_es: "Épocas de Entrenamiento"
         description: |
-          **EN:** Complete passes through the training dataset (MLM only). Typical: 1–3 (large datasets, billions of tokens), 5–10 (medium, millions), 10–20+ (small). Monitor validation loss. For SBERT, use `sbert.epochs` instead.
+          Complete passes through the training dataset (MLM only). Typical: 1–3 (large datasets, billions of tokens), 5–10 (medium, millions), 10–20+ (small). Monitor validation loss. For SBERT, use `sbert.epochs` instead.
 
-          **ES:** Pasadas completas por el dataset de entrenamiento (solo MLM). Típico: 1–3 (datasets grandes, miles de millones de tokens), 5–10 (medios, millones), 10–20+ (pequeños). Monitorear pérdida de validación. Para SBERT, usar `sbert.epochs`.
+          **Impacto:** Más épocas = mejor aprendizaje pero riesgo de sobreajuste. Early stopping recomendado.
+        description_es: |
+          Pasadas completas por el dataset de entrenamiento (solo MLM). Típico: 1–3 (datasets grandes, miles de millones de tokens), 5–10 (medios, millones), 10–20+ (pequeños). Monitorear pérdida de validación. Para SBERT, usar `sbert.epochs`.
 
           **Impacto:** Más épocas = mejor aprendizaje pero riesgo de sobreajuste. Early stopping recomendado.
         examples: [5]
       batch_size:
         type: integer
-        title: "Training Batch Size / Tamaño de Lote de Entrenamiento"
+        title: "Training Batch Size"
+        title_es: "Tamaño de Lote de Entrenamiento"
         description: |
-          **EN:** Examples per optimizer step (before gradient accumulation). Depends on GPU memory:
+          Examples per optimizer step (before gradient accumulation). Depends on GPU memory:
           2–8 (8GB), 8–32 (16GB), 32–64 (40GB+). Effective batch = `batch_size × gradient_accumulation_steps`.
           Larger batches = more stable gradients, may need higher LR (linear scaling rule).
 
-          **ES:** Ejemplos por paso del optimizador (antes de acumulación de gradientes). Depende de memoria GPU:
+          **Impacto:** Empezar con 4–8 y ajustar según memoria. Lotes muy pequeños producen gradientes ruidosos.
+        description_es: |
+          Ejemplos por paso del optimizador (antes de acumulación de gradientes). Depende de memoria GPU:
           2–8 (8GB), 8–32 (16GB), 32–64 (40GB+). Lote efectivo = `batch_size × gradient_accumulation_steps`.
           Lotes más grandes = gradientes más estables, pueden necesitar LR más alto.
 
@@ -809,157 +1004,213 @@ properties:
         examples: [4]
       dataloader_workers:
         type: integer
-        title: "Dataloader Workers / Workers de Carga de Datos"
+        title: "Dataloader Workers"
+        title_es: "Workers de Carga de Datos"
         description: |
-          **EN:** Parallel worker processes for data loading/preprocessing. Typical: 0 (main process), 2–4 (small), 8–16 (large). More workers reduce I/O bottlenecks. Limited by CPU cores.
+          Parallel worker processes for data loading/preprocessing. Typical: 0 (main process), 2–4 (small), 8–16 (large). More workers reduce I/O bottlenecks. Limited by CPU cores.
 
-          **ES:** Procesos worker paralelos para carga y preprocesamiento de datos. Típico: 0 (proceso principal), 2–4 (pequeño), 8–16 (grande). Más workers reducen cuellos de botella I/O. Limitado por núcleos de CPU.
+          **Impacto:** Aumentar hasta que CPU llegue al límite. Demasiados workers causan contención de CPU.
+        description_es: |
+          Procesos worker paralelos para carga y preprocesamiento de datos. Típico: 0 (proceso principal), 2–4 (pequeño), 8–16 (grande). Más workers reducen cuellos de botella I/O. Limitado por núcleos de CPU.
 
           **Impacto:** Aumentar hasta que CPU llegue al límite. Demasiados workers causan contención de CPU.
         examples: [2]
       max_length:
         type: integer
-        title: "Max Sequence Length / Longitud Máxima de Secuencia"
+        title: "Max Sequence Length"
+        title_es: "Longitud Máxima de Secuencia"
         description: |
-          **EN:** Maximum token sequence length. 128 (short), 256 (moderate), 512 (BERT standard), 1024+ (long docs).
+          Maximum token sequence length. 128 (short), 256 (moderate), 512 (BERT standard), 1024+ (long docs).
           Memory: O(seq_len²) for attention. For long sequences, use sparse attention layers (`longformer`, `bigbird`).
 
-          **ES:** Longitud máxima de secuencia de tokens. 128 (corto), 256 (moderado), 512 (estándar BERT), 1024+ (docs largos).
+          **Impacto:** Duplicar `max_length` cuadruplica la memoria de atención. Balancear entre contexto y presupuesto de cómputo.
+        description_es: |
+          Longitud máxima de secuencia de tokens. 128 (corto), 256 (moderado), 512 (estándar BERT), 1024+ (docs largos).
           Memoria: O(seq_len²) para atención. Para secuencias largas, usar capas de atención dispersa (`longformer`, `bigbird`).
 
           **Impacto:** Duplicar `max_length` cuadruplica la memoria de atención. Balancear entre contexto y presupuesto de cómputo.
         examples: [512]
       mlm_probability:
         type: number
-        title: "MLM Masking Probability / Probabilidad de Enmascaramiento MLM"
+        title: "MLM Masking Probability"
+        title_es: "Probabilidad de Enmascaramiento MLM"
         description: |
-          **EN:** Fraction of tokens masked for MLM prediction. Standard: 0.15 (15%). Breakdown: 80% → [MASK], 10% → random, 10% → unchanged. >0.3 degrades quality; <0.05 underutilizes MLM.
+          Fraction of tokens masked for MLM prediction. Standard: 0.15 (15%). Breakdown: 80% → [MASK], 10% → random, 10% → unchanged. >0.3 degrades quality; <0.05 underutilizes MLM.
 
-          **ES:** Fracción de tokens enmascarados para predicción MLM. Estándar: 0.15 (15%). Desglose: 80% → [MASK], 10% → aleatorio, 10% → sin cambio. >0.3 degrada calidad; <0.05 subutiliza MLM.
+          **Impacto:** 0.15 es el valor probado (BERT). Aumentar para preentrenamiento agresivo, disminuir para fine-tuning.
+        description_es: |
+          Fracción de tokens enmascarados para predicción MLM. Estándar: 0.15 (15%). Desglose: 80% → [MASK], 10% → aleatorio, 10% → sin cambio. >0.3 degrada calidad; <0.05 subutiliza MLM.
 
           **Impacto:** 0.15 es el valor probado (BERT). Aumentar para preentrenamiento agresivo, disminuir para fine-tuning.
         examples: [0.15]
       max_samples:
         type: integer
-        title: "Max Training Samples / Máximo de Muestras de Entrenamiento"
+        title: "Max Training Samples"
+        title_es: "Máximo de Muestras de Entrenamiento"
         description: |
-          **EN:** Total samples before stopping, independent of epochs. Limits training on large datasets.
+          Total samples before stopping, independent of epochs. Limits training on large datasets.
           Set very high (e.g., 100,000,000) to effectively disable. Stops at `min(num_epochs × dataset_size, max_samples)`.
 
-          **ES:** Total de muestras antes de detenerse, independiente de épocas. Limita entrenamiento en datasets grandes.
+          **Impacto:** Útil para experimentos controlados o entrenamiento progresivo sin límites de época claros.
+        description_es: |
+          Total de muestras antes de detenerse, independiente de épocas. Limita entrenamiento en datasets grandes.
           Valor muy alto (ej., 100,000,000) para deshabilitar. Para en `min(num_epochs × dataset_size, max_samples)`.
 
           **Impacto:** Útil para experimentos controlados o entrenamiento progresivo sin límites de época claros.
         examples: [20000000]
       dataset_batch_size:
         type: integer
-        title: "Dataset Streaming Batch Size / Tamaño de Lote de Streaming"
+        title: "Dataset Streaming Batch Size"
+        title_es: "Tamaño de Lote de Streaming"
         description: |
-          **EN:** Internal batch size for streaming dataset. Typical: 10,000–50,000. Larger = less I/O, more memory.
+          Internal batch size for streaming dataset. Typical: 10,000–50,000. Larger = less I/O, more memory.
           Independent of training `batch_size`. Tune based on storage speed.
 
-          **ES:** Tamaño de lote interno para dataset de streaming. Típico: 10,000–50,000. Mayor = menos I/O, más memoria.
+          **Impacto:** Debe ser múltiplo del `batch_size` de entrenamiento para eficiencia.
+        description_es: |
+          Tamaño de lote interno para dataset de streaming. Típico: 10,000–50,000. Mayor = menos I/O, más memoria.
           Independiente del `batch_size` de entrenamiento. Ajustar según velocidad de almacenamiento.
 
           **Impacto:** Debe ser múltiplo del `batch_size` de entrenamiento para eficiencia.
         examples: [25000]
       num_workers:
         type: integer
-        title: "Dataset Streaming Workers / Workers de Streaming de Datos"
+        title: "Dataset Streaming Workers"
+        title_es: "Workers de Streaming de Datos"
         description: |
-          **EN:** Parallel workers for dataset streaming pipeline. Typical: 4–16. More workers = less data loading latency,
+          Parallel workers for dataset streaming pipeline. Typical: 4–16. More workers = less data loading latency,
           more CPU/memory. Monitor CPU utilization; reduce if bottlenecked.
 
-          **ES:** Workers paralelos para pipeline de streaming de datos. Típico: 4–16. Más workers = menos latencia de carga,
+          **Impacto:** Ajustar según núcleos de CPU disponibles. 0 = carga single-threaded.
+        description_es: |
+          Workers paralelos para pipeline de streaming de datos. Típico: 4–16. Más workers = menos latencia de carga,
           más CPU/memoria. Monitorear utilización de CPU; reducir si hay cuello de botella.
 
           **Impacto:** Ajustar según núcleos de CPU disponibles. 0 = carga single-threaded.
         examples: [8]
       cache_dir:
         type: string
-        title: "Dataset Cache Dir / Directorio de Caché de Datos"
+        title: "Dataset Cache Dir"
+        title_es: "Directorio de Caché de Datos"
         description: |
-          **EN:** Directory for caching processed datasets to avoid recomputation. SSD preferred. Example: `./temp_data/v2_dataset_cache`.
+          Directory for caching processed datasets to avoid recomputation. SSD preferred. Example: `./temp_data/v2_dataset_cache`.
           Clear cache to force re-processing on schema changes.
 
-          **ES:** Directorio para cachear datasets procesados y evitar recómputo. SSD preferido. Ejemplo: `./temp_data/v2_dataset_cache`.
+          **Impacto:** Acelera ejecuciones subsecuentes. Requiere suficiente espacio en disco.
+        description_es: |
+          Directorio para cachear datasets procesados y evitar recómputo. SSD preferido. Ejemplo: `./temp_data/v2_dataset_cache`.
           Limpiar caché para forzar reprocesamiento ante cambios de esquema.
 
           **Impacto:** Acelera ejecuciones subsecuentes. Requiere suficiente espacio en disco.
         examples: ["./temp_data/v2_dataset_cache"]
       local_parquet_dir:
         type: string
-        title: "Local Parquet Dir / Directorio de Parquet Local"
+        title: "Local Parquet Dir"
+        title_es: "Directorio de Parquet Local"
         description: |
-          **EN:** Path to local parquet files for offline streaming. Overrides remote fetching. Requires `stream_local_parquet=true`.
-          **ES:** Ruta a archivos parquet locales para streaming offline. Anula descarga remota. Requiere `stream_local_parquet=true`.
+          Path to local parquet files for offline streaming. Overrides remote fetching. Requires `stream_local_parquet=true`.
+
+          **Impacto:** Entrenamiento más rápido sin dependencia de red.
+        description_es: |
+          Ruta a archivos parquet locales para streaming offline. Anula descarga remota. Requiere `stream_local_parquet=true`.
+
           **Impacto:** Entrenamiento más rápido sin dependencia de red.
         examples: ["/path/to/parquet"]
       prefer_local_cache:
         type: boolean
-        title: "Prefer Local Cache / Preferir Caché Local"
+        title: "Prefer Local Cache"
+        title_es: "Preferir Caché Local"
         description: |
-          **EN:** Check local cache first before remote download. Speeds up repeated runs. Cache miss falls back to remote.
-          **ES:** Verificar caché local primero antes de descarga remota. Acelera ejecuciones repetidas. Fallback a remoto si no hay caché.
+          Check local cache first before remote download. Speeds up repeated runs. Cache miss falls back to remote.
+
+          **Impacto:** Recomendado para desarrollo y debugging para evitar descargas repetidas.
+        description_es: |
+          Verificar caché local primero antes de descarga remota. Acelera ejecuciones repetidas. Fallback a remoto si no hay caché.
+
           **Impacto:** Recomendado para desarrollo y debugging para evitar descargas repetidas.
         examples: [true]
       stream_local_parquet:
         type: boolean
-        title: "Stream Local Parquet / Hacer Streaming de Parquet Local"
+        title: "Stream Local Parquet"
+        title_es: "Hacer Streaming de Parquet Local"
         description: |
-          **EN:** Stream from local parquet when `local_parquet_dir` is set. `false` may use remote even if local exists.
-          **ES:** Hacer streaming desde parquet local cuando `local_parquet_dir` está configurado. `false` puede usar remoto aunque exista local.
+          Stream from local parquet when `local_parquet_dir` is set. `false` may use remote even if local exists.
+
+          **Impacto:** `true` = solo local (error si falta). Útil para entrenamiento offline consistente.
+        description_es: |
+          Hacer streaming desde parquet local cuando `local_parquet_dir` está configurado. `false` puede usar remoto aunque exista local.
+
           **Impacto:** `true` = solo local (error si falta). Útil para entrenamiento offline consistente.
         examples: [true]
       join_temp_data_context_window:
         type: integer
-        title: "Join Temp Data Context Window / Ventana de Contexto de Datos Temporales"
+        title: "Join Temp Data Context Window"
+        title_es: "Ventana de Contexto de Datos Temporales"
         description: |
-          **EN:** If >0, joins cached token chunks into sequences of this length. Example: 2000 for 2k-token sequences.
+          If >0, joins cached token chunks into sequences of this length. Example: 2000 for 2k-token sequences.
           0 = disabled. Must be ≥ `max_length`.
 
-          **ES:** Si >0, une fragmentos de tokens en caché en secuencias de esta longitud. Ejemplo: 2000 para secuencias de 2k tokens.
+          **Impacto:** Útil cuando la caché contiene segmentos cortos pero necesitas secuencias más largas.
+        description_es: |
+          Si >0, une fragmentos de tokens en caché en secuencias de esta longitud. Ejemplo: 2000 para secuencias de 2k tokens.
           0 = deshabilitado. Debe ser ≥ `max_length`.
 
           **Impacto:** Útil cuando la caché contiene segmentos cortos pero necesitas secuencias más largas.
         examples: [0, 2000, 8192]
       join_temp_data_min_remainder_tokens:
         type: integer
-        title: "Min Remainder Tokens / Tokens Mínimos Restantes"
+        title: "Min Remainder Tokens"
+        title_es: "Tokens Mínimos Restantes"
         description: |
-          **EN:** Minimum content tokens in last partial joined window to keep it. Typical: 64–256. Only when `join_temp_data_context_window > 0`.
-          **ES:** Tokens mínimos en la última ventana parcial unida para conservarla. Típico: 64–256. Solo cuando `join_temp_data_context_window > 0`.
+          Minimum content tokens in last partial joined window to keep it. Typical: 64–256. Only when `join_temp_data_context_window > 0`.
+
+          **Impacto:** Mayor = menos ruido, posible desperdicio de datos. Menor = más datos, incluye secuencias muy cortas.
+        description_es: |
+          Tokens mínimos en la última ventana parcial unida para conservarla. Típico: 64–256. Solo cuando `join_temp_data_context_window > 0`.
+
           **Impacto:** Mayor = menos ruido, posible desperdicio de datos. Menor = más datos, incluye secuencias muy cortas.
         examples: [128]
       use_amp:
         type: boolean
-        title: "Use AMP / Usar Precisión Mixta Automática"
+        title: "Use AMP"
+        title_es: "Usar Precisión Mixta Automática"
         description: |
-          **EN:** Enable FP16 mixed precision. ~50% less memory, faster on GPUs with Tensor Cores (V100, A100, RTX 20/30/40). Auto gradient scaling prevents underflow.
-          **ES:** Habilita precisión mixta FP16. ~50% menos memoria, más rápido en GPUs con Tensor Cores. Escalado automático de gradientes previene underflow.
+          Enable FP16 mixed precision. ~50% less memory, faster on GPUs with Tensor Cores (V100, A100, RTX 20/30/40). Auto gradient scaling prevents underflow.
+
+          **Impacto:** Altamente recomendado para GPUs modernas. Monitorear NaN; deshabilitar si hay problemas.
+        description_es: |
+          Habilita precisión mixta FP16. ~50% menos memoria, más rápido en GPUs con Tensor Cores. Escalado automático de gradientes previene underflow.
+
           **Impacto:** Altamente recomendado para GPUs modernas. Monitorear NaN; deshabilitar si hay problemas.
         examples: [false]
       gradient_accumulation_steps:
         type: integer
-        title: "Gradient Accumulation Steps / Pasos de Acumulación de Gradientes"
+        title: "Gradient Accumulation Steps"
+        title_es: "Pasos de Acumulación de Gradientes"
         description: |
-          **EN:** Accumulate gradients over N mini-batches before optimizer step. Effective batch = `batch_size × N`.
+          Accumulate gradients over N mini-batches before optimizer step. Effective batch = `batch_size × N`.
           Example: batch_size=4, accumulation=4 → effective batch=16. LR should scale with effective batch.
 
-          **ES:** Acumular gradientes sobre N mini-lotes antes del paso del optimizador. Lote efectivo = `batch_size × N`.
+          **Impacto:** Permite lotes efectivos grandes sin aumentar memoria GPU. Aumenta el tiempo por época.
+        description_es: |
+          Acumular gradientes sobre N mini-lotes antes del paso del optimizador. Lote efectivo = `batch_size × N`.
           Ejemplo: batch_size=4, accumulation=4 → lote efectivo=16. LR debe escalar con lote efectivo.
 
           **Impacto:** Permite lotes efectivos grandes sin aumentar memoria GPU. Aumenta el tiempo por época.
         examples: [4]
       optimizer:
         type: object
-        title: "Optimizer Configuration / Configuración del Optimizador"
+        title: "Optimizer Configuration"
+        title_es: "Configuración del Optimizador"
         description: |
-          **EN:** Optimizer type and hyperparameters with per-parameter-group settings. Parameters are prefixed
+          Optimizer type and hyperparameters with per-parameter-group settings. Parameters are prefixed
           with the optimizer class name (e.g., `adamw-lr_embeddings`). Supports fine-grained control over
           different parameter types.
 
-          **ES:** Tipo de optimizador e hiperparámetros con configuraciones por grupo de parámetros.
+          **Impacto:** La elección del optimizador afecta significativamente la dinámica de entrenamiento
+          y calidad final. `adamw` es la opción más probada y recomendada para la mayoría de casos.
+        description_es: |
+          Tipo de optimizador e hiperparámetros con configuraciones por grupo de parámetros.
           Los parámetros usan prefijo del optimizador (ej., `adamw-lr_embeddings`). Permite control
           detallado sobre diferentes tipos de parámetros.
 
@@ -972,9 +1223,10 @@ properties:
         properties:
           optimizer_class:
             type: string
-            title: "Optimizer Class / Clase de Optimizador"
+            title: "Optimizer Class"
+            title_es: "Clase de Optimizador"
             description: |
-              **EN:** Optimizer algorithm. Summary by use case:
+              Optimizer algorithm. Summary by use case:
 
               | Optimizer | Use Case | Notes |
               |-----------|----------|-------|
@@ -1002,7 +1254,10 @@ properties:
               | `apollo_mini` | Rank-1 APOLLO | Minimal projection |
               | `q_apollo` | Quantized APOLLO | Quantized states |
 
-              **ES:** Algoritmo optimizador. Resumen por caso de uso (ver tabla arriba).
+              **Impacto:** Cambiar de optimizador puede requerir reajustar learning rates y otros hiperparámetros.
+              Probar con `adamw` primero; cambiar solo si hay una razón específica.
+            description_es: |
+              Algoritmo optimizador. Resumen por caso de uso (ver tabla arriba).
               `adamw` es la opción más probada y recomendada para la mayoría de casos.
               `galore_adamw`/`apollo` para modelos grandes con memoria limitada.
               `prodigy` para mínimo ajuste de learning rate.
@@ -1037,9 +1292,10 @@ properties:
             examples: [adamw]
           parameters:
             type: object
-            title: "Optimizer Parameters / Parámetros del Optimizador"
+            title: "Optimizer Parameters"
+            title_es: "Parámetros del Optimizador"
             description: |
-              **EN:** Optimizer hyperparameters with per-parameter-group settings. All keys are prefixed
+              Optimizer hyperparameters with per-parameter-group settings. All keys are prefixed
               with the optimizer class name. Format: `<optimizer>-<param_group>_<hyperparam>=value`.
 
               **Shared suffixes** (all optimizers):
@@ -1062,7 +1318,11 @@ properties:
               - `q_apollo`: `rank`, `update_proj_gap`, `scale`, `scale_type`, `proj_type`, `scale_front`, `disable_nl`, `quant_bits`
               - Others: no specific suffixes (only shared ones)
 
-              **ES:** Hiperparámetros con configuraciones por grupo de parámetros. Todas las claves llevan
+              **Impacto:** Control detallado por grupo. Ejemplo: LR más bajo para embeddings (2e-6),
+              más alto para attention (3e-6). Ver `x_parameter_reference` para sufijos específicos
+              de cada optimizador.
+            description_es: |
+              Hiperparámetros con configuraciones por grupo de parámetros. Todas las claves llevan
               prefijo de la clase del optimizador. Formato: `<optimizador>-<grupo>_<hiperparam>=valor`.
 
               **Grupos:** embeddings (embeddings de tokens), norms (capas de normalización),
@@ -1199,34 +1459,46 @@ properties:
                   specific_global_suffixes: [rank, update_proj_gap, scale, scale_type, proj_type, scale_front, disable_nl, quant_bits]
       scheduler_total_steps:
         type: integer
-        title: "Scheduler Total Steps / Pasos Totales del Scheduler"
+        title: "Scheduler Total Steps"
+        title_es: "Pasos Totales del Scheduler"
         description: |
-          **EN:** Total optimizer steps for LR schedule. Formula: `(num_epochs × dataset_size) / (batch_size × gradient_accumulation_steps)`.
+          Total optimizer steps for LR schedule. Formula: `(num_epochs × dataset_size) / (batch_size × gradient_accumulation_steps)`.
           Too short: schedule ends early, constant LR; too long: never reaches final LR.
 
-          **ES:** Pasos totales del optimizador para schedule de LR. Fórmula: `(num_epochs × dataset_size) / (batch_size × gradient_accumulation_steps)`.
+          **Impacto:** Sobreestimar para duración dinámica. Warmup y decay se calculan sobre este valor.
+        description_es: |
+          Pasos totales del optimizador para schedule de LR. Fórmula: `(num_epochs × dataset_size) / (batch_size × gradient_accumulation_steps)`.
           Muy corto: schedule termina temprano, LR constante; muy largo: nunca alcanza LR final.
 
           **Impacto:** Sobreestimar para duración dinámica. Warmup y decay se calculan sobre este valor.
         examples: [10000]
       scheduler_warmup_ratio:
         type: number
-        title: "Scheduler Warmup Ratio / Ratio de Calentamiento del Scheduler"
+        title: "Scheduler Warmup Ratio"
+        title_es: "Ratio de Calentamiento del Scheduler"
         description: |
-          **EN:** Fraction of `scheduler_total_steps` for LR warmup. Typical: 0.05–0.1. Larger models need more warmup (0.1), smaller less (0.05).
-          **ES:** Fracción de `scheduler_total_steps` para calentamiento de LR. Típico: 0.05–0.1. Modelos grandes necesitan más warmup (0.1), pequeños menos (0.05).
+          Fraction of `scheduler_total_steps` for LR warmup. Typical: 0.05–0.1. Larger models need more warmup (0.1), smaller less (0.05).
+
+          **Impacto:** Demasiado warmup = tiempo perdido con LR subóptimo. Muy poco = entrenamiento temprano inestable.
+        description_es: |
+          Fracción de `scheduler_total_steps` para calentamiento de LR. Típico: 0.05–0.1. Modelos grandes necesitan más warmup (0.1), pequeños menos (0.05).
+
           **Impacto:** Demasiado warmup = tiempo perdido con LR subóptimo. Muy poco = entrenamiento temprano inestable.
         examples: [0.1]
       scheduler_type:
         type: string
-        title: "LR Scheduler / Scheduler de LR"
+        title: "LR Scheduler"
+        title_es: "Scheduler de LR"
         description: |
-          **EN:** LR decay strategy.
+          LR decay strategy.
           - `cosine`: smooth cosine decay to near-zero — **recommended for pre-training**.
           - `constant`: maintains initial LR — rarely ideal.
           - `linear_warmup_then_constant`: warms up, then constant — good for fine-tuning.
 
-          **ES:** Estrategia de decaimiento de LR.
+          **Impacto:** `cosine` es la opción más común y robusta. `linear_warmup_then_constant` útil
+          para transfer learning donde el LR no debe decaer mucho.
+        description_es: |
+          Estrategia de decaimiento de LR.
           - `cosine`: decaimiento coseno suave a casi cero — **recomendado para preentrenamiento**.
           - `constant`: mantiene LR inicial — raramente ideal.
           - `linear_warmup_then_constant`: calienta y mantiene constante — bueno para fine-tuning.
@@ -1237,230 +1509,332 @@ properties:
         examples: [cosine]
       grad_clip_max_norm:
         type: number
-        title: "Gradient Clipping Max Norm / Norma Máxima de Recorte de Gradientes"
+        title: "Gradient Clipping Max Norm"
+        title_es: "Norma Máxima de Recorte de Gradientes"
         description: |
-          **EN:** Max allowed gradient norm. Gradients exceeding this are scaled down. Typical: 1.0–10.0.
+          Max allowed gradient norm. Gradients exceeding this are scaled down. Typical: 1.0–10.0.
           Set 0 to disable. If consistently hitting threshold → increase; if training diverges → decrease.
 
-          **ES:** Norma máxima de gradiente permitida. Gradientes que excedan esto se escalan hacia abajo.
+          **Impacto:** Previene gradientes explosivos. Monitorear normas en logs para ajustar.
+        description_es: |
+          Norma máxima de gradiente permitida. Gradientes que excedan esto se escalan hacia abajo.
           Típico: 1.0–10.0. 0 para deshabilitar. Si se alcanza constantemente → aumentar; si diverge → disminuir.
 
           **Impacto:** Previene gradientes explosivos. Monitorear normas en logs para ajustar.
         examples: [5.0]
       inf_post_clip_threshold:
         type: number
-        title: "Inf Post-Clip Threshold / Umbral Inf Post-Recorte"
+        title: "Inf Post-Clip Threshold"
+        title_es: "Umbral Inf Post-Recorte"
         description: |
-          **EN:** If any gradient norm exceeds this after clipping, flag it. Typical: 50–200. Must be > `grad_clip_max_norm`. Logging only.
-          **ES:** Si alguna norma de gradiente excede esto después del recorte, marcarla. Típico: 50–200. Debe ser > `grad_clip_max_norm`. Solo logging.
+          If any gradient norm exceeds this after clipping, flag it. Typical: 50–200. Must be > `grad_clip_max_norm`. Logging only.
+
+          **Impacto:** Ayuda a identificar problemas de entrenamiento sin detenerlo.
+        description_es: |
+          Si alguna norma de gradiente excede esto después del recorte, marcarla. Típico: 50–200. Debe ser > `grad_clip_max_norm`. Solo logging.
+
           **Impacto:** Ayuda a identificar problemas de entrenamiento sin detenerlo.
         examples: [100.0]
       max_nan_retries:
         type: integer
-        title: "Max NaN Retries / Reintentos Máximos por NaN"
+        title: "Max NaN Retries"
+        title_es: "Reintentos Máximos por NaN"
         description: |
-          **EN:** Max retries on NaN/Inf gradients before stopping. Typical: 3–10. Skips corrupted batches.
+          Max retries on NaN/Inf gradients before stopping. Typical: 3–10. Skips corrupted batches.
           If NaNs persist, investigate data quality, LR, or numerical stability.
-          **ES:** Reintentos máximos ante gradientes NaN/Inf antes de detenerse. Típico: 3–10. Omite lotes corruptos.
+
+          **Impacto:** Muy bajo = se detiene en problemas transitorios. Muy alto = pierde tiempo en problemas sistemáticos.
+        description_es: |
+          Reintentos máximos ante gradientes NaN/Inf antes de detenerse. Típico: 3–10. Omite lotes corruptos.
           Si NaNs persisten, investigar calidad de datos, LR o estabilidad numérica.
+
           **Impacto:** Muy bajo = se detiene en problemas transitorios. Muy alto = pierde tiempo en problemas sistemáticos.
         examples: [3]
       checkpoint_every_n_steps:
         type: integer
-        title: "Checkpoint Frequency / Frecuencia de Checkpoints"
+        title: "Checkpoint Frequency"
+        title_es: "Frecuencia de Checkpoints"
         description: |
-          **EN:** Save rolling checkpoint every N steps. Typical: 500–5000. More often = less data loss on crash, more disk I/O.
-          **ES:** Guardar checkpoint rodante cada N pasos. Típico: 500–5000. Más frecuente = menos pérdida de datos en crash, más I/O.
+          Save rolling checkpoint every N steps. Typical: 500–5000. More often = less data loss on crash, more disk I/O.
+
+          **Impacto:** Balancear con velocidad de disco. Para entrenamientos largos (semanas) usar intervalos más cortos.
+        description_es: |
+          Guardar checkpoint rodante cada N pasos. Típico: 500–5000. Más frecuente = menos pérdida de datos en crash, más I/O.
+
           **Impacto:** Balancear con velocidad de disco. Para entrenamientos largos (semanas) usar intervalos más cortos.
         examples: [500]
       max_rolling_checkpoints:
         type: integer
-        title: "Max Rolling Checkpoints / Máximo de Checkpoints Rodantes"
+        title: "Max Rolling Checkpoints"
+        title_es: "Máximo de Checkpoints Rodantes"
         description: |
-          **EN:** Max rolling checkpoints kept. Oldest deleted when exceeded. Typical: 2–5. Disk ≈ `checkpoint_size × max_rolling_checkpoints`.
-          **ES:** Máximo de checkpoints rodantes conservados. El más antiguo se elimina al exceder. Típico: 2–5. Espacio ≈ `checkpoint_size × max_rolling_checkpoints`.
+          Max rolling checkpoints kept. Oldest deleted when exceeded. Typical: 2–5. Disk ≈ `checkpoint_size × max_rolling_checkpoints`.
+
+          **Impacto:** 1 = solo el último. Checkpoints rodantes ≠ mejores checkpoints (no se eliminan automáticamente).
+        description_es: |
+          Máximo de checkpoints rodantes conservados. El más antiguo se elimina al exceder. Típico: 2–5. Espacio ≈ `checkpoint_size × max_rolling_checkpoints`.
+
           **Impacto:** 1 = solo el último. Checkpoints rodantes ≠ mejores checkpoints (no se eliminan automáticamente).
         examples: [3]
       num_best_checkpoints:
         type: integer
-        title: "Best Checkpoints / Mejores Checkpoints"
+        title: "Best Checkpoints"
+        title_es: "Mejores Checkpoints"
         description: |
-          **EN:** Number of best checkpoints kept permanently (by validation loss). Typical: 1–3. Not auto-deleted.
-          **ES:** Número de mejores checkpoints conservados permanentemente (por pérdida de validación). Típico: 1–3. No se eliminan automáticamente.
+          Number of best checkpoints kept permanently (by validation loss). Typical: 1–3. Not auto-deleted.
+
+          **Impacto:** Útil para ensamblado o selección entre modelos con rendimiento similar.
+        description_es: |
+          Número de mejores checkpoints conservados permanentemente (por pérdida de validación). Típico: 1–3. No se eliminan automáticamente.
+
           **Impacto:** Útil para ensamblado o selección entre modelos con rendimiento similar.
         examples: [2]
       nan_check_interval:
         type: integer
-        title: "NaN Check Interval / Intervalo de Verificación de NaN"
+        title: "NaN Check Interval"
+        title_es: "Intervalo de Verificación de NaN"
         description: |
-          **EN:** Steps between NaN/Inf checks. Typical: 10–100. Critical for mixed precision. Combined with `max_nan_retries` for recovery.
-          **ES:** Pasos entre verificaciones de NaN/Inf. Típico: 10–100. Crítico para precisión mixta. Combinado con `max_nan_retries` para recuperación.
+          Steps between NaN/Inf checks. Typical: 10–100. Critical for mixed precision. Combined with `max_nan_retries` for recovery.
+
+          **Impacto:** Más frecuente = detección más rápida, pequeño overhead.
+        description_es: |
+          Pasos entre verificaciones de NaN/Inf. Típico: 10–100. Crítico para precisión mixta. Combinado con `max_nan_retries` para recuperación.
+
           **Impacto:** Más frecuente = detección más rápida, pequeño overhead.
         examples: [10]
       log_gradient_stats:
         type: boolean
-        title: "Log Gradient Stats / Registrar Estadísticas de Gradientes"
+        title: "Log Gradient Stats"
+        title_es: "Registrar Estadísticas de Gradientes"
         description: |
-          **EN:** Log per-layer gradient norms, min/max. `true` for debugging/tuning, `false` for production. Combined with `enable_block_grad_norms`.
-          **ES:** Registrar normas de gradiente por capa, min/max. `true` para debugging/ajuste, `false` para producción. Combinado con `enable_block_grad_norms`.
+          Log per-layer gradient norms, min/max. `true` for debugging/tuning, `false` for production. Combined with `enable_block_grad_norms`.
+
+          **Impacto:** Ayuda a identificar gradientes muertos/explotando en capas específicas.
+        description_es: |
+          Registrar normas de gradiente por capa, min/max. `true` para debugging/ajuste, `false` para producción. Combinado con `enable_block_grad_norms`.
+
           **Impacto:** Ayuda a identificar gradientes muertos/explotando en capas específicas.
         examples: [true]
       gradient_log_interval:
         type: integer
-        title: "Gradient Log Interval / Intervalo de Log de Gradientes"
+        title: "Gradient Log Interval"
+        title_es: "Intervalo de Log de Gradientes"
         description: |
-          **EN:** Steps between gradient stat logs (when `log_gradient_stats=true`). Typical: 10–100. Reduce once training is stable.
-          **ES:** Pasos entre logs de estadísticas de gradiente (cuando `log_gradient_stats=true`). Típico: 10–100. Reducir una vez estable.
+          Steps between gradient stat logs (when `log_gradient_stats=true`). Typical: 10–100. Reduce once training is stable.
+        description_es: |
+          Pasos entre logs de estadísticas de gradiente (cuando `log_gradient_stats=true`). Típico: 10–100. Reducir una vez estable.
         examples: [10]
       csv_log_path:
         type: string
-        title: "CSV Metrics Log Path / Ruta de Log de Métricas CSV"
+        title: "CSV Metrics Log Path"
+        title_es: "Ruta de Log de Métricas CSV"
         description: |
-          **EN:** File path for step-level training metrics in CSV format. Includes loss, LR, gradient norms, GPU metrics, telemetry.
-          **ES:** Ruta de archivo para métricas de entrenamiento por paso en formato CSV. Incluye loss, LR, normas de gradiente, métricas GPU, telemetría.
+          File path for step-level training metrics in CSV format. Includes loss, LR, gradient norms, GPU metrics, telemetry.
+
+          **Impacto:** Crece con entrenamientos largos. Compatible con `csv_rotate_on_schema_change`.
+        description_es: |
+          Ruta de archivo para métricas de entrenamiento por paso en formato CSV. Incluye loss, LR, normas de gradiente, métricas GPU, telemetría.
+
           **Impacto:** Crece con entrenamientos largos. Compatible con `csv_rotate_on_schema_change`.
         examples: ["training_metrics.csv"]
       csv_rotate_on_schema_change:
         type: boolean
-        title: "CSV Rotate on Schema Change / Rotar CSV al Cambiar Esquema"
+        title: "CSV Rotate on Schema Change"
+        title_es: "Rotar CSV al Cambiar Esquema"
         description: |
-          **EN:** Rotate CSV file (backup + new) when schema changes. Prevents corruption from column mismatches.
-          **ES:** Rotar archivo CSV (respaldo + nuevo) cuando el esquema cambia. Previene corrupción por desajuste de columnas.
+          Rotate CSV file (backup + new) when schema changes. Prevents corruption from column mismatches.
+        description_es: |
+          Rotar archivo CSV (respaldo + nuevo) cuando el esquema cambia. Previene corrupción por desajuste de columnas.
         examples: [true]
       gpu_metrics_backend:
         type: string
-        title: "GPU Metrics Backend / Backend de Métricas GPU"
+        title: "GPU Metrics Backend"
+        title_es: "Backend de Métricas GPU"
         description: |
-          **EN:** GPU telemetry backend. `nvml` = NVIDIA metrics (temp, memory, utilization). `none` = disabled. Required for `gpu_temp_guard_enabled`.
-          **ES:** Backend de telemetría GPU. `nvml` = métricas NVIDIA (temp, memoria, utilización). `none` = deshabilitado. Requerido para `gpu_temp_guard_enabled`.
+          GPU telemetry backend. `nvml` = NVIDIA metrics (temp, memory, utilization). `none` = disabled. Required for `gpu_temp_guard_enabled`.
+        description_es: |
+          Backend de telemetría GPU. `nvml` = métricas NVIDIA (temp, memoria, utilización). `none` = deshabilitado. Requerido para `gpu_temp_guard_enabled`.
         enum: [nvml, none]
         examples: [nvml]
       nvml_device_index:
         type: integer
-        title: "NVML Device Index / Índice de Dispositivo NVML"
+        title: "NVML Device Index"
+        title_es: "Índice de Dispositivo NVML"
         description: |
-          **EN:** GPU index to monitor (0 = first GPU). Must match training device. Single GPU: always 0.
-          **ES:** Índice de GPU a monitorear (0 = primera GPU). Debe coincidir con el dispositivo de entrenamiento. GPU única: siempre 0.
+          GPU index to monitor (0 = first GPU). Must match training device. Single GPU: always 0.
+        description_es: |
+          Índice de GPU a monitorear (0 = primera GPU). Debe coincidir con el dispositivo de entrenamiento. GPU única: siempre 0.
         examples: [0]
       enable_block_grad_norms:
         type: boolean
-        title: "Per-Block Gradient Norms / Normas de Gradiente por Bloque"
+        title: "Per-Block Gradient Norms"
+        title_es: "Normas de Gradiente por Bloque"
         description: |
-          **EN:** Log gradient norms per block (embeddings, attention, FFN, etc.) in CSV. `true` for debugging, `false` for production.
-          **ES:** Registrar normas de gradiente por bloque (embeddings, atención, FFN, etc.) en CSV. `true` para debugging, `false` para producción.
+          Log gradient norms per block (embeddings, attention, FFN, etc.) in CSV. `true` for debugging, `false` for production.
+
+          **Impacto:** Insight detallado del flujo de gradientes a través de componentes del modelo.
+        description_es: |
+          Registrar normas de gradiente por bloque (embeddings, atención, FFN, etc.) en CSV. `true` para debugging, `false` para producción.
+
           **Impacto:** Insight detallado del flujo de gradientes a través de componentes del modelo.
         examples: [true]
       telemetry_log_interval:
         type: integer
-        title: "Telemetry Log Interval / Intervalo de Log de Telemetría"
+        title: "Telemetry Log Interval"
+        title_es: "Intervalo de Log de Telemetría"
         description: |
-          **EN:** Steps between heavy telemetry logs (GPU metrics, per-block gradient norms). Typical: 1–10. Set 1 for max visibility.
-          **ES:** Pasos entre logs de telemetría pesada (métricas GPU, normas de gradiente por bloque). Típico: 1–10. 1 para máxima visibilidad.
+          Steps between heavy telemetry logs (GPU metrics, per-block gradient norms). Typical: 1–10. Set 1 for max visibility.
+        description_es: |
+          Pasos entre logs de telemetría pesada (métricas GPU, normas de gradiente por bloque). Típico: 1–10. 1 para máxima visibilidad.
         examples: [1]
       gpu_temp_guard_enabled:
         type: boolean
-        title: "GPU Temp Guard / Guardia de Temperatura GPU"
+        title: "GPU Temp Guard"
+        title_es: "Guardia de Temperatura GPU"
         description: |
-          **EN:** Strict GPU temperature monitoring (CUDA only). Pauses/resumes training based on thresholds. Requires `gpu_metrics_backend=nvml`.
-          **ES:** Monitoreo estricto de temperatura GPU (solo CUDA). Pausa/reanuda entrenamiento según umbrales. Requiere `gpu_metrics_backend=nvml`.
+          Strict GPU temperature monitoring (CUDA only). Pauses/resumes training based on thresholds. Requires `gpu_metrics_backend=nvml`.
+
+          **Impacto:** Crítico para prevenir sobrecalentamiento en cargas sostenidas. `true` para seguridad.
+        description_es: |
+          Monitoreo estricto de temperatura GPU (solo CUDA). Pausa/reanuda entrenamiento según umbrales. Requiere `gpu_metrics_backend=nvml`.
+
           **Impacto:** Crítico para prevenir sobrecalentamiento en cargas sostenidas. `true` para seguridad.
         examples: [true]
       switch_on_thermal:
         type: boolean
-        title: "Switch on Thermal / Cambiar en Evento Térmico"
+        title: "Switch on Thermal"
+        title_es: "Cambiar en Evento Térmico"
         description: |
-          **EN:** `true` = critical temp triggers GPU→CPU fallback, auto-resume on cooldown. `false` = pause only.
-          **ES:** `true` = temp crítica activa fallback GPU→CPU, auto-reanudación al enfriar. `false` = solo pausa.
+          `true` = critical temp triggers GPU→CPU fallback, auto-resume on cooldown. `false` = pause only.
+
+          **Impacto:** `true` maximiza progreso pero puede causar estados corruptos. `false` más seguro.
+        description_es: |
+          `true` = temp crítica activa fallback GPU→CPU, auto-reanudación al enfriar. `false` = solo pausa.
+
           **Impacto:** `true` maximiza progreso pero puede causar estados corruptos. `false` más seguro.
         examples: [false, true]
       gpu_temp_pause_threshold_c:
         type: number
-        title: "GPU Pause Temp / Temp de Pausa GPU (°C)"
+        title: "GPU Pause Temp"
+        title_es: "Temp de Pausa GPU (°C)"
         description: |
-          **EN:** Temp (°C) to pause training. Typical: 85–95. Set below GPU Tjmax (usually 100–110°C). Must be > `gpu_temp_resume_threshold_c`.
-          **ES:** Temp (°C) para pausar entrenamiento. Típico: 85–95. Debajo del Tjmax de la GPU (usualmente 100–110°C). Debe ser > `gpu_temp_resume_threshold_c`.
+          Temp (°C) to pause training. Typical: 85–95. Set below GPU Tjmax (usually 100–110°C). Must be > `gpu_temp_resume_threshold_c`.
+        description_es: |
+          Temp (°C) para pausar entrenamiento. Típico: 85–95. Debajo del Tjmax de la GPU (usualmente 100–110°C). Debe ser > `gpu_temp_resume_threshold_c`.
         examples: [90.0]
       gpu_temp_resume_threshold_c:
         type: number
-        title: "GPU Resume Temp / Temp de Reanudación GPU (°C)"
+        title: "GPU Resume Temp"
+        title_es: "Temp de Reanudación GPU (°C)"
         description: |
-          **EN:** Temp (°C) to resume training after pause. Typical: 70–85. Must be < `gpu_temp_pause_threshold_c` by ≥5–10°C (hysteresis).
-          **ES:** Temp (°C) para reanudar entrenamiento tras pausa. Típico: 70–85. Debe ser < `gpu_temp_pause_threshold_c` por ≥5–10°C (histéresis).
+          Temp (°C) to resume training after pause. Typical: 70–85. Must be < `gpu_temp_pause_threshold_c` by ≥5–10°C (hysteresis).
+        description_es: |
+          Temp (°C) para reanudar entrenamiento tras pausa. Típico: 70–85. Debe ser < `gpu_temp_pause_threshold_c` por ≥5–10°C (histéresis).
         examples: [80.0]
       gpu_temp_critical_threshold_c:
         type: number
-        title: "GPU Critical Temp / Temp Crítica GPU (°C) — logging only"
+        title: "GPU Critical Temp"
+        title_es: "Temp Crítica GPU (°C) — logging only"
         description: |
-          **EN:** Informational logging marker for severe thermal events. Null = disabled. Set > `gpu_temp_pause_threshold_c`.
-          **ES:** Marcador informativo para eventos térmicos severos. Null = deshabilitado. Poner > `gpu_temp_pause_threshold_c`.
+          Informational logging marker for severe thermal events. Null = disabled. Set > `gpu_temp_pause_threshold_c`.
+        description_es: |
+          Marcador informativo para eventos térmicos severos. Null = deshabilitado. Poner > `gpu_temp_pause_threshold_c`.
         examples: [95.0]
       gpu_temp_poll_interval_seconds:
         type: number
-        title: "GPU Temp Poll Interval / Intervalo de Sondeo de Temp GPU (s)"
+        title: "GPU Temp Poll Interval"
+        title_es: "Intervalo de Sondeo de Temp GPU (s)"
         description: |
-          **EN:** Seconds between temp checks during cooldown wait. Typical: 10–60. Shorter = faster resume but more overhead.
-          **ES:** Segundos entre verificaciones de temp durante espera de enfriamiento. Típico: 10–60. Más corto = reanudación más rápida pero más overhead.
+          Seconds between temp checks during cooldown wait. Typical: 10–60. Shorter = faster resume but more overhead.
+        description_es: |
+          Segundos entre verificaciones de temp durante espera de enfriamiento. Típico: 10–60. Más corto = reanudación más rápida pero más overhead.
         examples: [30.0]
       use_galore:
         type: boolean
-        title: "Enable GaLore / Habilitar GaLore"
+        title: "Enable GaLore"
+        title_es: "Habilitar GaLore"
         description: |
-          **EN:** Gradient Low-Rank Projection for memory-efficient training of large models (>1B params).
+          Gradient Low-Rank Projection for memory-efficient training of large models (>1B params).
           Projects optimizer states to low-rank subspace. Requires `galore_rank`, `galore_update_interval`, `galore_scale`, `galore_max_dim`.
 
-          **ES:** Proyección de Gradientes de Bajo Rango para entrenamiento eficiente de modelos grandes (>1B params).
+          **Impacto:** Reduce memoria del optimizador de O(P×2) a O(P×rank). Overhead computacional por proyección.
+        description_es: |
+          Proyección de Gradientes de Bajo Rango para entrenamiento eficiente de modelos grandes (>1B params).
           Proyecta estados del optimizador a subespacio de bajo rango. Requiere `galore_rank`, `galore_update_interval`, `galore_scale`, `galore_max_dim`.
 
           **Impacto:** Reduce memoria del optimizador de O(P×2) a O(P×rank). Overhead computacional por proyección.
         examples: [false]
       galore_rank:
         type: integer
-        title: "GaLore Rank / Rango de GaLore"
+        title: "GaLore Rank"
+        title_es: "Rango de GaLore"
         description: |
-          **EN:** Low-rank projection dimension. Typical: 16–128. Memory savings ≈ `1 − (rank / param_dim)`. Start with `hidden_size/12`.
-          **ES:** Dimensión de proyección de bajo rango. Típico: 16–128. Ahorro ≈ `1 − (rank / param_dim)`. Empezar con `hidden_size/12`.
+          Low-rank projection dimension. Typical: 16–128. Memory savings ≈ `1 − (rank / param_dim)`. Start with `hidden_size/12`.
+        description_es: |
+          Dimensión de proyección de bajo rango. Típico: 16–128. Ahorro ≈ `1 − (rank / param_dim)`. Empezar con `hidden_size/12`.
         examples: [64]
       galore_update_interval:
         type: integer
-        title: "GaLore Update Interval / Intervalo de Actualización GaLore"
+        title: "GaLore Update Interval"
+        title_es: "Intervalo de Actualización GaLore"
         description: |
-          **EN:** Steps between projection matrix recomputation. Typical: 1–10. 1 = every step (accurate, slower), 10 = every 10 steps (faster).
-          **ES:** Pasos entre recómputo de matriz de proyección. Típico: 1–10. 1 = cada paso (preciso, lento), 10 = cada 10 pasos (rápido).
+          Steps between projection matrix recomputation. Typical: 1–10. 1 = every step (accurate, slower), 10 = every 10 steps (faster).
+
+          **Impacto:** Balance entre precisión de optimización y velocidad.
+        description_es: |
+          Pasos entre recómputo de matriz de proyección. Típico: 1–10. 1 = cada paso (preciso, lento), 10 = cada 10 pasos (rápido).
+
           **Impacto:** Balance entre precisión de optimización y velocidad.
         examples: [1]
       galore_scale:
         type: number
-        title: "GaLore Gradient Scale / Escala de Gradiente GaLore"
+        title: "GaLore Gradient Scale"
+        title_es: "Escala de Gradiente GaLore"
         description: |
-          **EN:** Scaling factor for projected gradients. Typical: 1.0. Scale down if unstable, scale up if too slow.
-          **ES:** Factor de escala para gradientes proyectados. Típico: 1.0. Reducir si inestable, aumentar si muy lento.
+          Scaling factor for projected gradients. Typical: 1.0. Scale down if unstable, scale up if too slow.
+        description_es: |
+          Factor de escala para gradientes proyectados. Típico: 1.0. Reducir si inestable, aumentar si muy lento.
         examples: [1.0]
       galore_max_dim:
         type: integer
-        title: "GaLore Max Tensor Dim / Dim Máxima de Tensor GaLore"
+        title: "GaLore Max Tensor Dim"
+        title_es: "Dim Máxima de Tensor GaLore"
         description: |
-          **EN:** Max tensor dimension for GaLore projection. Smaller tensors use standard optimizer. Typical: 4096 or `hidden_size`.
-          **ES:** Dimensión máxima de tensor para proyección GaLore. Tensores más pequeños usan optimizador estándar. Típico: 4096 o `hidden_size`.
+          Max tensor dimension for GaLore projection. Smaller tensors use standard optimizer. Typical: 4096 or `hidden_size`.
+
+          **Impacto:** Evita overhead en tensores pequeños donde la proyección no vale la pena.
+        description_es: |
+          Dimensión máxima de tensor para proyección GaLore. Tensores más pequeños usan optimizador estándar. Típico: 4096 o `hidden_size`.
+
           **Impacto:** Evita overhead en tensores pequeños donde la proyección no vale la pena.
         examples: [4096]
       hf_output_dir:
         type: string
-        title: "HF Output Dir / Directorio de Salida HuggingFace"
+        title: "HF Output Dir"
+        title_es: "Directorio de Salida HuggingFace"
         description: |
-          **EN:** Directory for saving final model via `save_pretrained()` when `base_model` is set. HuggingFace format: `config.json`, `pytorch_model.bin`, tokenizer.
-          **ES:** Directorio para guardar modelo final con `save_pretrained()` cuando `base_model` está configurado. Formato HuggingFace: `config.json`, `pytorch_model.bin`, tokenizador.
+          Directory for saving final model via `save_pretrained()` when `base_model` is set. HuggingFace format: `config.json`, `pytorch_model.bin`, tokenizer.
+
+          **Impacto:** Solo aplica con `base_model`. Para modelos desde cero, los checkpoints se guardan diferente.
+        description_es: |
+          Directorio para guardar modelo final con `save_pretrained()` cuando `base_model` está configurado. Formato HuggingFace: `config.json`, `pytorch_model.bin`, tokenizador.
+
           **Impacto:** Solo aplica con `base_model`. Para modelos desde cero, los checkpoints se guardan diferente.
         examples: ["checkpoints/hf_final"]
       sbert:
         type: object
-        title: "SBERT Training / Entrenamiento SBERT"
+        title: "SBERT Training"
+        title_es: "Entrenamiento SBERT"
         description: |
-          **EN:** Sentence-BERT training for semantic embedding fine-tuning (when `training.task=sbert`).
+          Sentence-BERT training for semantic embedding fine-tuning (when `training.task=sbert`).
           SBERT learns to produce similar embeddings for semantically similar texts via contrastive learning.
           Supports: `paired_similarity`, `triplets`, `qa`. Faster than MLM pre-training; produces models
           for semantic search, clustering, and retrieval.
 
-          **ES:** Entrenamiento Sentence-BERT para fine-tuning de embeddings semánticos (cuando `training.task=sbert`).
+          **Impacto:** SBERT convierte el modelo base en un codificador de oraciones. La elección del
+          tipo de dataset determina la función de pérdida y el comportamiento del modelo.
+        description_es: |
+          Entrenamiento Sentence-BERT para fine-tuning de embeddings semánticos (cuando `training.task=sbert`).
           SBERT aprende a producir embeddings similares para textos semánticamente similares mediante
           aprendizaje contrastivo. Soporta: `paired_similarity`, `triplets`, `qa`. Más rápido que MLM;
           produce modelos para búsqueda semántica, clustering y recuperación.
@@ -1471,21 +1845,26 @@ properties:
         properties:
           dataset_name:
             type: string
-            title: "Dataset Name / Nombre del Dataset"
+            title: "Dataset Name"
+            title_es: "Nombre del Dataset"
             description: |
-              **EN:** HuggingFace dataset ID or local path. Must be compatible with `dataset_type`. Example: `erickfmm/agentlans__multilingual-sentences__paired_10_sts`.
-              **ES:** ID de dataset HuggingFace o ruta local. Debe ser compatible con `dataset_type`. Ejemplo: `erickfmm/agentlans__multilingual-sentences__paired_10_sts`.
+              HuggingFace dataset ID or local path. Must be compatible with `dataset_type`. Example: `erickfmm/agentlans__multilingual-sentences__paired_10_sts`.
+            description_es: |
+              ID de dataset HuggingFace o ruta local. Debe ser compatible con `dataset_type`. Ejemplo: `erickfmm/agentlans__multilingual-sentences__paired_10_sts`.
             examples: ["erickfmm/agentlans__multilingual-sentences__paired_10_sts"]
           dataset_type:
             type: string
-            title: "Dataset Type / Tipo de Dataset"
+            title: "Dataset Type"
+            title_es: "Tipo de Dataset"
             description: |
-              **EN:** Dataset format and training strategy:
+              Dataset format and training strategy:
               - `paired_similarity`: sentence pairs with similarity scores (STS). Uses CosineSimilarityLoss.
               - `triplets`: anchor-positive-negative (IR). Uses MultipleNegativesRankingLoss.
               - `qa`: question-answer pairs. Optimizes QA embedding similarity.
 
-              **ES:** Formato de dataset y estrategia de entrenamiento:
+              **Impacto:** Determina la función de pérdida y cómo se interpretan los datos.
+            description_es: |
+              Formato de dataset y estrategia de entrenamiento:
               - `paired_similarity`: pares de oraciones con puntajes de similitud (STS). Usa CosineSimilarityLoss.
               - `triplets`: ancla-positivo-negativo (RI). Usa MultipleNegativesRankingLoss.
               - `qa`: pares pregunta-respuesta. Optimiza similitud de embeddings QA.
@@ -1495,12 +1874,14 @@ properties:
             examples: [paired_similarity, triplets, qa]
           columns:
             type: object
-            title: "Column Mappings / Mapeo de Columnas"
+            title: "Column Mappings"
+            title_es: "Mapeo de Columnas"
             description: |
-              **EN:** Optional column name overrides. Maps expected names to actual dataset columns.
+              Optional column name overrides. Maps expected names to actual dataset columns.
               Keys depend on `dataset_type`: `paired_similarity` → sentence1, sentence2, similarity;
               `triplets` → query, positive, negatives; `qa` → question, answer. Case-sensitive.
-              **ES:** Sobrescrituras opcionales de nombres de columna. Mapea nombres esperados a columnas reales.
+            description_es: |
+              Sobrescrituras opcionales de nombres de columna. Mapea nombres esperados a columnas reales.
               Las claves dependen de `dataset_type`: `paired_similarity` → sentence1, sentence2, similarity;
               `triplets` → query, positive, negatives; `qa` → question, answer. Sensible a mayúsculas.
             additionalProperties: false
@@ -1508,158 +1889,207 @@ properties:
               sentence1:
                 type: string
                 title: "Sentence 1 Column"
+                title_es: "Columna de Oración 1"
                 description: "Column name for first sentence in paired_similarity datasets. Default: 'sentence1' if not specified. Points to the first text column in your dataset. Example: if dataset has 'text_a', set sentence1='text_a'. Used for constructing sentence pairs with sentence2."
+                description_es: "Nombre de la columna para la primera oración en datasets `paired_similarity`. Valor por defecto: `sentence1` si no se especifica. Apunta a la primera columna de texto de tu dataset. Ejemplo: si el dataset tiene `text_a`, configura `sentence1='text_a'`. Se usa para construir pares de oraciones junto con `sentence2`."
                 examples: [sentence1]
               sentence2:
                 type: string
                 title: "Sentence 2 Column"
+                title_es: "Columna de Oración 2"
                 description: "Column name for second sentence in paired_similarity datasets. Default: 'sentence2' if not specified. Points to the second text column in your dataset. Example: if dataset has 'text_b', set sentence2='text_b'. Used with sentence1 to form pairs for similarity learning."
+                description_es: "Nombre de la columna para la segunda oración en datasets `paired_similarity`. Valor por defecto: `sentence2` si no se especifica. Apunta a la segunda columna de texto de tu dataset. Ejemplo: si el dataset tiene `text_b`, configura `sentence2='text_b'`. Se usa junto con `sentence1` para formar pares para aprendizaje de similitud."
                 examples: [sentence2]
               similarity:
                 type: string
                 title: "Similarity Score Column"
+                title_es: "Columna de Puntaje de Similitud"
                 description: "Column name for similarity scores in paired_similarity datasets. Default: 'score' or 'similarity' if not specified. Should contain numeric values (typically 0-1 or 0-5 scale). Higher values indicate more similar sentences. Used as regression target in CosineSimilarityLoss. Example: if dataset has 'similarity_score', set similarity='similarity_score'."
+                description_es: "Nombre de la columna para los puntajes de similitud en datasets `paired_similarity`. Valor por defecto: `score` o `similarity` si no se especifica. Debe contener valores numéricos (normalmente en escala 0-1 o 0-5). Los valores más altos indican oraciones más similares. Se usa como objetivo de regresión en `CosineSimilarityLoss`. Ejemplo: si el dataset tiene `similarity_score`, configura `similarity='similarity_score'`."
                 examples: [score, similarity]
               query:
                 type: string
                 title: "Query/Anchor Column"
+                title_es: "Columna de Consulta/Ancla"
                 description: "Column name for query/anchor text in triplets datasets. Default: 'query' if not specified. This is the reference text (e.g., search query, anchor sentence). Positive and negative examples are compared against this. Example: if dataset has 'anchor', set query='anchor'. Used as anchor in MultipleNegativesRankingLoss."
+                description_es: "Nombre de la columna para el texto de consulta/ancla en datasets `triplets`. Valor por defecto: `query` si no se especifica. Este es el texto de referencia (por ejemplo, consulta de búsqueda u oración ancla). Los ejemplos positivos y negativos se comparan contra este. Ejemplo: si el dataset tiene `anchor`, configura `query='anchor'`. Se usa como ancla en `MultipleNegativesRankingLoss`."
                 examples: [Q]
               positive:
                 type: string
                 title: "Positive Example Column"
+                title_es: "Columna de Ejemplo Positivo"
                 description: "Column name for positive/matching text in triplets datasets. Default: 'positive' or 'pos' if not specified. This text should be semantically similar to the query. Example: if dataset has 'POS', set positive='POS'. Used as positive example in contrastive learning."
+                description_es: "Nombre de la columna para el texto positivo/coincidente en datasets `triplets`. Valor por defecto: `positive` o `pos` si no se especifica. Este texto debe ser semánticamente similar a la consulta. Ejemplo: si el dataset tiene `POS`, configura `positive='POS'`. Se usa como ejemplo positivo en aprendizaje contrastivo."
                 examples: [POS]
               negatives:
                 type: string
                 title: "Negatives List Column"
+                title_es: "Columna de Lista de Negativos"
                 description: "Column name for list of negative/dissimilar texts in triplets datasets. Default: 'negatives' or 'neg' if not specified. Should contain a list or array of texts dissimilar to the query. Example: if dataset has 'NEGs', set negatives='NEGs'. Used as hard negatives in contrastive learning to improve model discrimination."
+                description_es: "Nombre de la columna para la lista de textos negativos/disímiles en datasets `triplets`. Valor por defecto: `negatives` o `neg` si no se especifica. Debe contener una lista o arreglo de textos distintos de la consulta. Ejemplo: si el dataset tiene `NEGs`, configura `negatives='NEGs'`. Se usa como negativos duros en aprendizaje contrastivo para mejorar la discriminación del modelo."
                 examples: [NEGs]
               question:
                 type: string
                 title: "Question Column"
+                title_es: "Columna de Pregunta"
                 description: "Column name for question text in qa datasets. Default: 'question' if not specified. The query text to be matched with answers. Example: if dataset has 'Question', set question='Question'. Used in QA pair training for semantic similarity."
+                description_es: "Nombre de la columna para el texto de pregunta en datasets `qa`. Valor por defecto: `question` si no se especifica. Es el texto de consulta que se empareja con las respuestas. Ejemplo: si el dataset tiene `Question`, configura `question='Question'`. Se usa en entrenamiento de pares QA para similitud semántica."
                 examples: [Question]
               answer:
                 type: string
                 title: "Answer Column"
+                title_es: "Columna de Respuesta"
                 description: "Column name for answer text in qa datasets. Default: 'answer' if not specified. The response text corresponding to the question. Model learns to bring question and answer embeddings closer. Example: if dataset has 'Answer', set answer='Answer'. Used with question for pair training."
+                description_es: "Nombre de la columna para el texto de respuesta en datasets `qa`. Valor por defecto: `answer` si no se especifica. Es el texto de respuesta correspondiente a la pregunta. El modelo aprende a acercar los embeddings de pregunta y respuesta. Ejemplo: si el dataset tiene `Answer`, configura `answer='Answer'`. Se usa junto con `question` para entrenamiento por pares."
                 examples: [Answer]
           query_prefix:
             type: string
-            title: "Query Prefix / Prefijo de Consulta"
+            title: "Query Prefix"
+            title_es: "Prefijo de Consulta"
             description: |
-              **EN:** Text prepended to query/question fields during tokenization. Example: `query: `. Helps model distinguish query vs document role.
-              **ES:** Texto antepuesto a campos de consulta/pregunta durante tokenización. Ejemplo: `query: `. Ayuda al modelo a distinguir rol de consulta vs documento.
+              Text prepended to query/question fields during tokenization. Example: `query: `. Helps model distinguish query vs document role.
+            description_es: |
+              Texto antepuesto a campos de consulta/pregunta durante tokenización. Ejemplo: `query: `. Ayuda al modelo a distinguir rol de consulta vs documento.
             examples: ["query: "]
           document_prefix:
             type: string
-            title: "Document Prefix / Prefijo de Documento"
+            title: "Document Prefix"
+            title_es: "Prefijo de Documento"
             description: |
-              **EN:** Text prepended to answer/positive/negative fields. Example: `document: `. Helps distinguish document from query embeddings.
-              **ES:** Texto antepuesto a campos de respuesta/positivo/negativo. Ejemplo: `document: `. Ayuda a distinguir embeddings de documento de consulta.
+              Text prepended to answer/positive/negative fields. Example: `document: `. Helps distinguish document from query embeddings.
+            description_es: |
+              Texto antepuesto a campos de respuesta/positivo/negativo. Ejemplo: `document: `. Ayuda a distinguir embeddings de documento de consulta.
             examples: ["document: "]
           output_dir:
             type: string
-            title: "Output Dir / Directorio de Salida"
+            title: "Output Dir"
+            title_es: "Directorio de Salida"
             description: |
-              **EN:** Directory for SBERT artifacts. Checkpoints → `output_dir/checkpoints/`. Final model loadable with `SentenceTransformer(output_dir)`.
-              **ES:** Directorio para artefactos SBERT. Checkpoints → `output_dir/checkpoints/`. Modelo final cargable con `SentenceTransformer(output_dir)`.
+              Directory for SBERT artifacts. Checkpoints → `output_dir/checkpoints/`. Final model loadable with `SentenceTransformer(output_dir)`.
+            description_es: |
+              Directorio para artefactos SBERT. Checkpoints → `output_dir/checkpoints/`. Modelo final cargable con `SentenceTransformer(output_dir)`.
             examples: ["./output/sbert_base_model"]
           batch_size:
             type: integer
-            title: "Batch Size / Tamaño de Lote"
+            title: "Batch Size"
+            title_es: "Tamaño de Lote"
             description: |
-              **EN:** Examples per batch. Typical: 16–64. Larger = more negatives, better contrastive learning. Use `gradient_accumulation_steps` to increase effective batch.
-              **ES:** Ejemplos por lote. Típico: 16–64. Mayor = más negativos, mejor aprendizaje contrastivo. Usar `gradient_accumulation_steps` para aumentar lote efectivo.
+              Examples per batch. Typical: 16–64. Larger = more negatives, better contrastive learning. Use `gradient_accumulation_steps` to increase effective batch.
+            description_es: |
+              Ejemplos por lote. Típico: 16–64. Mayor = más negativos, mejor aprendizaje contrastivo. Usar `gradient_accumulation_steps` para aumentar lote efectivo.
             examples: [16]
           gradient_accumulation_steps:
             type: integer
-            title: "Gradient Accumulation Steps / Pasos de Acumulación de Gradientes"
+            title: "Gradient Accumulation Steps"
+            title_es: "Pasos de Acumulación de Gradientes"
             description: |
-              **EN:** Accumulate over N mini-batches. Effective batch = `batch_size × N`. Typical: 1–8. SBERT benefits from larger effective batches.
-              **ES:** Acumular sobre N mini-lotes. Lote efectivo = `batch_size × N`. Típico: 1–8. SBERT se beneficia de lotes efectivos más grandes.
+              Accumulate over N mini-batches. Effective batch = `batch_size × N`. Typical: 1–8. SBERT benefits from larger effective batches.
+            description_es: |
+              Acumular sobre N mini-lotes. Lote efectivo = `batch_size × N`. Típico: 1–8. SBERT se beneficia de lotes efectivos más grandes.
             examples: [1, 4]
           max_grad_norm:
             type: number
-            title: "Max Gradient Norm / Norma Máx de Gradiente"
+            title: "Max Gradient Norm"
+            title_es: "Norma Máx de Gradiente"
             description: |
-              **EN:** Gradient clipping threshold for SBERT. Typical: 0.5–2.0 (often lower than MLM due to contrastive loss sensitivity). 0 = disabled.
-              **ES:** Umbral de recorte de gradiente para SBERT. Típico: 0.5–2.0 (a menudo menor que MLM por sensibilidad de pérdida contrastiva). 0 = deshabilitado.
+              Gradient clipping threshold for SBERT. Typical: 0.5–2.0 (often lower than MLM due to contrastive loss sensitivity). 0 = disabled.
+            description_es: |
+              Umbral de recorte de gradiente para SBERT. Típico: 0.5–2.0 (a menudo menor que MLM por sensibilidad de pérdida contrastiva). 0 = deshabilitado.
             examples: [1.0]
           epochs:
             type: integer
-            title: "Epochs / Épocas"
+            title: "Epochs"
+            title_es: "Épocas"
             description: |
-              **EN:** Complete passes through SBERT dataset. Typical: 1–10. SBERT converges faster than MLM (2–5 often enough). Monitor validation metrics.
-              **ES:** Pasadas completas por dataset SBERT. Típico: 1–10. SBERT converge más rápido que MLM (2–5 suele ser suficiente). Monitorear métricas de validación.
+              Complete passes through SBERT dataset. Typical: 1–10. SBERT converges faster than MLM (2–5 often enough). Monitor validation metrics.
+            description_es: |
+              Pasadas completas por dataset SBERT. Típico: 1–10. SBERT converge más rápido que MLM (2–5 suele ser suficiente). Monitorear métricas de validación.
             examples: [4]
           warmup_steps:
             type: integer
-            title: "Warmup Steps / Pasos de Calentamiento"
+            title: "Warmup Steps"
+            title_es: "Pasos de Calentamiento"
             description: |
-              **EN:** Steps for LR warmup in SBERT. Typical: 10–20% of total steps. Formula: `int(epochs × (dataset_size/batch_size) × warmup_ratio)`.
-              **ES:** Pasos para calentamiento de LR en SBERT. Típico: 10–20% del total. Fórmula: `int(epochs × (dataset_size/batch_size) × warmup_ratio)`.
+              Steps for LR warmup in SBERT. Typical: 10–20% of total steps. Formula: `int(epochs × (dataset_size/batch_size) × warmup_ratio)`.
+            description_es: |
+              Pasos para calentamiento de LR en SBERT. Típico: 10–20% del total. Fórmula: `int(epochs × (dataset_size/batch_size) × warmup_ratio)`.
             examples: [1000]
           evaluation_steps:
             type: integer
-            title: "Evaluation Steps / Pasos de Evaluación"
+            title: "Evaluation Steps"
+            title_es: "Pasos de Evaluación"
             description: |
-              **EN:** Evaluate every N steps. Typical: 500–5000. More frequent = better checkpointing, slower training.
-              **ES:** Evaluar cada N pasos. Típico: 500–5000. Más frecuente = mejor checkpointing, entrenamiento más lento.
+              Evaluate every N steps. Typical: 500–5000. More frequent = better checkpointing, slower training.
+            description_es: |
+              Evaluar cada N pasos. Típico: 500–5000. Más frecuente = mejor checkpointing, entrenamiento más lento.
             examples: [5000]
           checkpoint_save_steps:
             type: integer
-            title: "Checkpoint Save Interval / Intervalo de Guardado de Checkpoint"
+            title: "Checkpoint Save Interval"
+            title_es: "Intervalo de Guardado de Checkpoint"
             description: |
-              **EN:** Save rolling checkpoint every N steps. Typical: 1000–10000. 0 = disabled (only best checkpoints).
-              **ES:** Guardar checkpoint rodante cada N pasos. Típico: 1000–10000. 0 = deshabilitado (solo mejores checkpoints).
+              Save rolling checkpoint every N steps. Typical: 1000–10000. 0 = disabled (only best checkpoints).
+            description_es: |
+              Guardar checkpoint rodante cada N pasos. Típico: 1000–10000. 0 = deshabilitado (solo mejores checkpoints).
             examples: [1000]
           resume_from_checkpoint:
             type: boolean
-            title: "Resume from Checkpoint / Reanudar desde Checkpoint"
+            title: "Resume from Checkpoint"
+            title_es: "Reanudar desde Checkpoint"
             description: |
-              **EN:** Resume from latest checkpoint in `output_dir/checkpoints/`. Restores optimizer, scheduler, and epoch state.
-              **ES:** Reanudar desde último checkpoint en `output_dir/checkpoints/`. Restaura optimizador, scheduler y estado de época.
+              Resume from latest checkpoint in `output_dir/checkpoints/`. Restores optimizer, scheduler, and epoch state.
+            description_es: |
+              Reanudar desde último checkpoint en `output_dir/checkpoints/`. Restaura optimizador, scheduler y estado de época.
             examples: [false]
           learning_rate:
             type: number
-            title: "Learning Rate / Tasa de Aprendizaje"
+            title: "Learning Rate"
+            title_es: "Tasa de Aprendizaje"
             description: |
-              **EN:** Initial LR for SBERT. Typical: 1e-5 to 1e-4. Fine-tuning: 1e-5–2e-5; from scratch: 5e-5–1e-4. 2e-5 works well for fine-tuning.
-              **ES:** LR inicial para SBERT. Típico: 1e-5 a 1e-4. Fine-tuning: 1e-5–2e-5; desde cero: 5e-5–1e-4. 2e-5 funciona bien para fine-tuning.
+              Initial LR for SBERT. Typical: 1e-5 to 1e-4. Fine-tuning: 1e-5–2e-5; from scratch: 5e-5–1e-4. 2e-5 works well for fine-tuning.
+            description_es: |
+              LR inicial para SBERT. Típico: 1e-5 a 1e-4. Fine-tuning: 1e-5–2e-5; desde cero: 5e-5–1e-4. 2e-5 funciona bien para fine-tuning.
             examples: [2.0e-5]
           max_train_samples:
             type: integer
-            title: "Max Training Samples / Máx Muestras de Entrenamiento"
+            title: "Max Training Samples"
+            title_es: "Máx Muestras de Entrenamiento"
             description: |
-              **EN:** Limit training to N samples. Useful for debugging or quick experiments. Training set only.
-              **ES:** Limitar entrenamiento a N muestras. Útil para debugging o experimentos rápidos. Solo conjunto de entrenamiento.
+              Limit training to N samples. Useful for debugging or quick experiments. Training set only.
+            description_es: |
+              Limitar entrenamiento a N muestras. Útil para debugging o experimentos rápidos. Solo conjunto de entrenamiento.
             examples: [100000]
           max_eval_samples:
             type: integer
-            title: "Max Eval Samples / Máx Muestras de Evaluación"
+            title: "Max Eval Samples"
+            title_es: "Máx Muestras de Evaluación"
             description: |
-              **EN:** Limit evaluation to N samples. Typical: 1000–10000. Speeds up eval with large validation sets.
-              **ES:** Limitar evaluación a N muestras. Típico: 1000–10000. Acelera eval con conjuntos de validación grandes.
+              Limit evaluation to N samples. Typical: 1000–10000. Speeds up eval with large validation sets.
+            description_es: |
+              Limitar evaluación a N muestras. Típico: 1000–10000. Acelera eval con conjuntos de validación grandes.
             examples: [10000]
           max_seq_length:
             type: integer
-            title: "Max Sequence Length / Longitud Máx de Secuencia"
+            title: "Max Sequence Length"
+            title_es: "Longitud Máx de Secuencia"
             description: |
-              **EN:** Max token length for input texts. Typical: 128–512. SBERT often works with shorter sequences (128–256) than MLM. For retrieval: 256–512; classification: 128.
-              **ES:** Longitud máxima de tokens para textos de entrada. Típico: 128–512. SBERT suele funcionar con secuencias más cortas (128–256) que MLM. Para recuperación: 256–512; clasificación: 128.
+              Max token length for input texts. Typical: 128–512. SBERT often works with shorter sequences (128–256) than MLM. For retrieval: 256–512; classification: 128.
+            description_es: |
+              Longitud máxima de tokens para textos de entrada. Típico: 128–512. SBERT suele funcionar con secuencias más cortas (128–256) que MLM. Para recuperación: 256–512; clasificación: 128.
             examples: [512]
           pooling_mode:
             type: string
-            title: "Pooling Mode / Modo de Pooling"
+            title: "Pooling Mode"
+            title_es: "Modo de Pooling"
             description: |
-              **EN:** Token aggregation into sentence embedding:
+              Token aggregation into sentence embedding:
               - `mean`: average all tokens — **recommended**, most stable.
               - `cls`: CLS token only (BERT-style, less stable).
               - `max`: max-pooling across tokens (salient features).
 
-              **ES:** Agregación de tokens en embedding de oración:
+              **Impacto:** `mean` es la opción más común y robusta. `cls` para tareas estilo clasificación.
+            description_es: |
+              Agregación de tokens en embedding de oración:
               - `mean`: promedio de todos los tokens — **recomendado**, más estable.
               - `cls`: solo token CLS (estilo BERT, menos estable).
               - `max`: max-pooling entre tokens (características salientes).
@@ -1669,47 +2099,60 @@ properties:
             examples: [mean]
           trust_remote_code:
             type: boolean
-            title: "Trust Remote Code / Confiar en Código Remoto"
+            title: "Trust Remote Code"
+            title_es: "Confiar en Código Remoto"
             description: |
-              **EN:** Allow custom code from model repo. Required for some custom models. Security risk for untrusted sources.
-              **ES:** Permitir código personalizado del repo del modelo. Requerido para algunos modelos custom. Riesgo de seguridad para fuentes no confiables.
+              Allow custom code from model repo. Required for some custom models. Security risk for untrusted sources.
+            description_es: |
+              Permitir código personalizado del repo del modelo. Requerido para algunos modelos custom. Riesgo de seguridad para fuentes no confiables.
             examples: [false]
           use_amp:
             type: boolean
-            title: "Use AMP / Usar Precisión Mixta"
+            title: "Use AMP"
+            title_es: "Usar Precisión Mixta"
             description: |
-              **EN:** Enable FP16 mixed precision for SBERT. ~50% less memory, faster on Tensor Core GPUs. Recommended.
-              **ES:** Habilitar precisión mixta FP16 para SBERT. ~50% menos memoria, más rápido en GPUs Tensor Core. Recomendado.
+              Enable FP16 mixed precision for SBERT. ~50% less memory, faster on Tensor Core GPUs. Recommended.
+            description_es: |
+              Habilitar precisión mixta FP16 para SBERT. ~50% menos memoria, más rápido en GPUs Tensor Core. Recomendado.
             examples: [true]
           resample_balanced:
             type: boolean
-            title: "Resample Balanced / Remuestreo Balanceado"
+            title: "Resample Balanced"
+            title_es: "Remuestreo Balanceado"
             description: |
-              **EN:** Resample to balanced distribution over similarity scores. Useful for imbalanced paired_similarity datasets. May duplicate/discard data.
-              **ES:** Remuestrear a distribución balanceada sobre puntajes de similitud. Útil para datasets paired_similarity desbalanceados. Puede duplicar/descartar datos.
+              Resample to balanced distribution over similarity scores. Useful for imbalanced paired_similarity datasets. May duplicate/discard data.
+            description_es: |
+              Remuestrear a distribución balanceada sobre puntajes de similitud. Útil para datasets paired_similarity desbalanceados. Puede duplicar/descartar datos.
             examples: [true]
           standardize_scores:
             type: boolean
-            title: "Standardize Scores / Estandarizar Puntajes"
+            title: "Standardize Scores"
+            title_es: "Estandarizar Puntajes"
             description: |
-              **EN:** Z-score normalize similarity scores (mean=0, std=`resample_std`). Alternative to `resample_balanced`. Preserves all data.
-              **ES:** Normalizar puntajes de similitud con z-score (media=0, std=`resample_std`). Alternativa a `resample_balanced`. Preserva todos los datos.
+              Z-score normalize similarity scores (mean=0, std=`resample_std`). Alternative to `resample_balanced`. Preserves all data.
+            description_es: |
+              Normalizar puntajes de similitud con z-score (media=0, std=`resample_std`). Alternativa a `resample_balanced`. Preserva todos los datos.
             examples: [false]
           resample_std:
             type: number
-            title: "Resample Std Dev / Desviación Estándar de Remuestreo"
+            title: "Resample Std Dev"
+            title_es: "Desviación Estándar de Remuestreo"
             description: |
-              **EN:** Target std dev when `standardize_scores=true`. Typical: 0.2–0.5. Formula: `(score - mean) / resample_std`.
-              **ES:** Desviación estándar objetivo cuando `standardize_scores=true`. Típico: 0.2–0.5. Fórmula: `(score - mean) / resample_std`.
+              Target std dev when `standardize_scores=true`. Typical: 0.2–0.5. Formula: `(score - mean) / resample_std`.
+            description_es: |
+              Desviación estándar objetivo cuando `standardize_scores=true`. Típico: 0.2–0.5. Fórmula: `(score - mean) / resample_std`.
             examples: [0.3]
           optimizer:
             type: object
-            title: "SBERT Optimizer / Optimizador SBERT"
+            title: "SBERT Optimizer"
+            title_es: "Optimizador SBERT"
             description: |
-              **EN:** Custom optimizer for SBERT. Overrides default sentence-transformers AdamW when specified.
+              Custom optimizer for SBERT. Overrides default sentence-transformers AdamW when specified.
               Uses the same classes as MLM training. If omitted, default AdamW is used.
 
-              **ES:** Optimizador personalizado para SBERT. Anula el AdamW por defecto de sentence-transformers
+              **Impacto:** Solo especificar si se necesita un optimizador diferente al AdamW estándar.
+            description_es: |
+              Optimizador personalizado para SBERT. Anula el AdamW por defecto de sentence-transformers
               cuando se especifica. Usa las mismas clases que entrenamiento MLM. Si se omite, se usa AdamW por defecto.
 
               **Impacto:** Solo especificar si se necesita un optimizador diferente al AdamW estándar.
@@ -1720,7 +2163,9 @@ properties:
               optimizer_class:
                 type: string
                 title: "Optimizer Class"
+                title_es: "Clase de Optimizador"
                 description: "Optimizer algorithm from the project's optimizer registry. All optimizers subclass torch.optim.Optimizer. When specified, this optimizer replaces the default sentence-transformers AdamW. The optimizer class is passed to fit() as optimizer_cls. Supported values: turbo_muon (accelerated muon with Nesterov-spectral normalization), adamw (Adam with decoupled weight decay), lion (sign-based, memory efficient), muon (layer-wise momentum), radam (rectified Adam), adan (Nesterov-accelerated adaptive), adopt (momentum-based adaptive), ademamix (AdaMix momentum), mars_adamw (MARS regularized), cautious_adamw (gradient masking), lamb (LARS-style large batch), schedulefree_adamw (no LR schedule), shampoo (second-order), soap (sparse), anon (Adaptivity Non-restricted Optimizer with tunable adaptivity via gamma), apollo (low-rank projected gradient scaling), apollo_mini (rank-1 APOLLO tensor scaling), q_apollo (quantized APOLLO states), sgd_momentum (classic SGD), adafactor (memory-efficient), prodigy (adaptive, minimal tuning), sophia (Hessian-aware), galore_adamw (GaLore gradient compression)."
+                description_es: "Algoritmo de optimización del registro de optimizadores del proyecto. Todos los optimizadores heredan de `torch.optim.Optimizer`. Cuando se especifica, este optimizador reemplaza el AdamW por defecto de sentence-transformers. La clase de optimizador se pasa a `fit()` como `optimizer_cls`. Valores soportados: `turbo_muon` (Muon acelerado con normalización espectral de Nesterov), `adamw` (Adam con weight decay desacoplado), `lion` (basado en signo y eficiente en memoria), `muon` (momentum por capa), `radam` (Rectified Adam), `adan` (adaptativo acelerado por Nesterov), `adopt` (adaptativo basado en momentum), `ademamix` (momentum tipo AdaMix), `mars_adamw` (regularizado con MARS), `cautious_adamw` (enmascarado de gradientes), `lamb` (estilo LARS para lotes grandes), `schedulefree_adamw` (sin scheduler de LR), `shampoo` (de segundo orden), `soap` (disperso), `anon` (Adaptivity Non-restricted Optimizer con adaptividad ajustable vía gamma), `apollo` (escalado de gradiente proyectado de bajo rango), `apollo_mini` (escalado APOLLO tensorial rango-1), `q_apollo` (estados APOLLO cuantizados), `sgd_momentum` (SGD clásico), `adafactor` (eficiente en memoria), `prodigy` (adaptativo con ajuste mínimo), `sophia` (consciente del Hessiano), `galore_adamw` (compresión de gradiente GaLore)."
                 enum:
                   - sgd_momentum
                   - adamw
@@ -1749,7 +2194,9 @@ properties:
               parameters:
                 type: object
                 title: "Optimizer Parameters"
+                title_es: "Parámetros del Optimizador"
                 description: "Optimizer-specific hyperparameters passed to the optimizer constructor. Each optimizer supports different parameters. Common parameters: lr (learning rate, overridden by learning_rate field), momentum (for SGD/muon/turbo_muon), nesterov (for muon/turbo_muon), ns_steps (Nesterov-spectral steps for muon/turbo_muon), ns_eps (Nesterov-spectral epsilon for muon/turbo_muon), cautious_clip (for cautious_adamw), rho/update_k (for sophia), d_coef (for prodigy), rank/update_proj_gap (for galore_adamw), beta2_decay/clip_threshold/eps1/eps2 (for adafactor). Parameters are passed as key-value pairs."
+                description_es: "Hiperparámetros específicos del optimizador que se pasan al constructor del optimizador. Cada optimizador soporta parámetros distintos. Parámetros comunes: `lr` (tasa de aprendizaje, sobrescrita por el campo `learning_rate`), `momentum` (para `sgd_momentum`/`muon`/`turbo_muon`), `nesterov` (para `muon`/`turbo_muon`), `ns_steps` (pasos espectrales de Nesterov para `muon`/`turbo_muon`), `ns_eps` (epsilon espectral de Nesterov para `muon`/`turbo_muon`), `cautious_clip` (para `cautious_adamw`), `rho`/`update_k` (para `sophia`), `d_coef` (para `prodigy`), `rank`/`update_proj_gap` (para `galore_adamw`), `beta2_decay`/`clip_threshold`/`eps1`/`eps2` (para `adafactor`). Los parámetros se pasan como pares clave-valor."
                 additionalProperties: true
                 minProperties: 0
                 examples:
@@ -1760,7 +2207,9 @@ properties:
           wandb_project:
             type: string
             title: "Weights & Biases Project Name"
+            title_es: "Nombre del Proyecto de Weights & Biases"
             description: "Custom project name for Weights & Biases telemetry tracking. When specified, training metrics and artifacts are logged to this W&B project. Useful for organizing experiments, comparing runs, and sharing results. If not specified, W&B logging may use a default project name or be disabled depending on environment configuration. Example: 'sbert-spanish-finetuning' for Spanish SBERT experiments."
+            description_es: "Nombre de proyecto personalizado para el seguimiento de telemetría en Weights & Biases. Cuando se especifica, las métricas y artefactos de entrenamiento se registran en este proyecto de W&B. Es útil para organizar experimentos, comparar ejecuciones y compartir resultados. Si no se especifica, el registro en W&B puede usar un nombre de proyecto por defecto o deshabilitarse según la configuración del entorno. Ejemplo: `sbert-spanish-finetuning` para experimentos de fine-tuning SBERT en español."
             examples: ["sbert-spanish-finetuning", "mrbert-es-sbert-continual"]
     allOf:
       - if:
