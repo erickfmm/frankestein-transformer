@@ -21,9 +21,12 @@ AVAILABLE_COMMANDS = [
     {"id": "sbert-infer", "name": "SBERT Infer", "description": "Run SBERT inference tasks"},
 ]
 
-LANGUAGE_OPTIONS = {
-    "English": "en",
-    "Español": "es",
+LANG_EN = "en"
+LANG_ES = "es"
+
+LANGUAGE_LABELS = {
+    LANG_EN: "English",
+    LANG_ES: "Español",
 }
 
 UI_STRINGS = {
@@ -39,6 +42,46 @@ UI_STRINGS = {
         "en": "Parameter group",
         "es": "Grupo de parámetros",
     },
+    "optimizer_configuration": {
+        "en": "Optimizer Configuration",
+        "es": "Configuración del Optimizador",
+    },
+    "parameter_group_info": {
+        "en": "The following parameters are available for this optimizer. Prefix each parameter with the optimizer class name (e.g., 'adamw-lr_embeddings').",
+        "es": "Los siguientes parámetros están disponibles para este optimizador. Prefija cada parámetro con el nombre de la clase del optimizador (por ejemplo, 'adamw-lr_embeddings').",
+    },
+    "embeddings_group": {
+        "en": "Embeddings",
+        "es": "Embeddings",
+    },
+    "embeddings_caption": {
+        "en": "Parameters controlling token embedding matrix optimization.",
+        "es": "Parámetros que controlan la optimización de la matriz de embeddings de tokens.",
+    },
+    "normalization_group": {
+        "en": "Normalization Layers",
+        "es": "Capas de Normalización",
+    },
+    "normalization_caption": {
+        "en": "Parameters for layer normalization and other normalization layers.",
+        "es": "Parámetros para layer normalization y otras capas de normalización.",
+    },
+    "attention_group": {
+        "en": "Attention Layers",
+        "es": "Capas de Atención",
+    },
+    "attention_caption": {
+        "en": "Parameters for attention mechanism optimization (all attention variants).",
+        "es": "Parámetros para la optimización de mecanismos de atención (todas las variantes).",
+    },
+    "other_group": {
+        "en": "Other Parameters",
+        "es": "Otros Parámetros",
+    },
+    "other_caption": {
+        "en": "Parameters for remaining model components (FFN, routing, etc.).",
+        "es": "Parámetros para los componentes restantes del modelo (FFN, routing, etc.).",
+    },
 }
 
 
@@ -50,22 +93,19 @@ def load_schema() -> Dict[str, Any]:
 
 def get_current_language() -> str:
     """Return the active UI language."""
-    selected_label = st.session_state.get("ui_language_selector")
-    if selected_label in LANGUAGE_OPTIONS:
-        return LANGUAGE_OPTIONS[selected_label]
-    return st.session_state.get("ui_language", "en")
+    return st.session_state.get("ui_language", LANG_EN)
 
 
 def get_ui_text(key: str) -> str:
     """Return localized static UI text."""
     localized_options = UI_STRINGS.get(key, {})
-    return localized_options.get(get_current_language(), localized_options.get("en", key))
+    return localized_options.get(get_current_language()) or localized_options.get(LANG_EN, key)
 
 
 def get_localized_schema_value(field_schema: Dict[str, Any], key: str, fallback: str = "") -> str:
     """Return localized schema metadata, falling back to English when needed."""
     language = get_current_language()
-    localized_key = f"{key}_es" if language == "es" else key
+    localized_key = f"{key}_{language}" if language != LANG_EN else key
     return field_schema.get(localized_key) or field_schema.get(key, fallback)
 
 
@@ -194,9 +234,7 @@ def render_object(
         prop_title = get_field_title(prop_schema, prop_name)
         prop_description = get_field_description(prop_schema)
         is_required = prop_name in required
-        expander_label = prop_title
-        if is_required:
-            expander_label = f"{prop_title} ({get_ui_text('required')})"
+        expander_label = f"{prop_title} ({get_ui_text('required')})" if is_required else prop_title
 
         with st.expander(expander_label, expanded=is_required):
             if prop_description:
@@ -212,7 +250,7 @@ def render_object(
 
 def render_optimizer_section(optimizer_class: str) -> Dict[str, Any]:
     """Render the optimizer configuration section."""
-    st.subheader("Optimizer Configuration")
+    st.subheader(get_ui_text("optimizer_configuration"))
     
     result = {
         "optimizer_class": optimizer_class,
@@ -222,10 +260,7 @@ def render_optimizer_section(optimizer_class: str) -> Dict[str, Any]:
     schema = load_schema()
     
     with st.expander(get_ui_text("parameter_group"), expanded=False):
-        st.info(
-            "The following parameters are available for this optimizer. "
-            "Prefix each parameter with the optimizer class name (e.g., 'adamw-lr_embeddings')."
-        )
+        st.info(get_ui_text("parameter_group_info"))
     
     # Map optimizer class to its prefix
     prefix_map = {
@@ -260,9 +295,8 @@ def render_optimizer_section(optimizer_class: str) -> Dict[str, Any]:
         "eps_": "Epsilon prevents division by zero in adaptive optimizers. Small values ensure numerical stability.",
     }
     
-    with st.expander("Embeddings", expanded=False):
-        st.write("##### Embeddings")
-        st.caption("Parameters controlling token embedding matrix optimization.")
+    with st.expander(get_ui_text("embeddings_group"), expanded=False):
+        st.caption(get_ui_text("embeddings_caption"))
         lr_emb = st.number_input(
             "Learning Rate",
             value=1e-6,
@@ -282,9 +316,8 @@ def render_optimizer_section(optimizer_class: str) -> Dict[str, Any]:
         result[f"{prefix}-lr_embeddings"] = lr_emb
         result[f"{prefix}-wd_embeddings"] = wd_emb
     
-    with st.expander("Normalization Layers", expanded=False):
-        st.write("##### Normalization Layers")
-        st.caption("Parameters for layer normalization and other normalization layers.")
+    with st.expander(get_ui_text("normalization_group"), expanded=False):
+        st.caption(get_ui_text("normalization_caption"))
         lr_norm = st.number_input(
             "Learning Rate",
             value=5e-6,
@@ -304,9 +337,8 @@ def render_optimizer_section(optimizer_class: str) -> Dict[str, Any]:
         result[f"{prefix}-lr_norms"] = lr_norm
         result[f"{prefix}-wd_norms"] = wd_norm
     
-    with st.expander("Attention Layers", expanded=False):
-        st.write("##### Attention Layers")
-        st.caption("Parameters for attention mechanism optimization (all attention variants).")
+    with st.expander(get_ui_text("attention_group"), expanded=False):
+        st.caption(get_ui_text("attention_caption"))
         lr_attn = st.number_input(
             "Learning Rate",
             value=3e-6,
@@ -326,9 +358,8 @@ def render_optimizer_section(optimizer_class: str) -> Dict[str, Any]:
         result[f"{prefix}-lr_attention"] = lr_attn
         result[f"{prefix}-wd_attention"] = wd_attn
     
-    with st.expander("Other Parameters", expanded=False):
-        st.write("##### Other Parameters")
-        st.caption("Parameters for remaining model components (FFN, routing, etc.).")
+    with st.expander(get_ui_text("other_group"), expanded=False):
+        st.caption(get_ui_text("other_caption"))
         lr_other = st.number_input(
             "Learning Rate",
             value=2e-6,
@@ -710,17 +741,15 @@ def main(argv=None):
     
     # Sidebar for command selection
     if "ui_language" not in st.session_state:
-        st.session_state["ui_language"] = "en"
-    if "ui_language_selector" not in st.session_state:
-        st.session_state["ui_language_selector"] = "English"
+        st.session_state["ui_language"] = LANG_EN
 
-    selected_language_label = st.sidebar.selectbox(
+    st.sidebar.selectbox(
         get_ui_text("language_selector"),
-        list(LANGUAGE_OPTIONS.keys()),
-        index=0 if get_current_language() == "en" else 1,
-        key="ui_language_selector",
+        list(LANGUAGE_LABELS.keys()),
+        index=0 if get_current_language() == LANG_EN else 1,
+        key="ui_language",
+        format_func=lambda language_code: LANGUAGE_LABELS[language_code],
     )
-    st.session_state["ui_language"] = LANGUAGE_OPTIONS[selected_language_label]
 
     st.sidebar.header("Command Selection")
     command_info = st.sidebar.selectbox(
