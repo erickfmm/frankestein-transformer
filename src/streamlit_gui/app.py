@@ -235,23 +235,35 @@ def render_object(
         prop_description = get_field_description(prop_schema)
         is_required = prop_name in required
         expander_label = f"{prop_title} ({get_ui_text('required')})" if is_required else prop_title
+        use_expander = level == 0
 
-        with st.expander(expander_label, expanded=is_required):
-            if prop_description:
-                st.caption(prop_description)
+        if use_expander:
+            with st.expander(expander_label, expanded=is_required):
+                if prop_description:
+                    st.caption(prop_description)
 
-            prop_value = render_field(prop_name, prop_schema, parent_key, level)
+                prop_value = render_field(prop_name, prop_schema, parent_key, level)
 
-            if prop_value is not None:
-                result[prop_name] = prop_value
+                if prop_value is not None:
+                    result[prop_name] = prop_value
+        else:
+            with st.container():
+                st.markdown(f"**{expander_label}**")
+                if prop_description:
+                    st.caption(prop_description)
+
+                prop_value = render_field(prop_name, prop_schema, parent_key, level)
+
+                if prop_value is not None:
+                    result[prop_name] = prop_value
+
+                st.divider()
     
     return result
 
 
 def render_optimizer_section(optimizer_class: str) -> Dict[str, Any]:
     """Render the optimizer configuration section."""
-    st.subheader(get_ui_text("optimizer_configuration"))
-    
     result = {
         "optimizer_class": optimizer_class,
     }
