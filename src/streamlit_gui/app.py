@@ -58,7 +58,8 @@ def get_current_language() -> str:
 
 def get_ui_text(key: str) -> str:
     """Return localized static UI text."""
-    return UI_STRINGS.get(key, {}).get(get_current_language(), UI_STRINGS.get(key, {}).get("en", key))
+    localized_options = UI_STRINGS.get(key, {})
+    return localized_options.get(get_current_language(), localized_options.get("en", key))
 
 
 def get_localized_schema_value(field_schema: Dict[str, Any], key: str, fallback: str = "") -> str:
@@ -197,7 +198,7 @@ def render_object(
         if is_required:
             expander_label = f"{prop_title} ({get_ui_text('required')})"
 
-        with st.expander(expander_label, expanded=is_required and level <= 1):
+        with st.expander(expander_label, expanded=is_required):
             if prop_description:
                 st.caption(prop_description)
 
