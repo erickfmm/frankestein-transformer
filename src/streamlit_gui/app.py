@@ -21,11 +21,61 @@ AVAILABLE_COMMANDS = [
     {"id": "sbert-infer", "name": "SBERT Infer", "description": "Run SBERT inference tasks"},
 ]
 
+LANGUAGE_OPTIONS = {
+    "English": "en",
+    "Español": "es",
+}
+
+UI_STRINGS = {
+    "required": {
+        "en": "Required",
+        "es": "Obligatorio",
+    },
+    "language_selector": {
+        "en": "Language",
+        "es": "Idioma",
+    },
+    "parameter_group": {
+        "en": "Parameter group",
+        "es": "Grupo de parámetros",
+    },
+}
+
 
 def load_schema() -> Dict[str, Any]:
     """Load the training configuration schema."""
     with open(SCHEMA_PATH, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
+
+
+def get_current_language() -> str:
+    """Return the active UI language."""
+    selected_label = st.session_state.get("ui_language_selector")
+    if selected_label in LANGUAGE_OPTIONS:
+        return LANGUAGE_OPTIONS[selected_label]
+    return st.session_state.get("ui_language", "en")
+
+
+def get_ui_text(key: str) -> str:
+    """Return localized static UI text."""
+    return UI_STRINGS.get(key, {}).get(get_current_language(), UI_STRINGS.get(key, {}).get("en", key))
+
+
+def get_localized_schema_value(field_schema: Dict[str, Any], key: str, fallback: str = "") -> str:
+    """Return localized schema metadata, falling back to English when needed."""
+    language = get_current_language()
+    localized_key = f"{key}_es" if language == "es" else key
+    return field_schema.get(localized_key) or field_schema.get(key, fallback)
+
+
+def get_field_title(field_schema: Dict[str, Any], fallback: str) -> str:
+    """Return the localized title for a schema field."""
+    return get_localized_schema_value(field_schema, "title", fallback)
+
+
+def get_field_description(field_schema: Dict[str, Any]) -> str:
+    """Return the localized description for a schema field."""
+    return get_localized_schema_value(field_schema, "description", "")
 
 
 def render_field(
@@ -36,8 +86,8 @@ def render_field(
 ) -> Any:
     """Render a form field based on its schema type."""
     # Get title and description from schema
-    field_title = field_schema.get("title", field_name)
-    field_description = field_schema.get("description", "")
+    field_title = get_field_title(field_schema, field_name)
+    field_description = get_field_description(field_schema)
     
     # Generate a unique key for the field
     field_key = f"{parent_key}.{field_name}" if parent_key else field_name
@@ -121,9 +171,6 @@ def render_field(
             return [line.strip() for line in array_input.split("\n") if line.strip()]
     
     elif field_type == "object":
-        st.write(f"### {field_title}")
-        if field_description:
-            st.caption(field_description)
         return render_object(field_name, field_schema, parent_key, level + 1)
     
     return None
@@ -143,35 +190,28 @@ def render_object(
     parent_key = f"{parent_key}.{obj_name}" if parent_key else obj_name
     
     for prop_name, prop_schema in properties.items():
-        with st.container():
-            # Get title from schema for display
-            prop_title = prop_schema.get("title", prop_name)
-            prop_description = prop_schema.get("description", "")
-            
-            # Mark required fields
-            is_required = prop_name in required
-            if is_required:
-                st.markdown(f"**{prop_title}** *:red[Required]*")
-            else:
-                st.markdown(f"**{prop_title}**")
-            
-            # Show description if available
+        prop_title = get_field_title(prop_schema, prop_name)
+        prop_description = get_field_description(prop_schema)
+        is_required = prop_name in required
+        expander_label = prop_title
+        if is_required:
+            expander_label = f"{prop_title} ({get_ui_text('required')})"
+
+        with st.expander(expander_label, expanded=is_required and level <= 1):
             if prop_description:
                 st.caption(prop_description)
-            
+
             prop_value = render_field(prop_name, prop_schema, parent_key, level)
-            
+
             if prop_value is not None:
                 result[prop_name] = prop_value
-            
-            st.divider()
     
     return result
 
 
 def render_optimizer_section(optimizer_class: str) -> Dict[str, Any]:
     """Render the optimizer configuration section."""
-    st.header("Optimizer Configuration")
+    st.subheader("Optimizer Configuration")
     
     result = {
         "optimizer_class": optimizer_class,
@@ -179,14 +219,12 @@ def render_optimizer_section(optimizer_class: str) -> Dict[str, Any]:
     
     # Load schema for optimizer parameters
     schema = load_schema()
-    optimizer_schema = schema["properties"]["training"]["properties"]["optimizer"]
-    optimizer_class_schema = optimizer_schema["properties"]["optimizer_class"]
     
-    st.subheader("Optimizer Parameters")
-    st.info(
-        "The following parameters are available for this optimizer. "
-        "Prefix each parameter with the optimizer class name (e.g., 'adamw-lr_embeddings')."
-    )
+    with st.expander(get_ui_text("parameter_group"), expanded=False):
+        st.info(
+            "The following parameters are available for this optimizer. "
+            "Prefix each parameter with the optimizer class name (e.g., 'adamw-lr_embeddings')."
+        )
     
     # Map optimizer class to its prefix
     prefix_map = {
@@ -213,17 +251,6 @@ def render_optimizer_section(optimizer_class: str) -> Dict[str, Any]:
     
     prefix = prefix_map.get(optimizer_class, optimizer_class)
     
-    # Render common parameter groups
-    param_groups = {
-        "embeddings": st.container(),
-        "norms": st.container(),
-        "ode": st.container(),
-        "retnet": st.container(),
-        "mamba": st.container(),
-        "attention": st.container(),
-        "other": st.container(),
-    }
-    
     # Descriptions for parameter groups
     param_descriptions = {
         "lr_": "Learning rate controls step size for parameter updates. Higher values converge faster but may overshoot. Lower values are more stable but slower.",
@@ -232,7 +259,7 @@ def render_optimizer_section(optimizer_class: str) -> Dict[str, Any]:
         "eps_": "Epsilon prevents division by zero in adaptive optimizers. Small values ensure numerical stability.",
     }
     
-    with param_groups["embeddings"]:
+    with st.expander("Embeddings", expanded=False):
         st.write("##### Embeddings")
         st.caption("Parameters controlling token embedding matrix optimization.")
         lr_emb = st.number_input(
@@ -254,7 +281,7 @@ def render_optimizer_section(optimizer_class: str) -> Dict[str, Any]:
         result[f"{prefix}-lr_embeddings"] = lr_emb
         result[f"{prefix}-wd_embeddings"] = wd_emb
     
-    with param_groups["norms"]:
+    with st.expander("Normalization Layers", expanded=False):
         st.write("##### Normalization Layers")
         st.caption("Parameters for layer normalization and other normalization layers.")
         lr_norm = st.number_input(
@@ -276,7 +303,7 @@ def render_optimizer_section(optimizer_class: str) -> Dict[str, Any]:
         result[f"{prefix}-lr_norms"] = lr_norm
         result[f"{prefix}-wd_norms"] = wd_norm
     
-    with param_groups["attention"]:
+    with st.expander("Attention Layers", expanded=False):
         st.write("##### Attention Layers")
         st.caption("Parameters for attention mechanism optimization (all attention variants).")
         lr_attn = st.number_input(
@@ -298,7 +325,7 @@ def render_optimizer_section(optimizer_class: str) -> Dict[str, Any]:
         result[f"{prefix}-lr_attention"] = lr_attn
         result[f"{prefix}-wd_attention"] = wd_attn
     
-    with param_groups["other"]:
+    with st.expander("Other Parameters", expanded=False):
         st.write("##### Other Parameters")
         st.caption("Parameters for remaining model components (FFN, routing, etc.).")
         lr_other = st.number_input(
@@ -354,24 +381,34 @@ def build_config_from_schema(schema: Dict[str, Any]) -> Dict[str, Any]:
     
     if model_mode == "Custom Model":
         with st.expander("Model Parameters", expanded=True):
+            model_schema = schema["properties"]["model"]
+            model_description = get_field_description(model_schema)
+            if model_description:
+                st.caption(model_description)
             model_config = render_object("model", schema["properties"]["model"])
             config["model_class"] = st.selectbox(
-                "Model Class",
+                get_field_title(schema["properties"]["model_class"], "Model Class"),
                 schema["properties"]["model_class"]["enum"],
                 index=0,
                 key="model_class",
+                help=get_field_description(schema["properties"]["model_class"]),
             )
             config["model"] = model_config
     else:
         with st.expander("Base Model Configuration", expanded=True):
             base_model = st.text_input(
-                "Base Model ID/Path",
+                get_field_title(schema["properties"]["base_model"], "Base Model ID/Path"),
                 value="answerdotai/ModernBERT-base",
                 key="base_model",
+                help=get_field_description(schema["properties"]["base_model"]),
             )
             config["base_model"] = base_model
             
-            st.write("**Tokenizer Configuration**")
+            tokenizer_schema = schema["properties"]["tokenizer"]
+            st.write(f"**{get_field_title(tokenizer_schema, 'Tokenizer Configuration')}**")
+            tokenizer_description = get_field_description(tokenizer_schema)
+            if tokenizer_description:
+                st.caption(tokenizer_description)
             tokenizer_config = render_object("tokenizer", schema["properties"]["tokenizer"])
             config["tokenizer"] = tokenizer_config
     
@@ -381,239 +418,237 @@ def build_config_from_schema(schema: Dict[str, Any]) -> Dict[str, Any]:
         training_schema = schema["properties"]["training"]
         
         # Task selection
+        task_schema = training_schema["properties"]["task"]
         task = st.selectbox(
-            "Training Task",
-            training_schema["properties"]["task"]["enum"],
+            get_field_title(task_schema, "Training Task"),
+            task_schema["enum"],
             index=0,
             key="training.task",
+            help=get_field_description(task_schema),
         )
         
         training_config = {"task": task}
         
         # General training parameters
-        st.write("##### General Training Parameters")
-        num_epochs_schema = training_schema["properties"]["num_epochs"]
-        batch_size_schema = training_schema["properties"]["batch_size"]
-        max_length_schema = training_schema["properties"]["max_length"]
-        
-        num_epochs = st.number_input(
-            num_epochs_schema.get("title", "Number of Epochs"),
-            value=5,
-            min_value=1,
-            key="training.num_epochs",
-            help=num_epochs_schema.get("description", ""),
-        )
-        batch_size = st.number_input(
-            batch_size_schema.get("title", "Batch Size"),
-            value=4,
-            min_value=1,
-            key="training.batch_size",
-            help=batch_size_schema.get("description", ""),
-        )
-        max_length = st.number_input(
-            max_length_schema.get("title", "Max Sequence Length"),
-            value=512,
-            min_value=1,
-            key="training.max_length",
-            help=max_length_schema.get("description", ""),
-        )
-        
-        training_config["num_epochs"] = num_epochs
-        training_config["batch_size"] = batch_size
-        training_config["max_length"] = max_length
+        with st.expander("General Training Parameters", expanded=True):
+            num_epochs_schema = training_schema["properties"]["num_epochs"]
+            batch_size_schema = training_schema["properties"]["batch_size"]
+            max_length_schema = training_schema["properties"]["max_length"]
+
+            num_epochs = st.number_input(
+                get_field_title(num_epochs_schema, "Number of Epochs"),
+                value=5,
+                min_value=1,
+                key="training.num_epochs",
+                help=get_field_description(num_epochs_schema),
+            )
+            batch_size = st.number_input(
+                get_field_title(batch_size_schema, "Batch Size"),
+                value=4,
+                min_value=1,
+                key="training.batch_size",
+                help=get_field_description(batch_size_schema),
+            )
+            max_length = st.number_input(
+                get_field_title(max_length_schema, "Max Sequence Length"),
+                value=512,
+                min_value=1,
+                key="training.max_length",
+                help=get_field_description(max_length_schema),
+            )
+
+            training_config["num_epochs"] = num_epochs
+            training_config["batch_size"] = batch_size
+            training_config["max_length"] = max_length
         
         # Dataset parameters
-        st.write("##### Dataset Parameters")
         max_samples_schema = training_schema["properties"]["max_samples"]
         dataset_batch_size_schema = training_schema["properties"]["dataset_batch_size"]
-        
-        max_samples = st.number_input(
-            max_samples_schema.get("title", "Max Samples"),
-            value=20000000,
-            min_value=1,
-            key="training.max_samples",
-            help=max_samples_schema.get("description", ""),
-        )
-        dataset_batch_size = st.number_input(
-            dataset_batch_size_schema.get("title", "Dataset Batch Size"),
-            value=25000,
-            min_value=1,
-            key="training.dataset_batch_size",
-            help=dataset_batch_size_schema.get("description", ""),
-        )
-        
-        training_config["max_samples"] = max_samples
-        training_config["dataset_batch_size"] = dataset_batch_size
+        with st.expander("Dataset Parameters", expanded=False):
+            max_samples = st.number_input(
+                get_field_title(max_samples_schema, "Max Samples"),
+                value=20000000,
+                min_value=1,
+                key="training.max_samples",
+                help=get_field_description(max_samples_schema),
+            )
+            dataset_batch_size = st.number_input(
+                get_field_title(dataset_batch_size_schema, "Dataset Batch Size"),
+                value=25000,
+                min_value=1,
+                key="training.dataset_batch_size",
+                help=get_field_description(dataset_batch_size_schema),
+            )
+
+            training_config["max_samples"] = max_samples
+            training_config["dataset_batch_size"] = dataset_batch_size
         
         # Optimizer
-        st.write("##### Optimizer")
-        optimizer_class = st.selectbox(
-            "Optimizer Class",
-            schema["properties"]["training"]["properties"]["optimizer"]["properties"]["optimizer_class"]["enum"],
-            index=1,  # Default to adamw
-            key="training.optimizer.optimizer_class",
-        )
-        
-        optimizer_params = render_optimizer_section(optimizer_class)
+        optimizer_class_schema = schema["properties"]["training"]["properties"]["optimizer"]["properties"]["optimizer_class"]
+        with st.expander("Optimizer", expanded=False):
+            optimizer_class = st.selectbox(
+                get_field_title(optimizer_class_schema, "Optimizer Class"),
+                optimizer_class_schema["enum"],
+                index=1,  # Default to adamw
+                key="training.optimizer.optimizer_class",
+                help=get_field_description(optimizer_class_schema),
+            )
+
+            optimizer_params = render_optimizer_section(optimizer_class)
         training_config["optimizer"] = optimizer_params
         
         # Scheduler
-        st.write("##### Scheduler")
         scheduler_total_steps_schema = training_schema["properties"]["scheduler_total_steps"]
         scheduler_warmup_ratio_schema = training_schema["properties"]["scheduler_warmup_ratio"]
         scheduler_type_schema = training_schema["properties"]["scheduler_type"]
-        
-        scheduler_total_steps = st.number_input(
-            scheduler_total_steps_schema.get("title", "Total Steps"),
-            value=10000,
-            min_value=1,
-            key="training.scheduler_total_steps",
-            help=scheduler_total_steps_schema.get("description", ""),
-        )
-        scheduler_warmup_ratio = st.number_input(
-            scheduler_warmup_ratio_schema.get("title", "Warmup Ratio"),
-            value=0.1,
-            min_value=0.0,
-            max_value=1.0,
-            step=0.01,
-            key="training.scheduler_warmup_ratio",
-            help=scheduler_warmup_ratio_schema.get("description", ""),
-        )
-        scheduler_type = st.selectbox(
-            scheduler_type_schema.get("title", "Scheduler Type"),
-            scheduler_type_schema.get("enum", []),
-            index=0,
-            key="training.scheduler_type",
-            help=scheduler_type_schema.get("description", ""),
-        )
-        
-        training_config["scheduler_total_steps"] = scheduler_total_steps
-        training_config["scheduler_warmup_ratio"] = scheduler_warmup_ratio
-        training_config["scheduler_type"] = scheduler_type
+        with st.expander("Scheduler", expanded=False):
+            scheduler_total_steps = st.number_input(
+                get_field_title(scheduler_total_steps_schema, "Total Steps"),
+                value=10000,
+                min_value=1,
+                key="training.scheduler_total_steps",
+                help=get_field_description(scheduler_total_steps_schema),
+            )
+            scheduler_warmup_ratio = st.number_input(
+                get_field_title(scheduler_warmup_ratio_schema, "Warmup Ratio"),
+                value=0.1,
+                min_value=0.0,
+                max_value=1.0,
+                step=0.01,
+                key="training.scheduler_warmup_ratio",
+                help=get_field_description(scheduler_warmup_ratio_schema),
+            )
+            scheduler_type = st.selectbox(
+                get_field_title(scheduler_type_schema, "Scheduler Type"),
+                scheduler_type_schema.get("enum", []),
+                index=0,
+                key="training.scheduler_type",
+                help=get_field_description(scheduler_type_schema),
+            )
+
+            training_config["scheduler_total_steps"] = scheduler_total_steps
+            training_config["scheduler_warmup_ratio"] = scheduler_warmup_ratio
+            training_config["scheduler_type"] = scheduler_type
         
         # Gradient settings
-        st.write("##### Gradient Settings")
         gradient_accumulation_steps_schema = training_schema["properties"]["gradient_accumulation_steps"]
         grad_clip_max_norm_schema = training_schema["properties"]["grad_clip_max_norm"]
-        
-        gradient_accumulation_steps = st.number_input(
-            gradient_accumulation_steps_schema.get("title", "Gradient Accumulation Steps"),
-            value=4,
-            min_value=1,
-            key="training.gradient_accumulation_steps",
-            help=gradient_accumulation_steps_schema.get("description", ""),
-        )
-        grad_clip_max_norm = st.number_input(
-            grad_clip_max_norm_schema.get("title", "Gradient Clip Max Norm"),
-            value=5.0,
-            min_value=0.0,
-            key="training.grad_clip_max_norm",
-            help=grad_clip_max_norm_schema.get("description", ""),
-        )
-        
-        training_config["gradient_accumulation_steps"] = gradient_accumulation_steps
-        training_config["grad_clip_max_norm"] = grad_clip_max_norm
+        with st.expander("Gradient Settings", expanded=False):
+            gradient_accumulation_steps = st.number_input(
+                get_field_title(gradient_accumulation_steps_schema, "Gradient Accumulation Steps"),
+                value=4,
+                min_value=1,
+                key="training.gradient_accumulation_steps",
+                help=get_field_description(gradient_accumulation_steps_schema),
+            )
+            grad_clip_max_norm = st.number_input(
+                get_field_title(grad_clip_max_norm_schema, "Gradient Clip Max Norm"),
+                value=5.0,
+                min_value=0.0,
+                key="training.grad_clip_max_norm",
+                help=get_field_description(grad_clip_max_norm_schema),
+            )
+
+            training_config["gradient_accumulation_steps"] = gradient_accumulation_steps
+            training_config["grad_clip_max_norm"] = grad_clip_max_norm
         
         # Checkpoint settings
-        st.write("##### Checkpoint Settings")
         checkpoint_every_n_steps_schema = training_schema["properties"]["checkpoint_every_n_steps"]
         max_rolling_checkpoints_schema = training_schema["properties"]["max_rolling_checkpoints"]
         num_best_checkpoints_schema = training_schema["properties"]["num_best_checkpoints"]
-        
-        checkpoint_every_n_steps = st.number_input(
-            checkpoint_every_n_steps_schema.get("title", "Checkpoint Every N Steps"),
-            value=500,
-            min_value=1,
-            key="training.checkpoint_every_n_steps",
-            help=checkpoint_every_n_steps_schema.get("description", ""),
-        )
-        max_rolling_checkpoints = st.number_input(
-            max_rolling_checkpoints_schema.get("title", "Max Rolling Checkpoints"),
-            value=3,
-            min_value=1,
-            key="training.max_rolling_checkpoints",
-            help=max_rolling_checkpoints_schema.get("description", ""),
-        )
-        num_best_checkpoints = st.number_input(
-            num_best_checkpoints_schema.get("title", "Num Best Checkpoints"),
-            value=2,
-            min_value=1,
-            key="training.num_best_checkpoints",
-            help=num_best_checkpoints_schema.get("description", ""),
-        )
-        
-        training_config["checkpoint_every_n_steps"] = checkpoint_every_n_steps
-        training_config["max_rolling_checkpoints"] = max_rolling_checkpoints
-        training_config["num_best_checkpoints"] = num_best_checkpoints
+        with st.expander("Checkpoint Settings", expanded=False):
+            checkpoint_every_n_steps = st.number_input(
+                get_field_title(checkpoint_every_n_steps_schema, "Checkpoint Every N Steps"),
+                value=500,
+                min_value=1,
+                key="training.checkpoint_every_n_steps",
+                help=get_field_description(checkpoint_every_n_steps_schema),
+            )
+            max_rolling_checkpoints = st.number_input(
+                get_field_title(max_rolling_checkpoints_schema, "Max Rolling Checkpoints"),
+                value=3,
+                min_value=1,
+                key="training.max_rolling_checkpoints",
+                help=get_field_description(max_rolling_checkpoints_schema),
+            )
+            num_best_checkpoints = st.number_input(
+                get_field_title(num_best_checkpoints_schema, "Num Best Checkpoints"),
+                value=2,
+                min_value=1,
+                key="training.num_best_checkpoints",
+                help=get_field_description(num_best_checkpoints_schema),
+            )
+
+            training_config["checkpoint_every_n_steps"] = checkpoint_every_n_steps
+            training_config["max_rolling_checkpoints"] = max_rolling_checkpoints
+            training_config["num_best_checkpoints"] = num_best_checkpoints
         
         # Logging settings
-        st.write("##### Logging Settings")
         csv_log_path_schema = training_schema["properties"]["csv_log_path"]
         log_gradient_stats_schema = training_schema["properties"]["log_gradient_stats"]
         gradient_log_interval_schema = training_schema["properties"]["gradient_log_interval"]
-        
-        csv_log_path = st.text_input(
-            csv_log_path_schema.get("title", "CSV Log Path"),
-            value="training_metrics.csv",
-            key="training.csv_log_path",
-            help=csv_log_path_schema.get("description", ""),
-        )
-        log_gradient_stats = st.checkbox(
-            log_gradient_stats_schema.get("title", "Log Gradient Stats"),
-            value=True,
-            key="training.log_gradient_stats",
-            help=log_gradient_stats_schema.get("description", ""),
-        )
-        gradient_log_interval = st.number_input(
-            gradient_log_interval_schema.get("title", "Gradient Log Interval"),
-            value=10,
-            min_value=1,
-            key="training.gradient_log_interval",
-            help=gradient_log_interval_schema.get("description", ""),
-        )
-        
-        training_config["csv_log_path"] = csv_log_path
-        training_config["log_gradient_stats"] = log_gradient_stats
-        training_config["gradient_log_interval"] = gradient_log_interval
+        with st.expander("Logging Settings", expanded=False):
+            csv_log_path = st.text_input(
+                get_field_title(csv_log_path_schema, "CSV Log Path"),
+                value="training_metrics.csv",
+                key="training.csv_log_path",
+                help=get_field_description(csv_log_path_schema),
+            )
+            log_gradient_stats = st.checkbox(
+                get_field_title(log_gradient_stats_schema, "Log Gradient Stats"),
+                value=True,
+                key="training.log_gradient_stats",
+                help=get_field_description(log_gradient_stats_schema),
+            )
+            gradient_log_interval = st.number_input(
+                get_field_title(gradient_log_interval_schema, "Gradient Log Interval"),
+                value=10,
+                min_value=1,
+                key="training.gradient_log_interval",
+                help=get_field_description(gradient_log_interval_schema),
+            )
+
+            training_config["csv_log_path"] = csv_log_path
+            training_config["log_gradient_stats"] = log_gradient_stats
+            training_config["gradient_log_interval"] = gradient_log_interval
         
         # GPU settings
-        st.write("##### GPU Settings")
         gpu_temp_guard_enabled_schema = training_schema["properties"]["gpu_temp_guard_enabled"]
         gpu_temp_pause_threshold_c_schema = training_schema["properties"]["gpu_temp_pause_threshold_c"]
         gpu_temp_resume_threshold_c_schema = training_schema["properties"]["gpu_temp_resume_threshold_c"]
-        
-        gpu_temp_guard_enabled = st.checkbox(
-            gpu_temp_guard_enabled_schema.get("title", "Enable GPU Temperature Guard"),
-            value=True,
-            key="training.gpu_temp_guard_enabled",
-            help=gpu_temp_guard_enabled_schema.get("description", ""),
-        )
-        gpu_temp_pause_threshold_c = st.number_input(
-            gpu_temp_pause_threshold_c_schema.get("title", "GPU Temp Pause Threshold (°C)"),
-            value=90.0,
-            min_value=0.0,
-            key="training.gpu_temp_pause_threshold_c",
-            help=gpu_temp_pause_threshold_c_schema.get("description", ""),
-        )
-        gpu_temp_resume_threshold_c = st.number_input(
-            gpu_temp_resume_threshold_c_schema.get("title", "GPU Temp Resume Threshold (°C)"),
-            value=80.0,
-            min_value=0.0,
-            key="training.gpu_temp_resume_threshold_c",
-            help=gpu_temp_resume_threshold_c_schema.get("description", ""),
-        )
-        
-        training_config["gpu_temp_guard_enabled"] = gpu_temp_guard_enabled
-        training_config["gpu_temp_pause_threshold_c"] = gpu_temp_pause_threshold_c
-        training_config["gpu_temp_resume_threshold_c"] = gpu_temp_resume_threshold_c
+        with st.expander("GPU Settings", expanded=False):
+            gpu_temp_guard_enabled = st.checkbox(
+                get_field_title(gpu_temp_guard_enabled_schema, "Enable GPU Temperature Guard"),
+                value=True,
+                key="training.gpu_temp_guard_enabled",
+                help=get_field_description(gpu_temp_guard_enabled_schema),
+            )
+            gpu_temp_pause_threshold_c = st.number_input(
+                get_field_title(gpu_temp_pause_threshold_c_schema, "GPU Temp Pause Threshold (°C)"),
+                value=90.0,
+                min_value=0.0,
+                key="training.gpu_temp_pause_threshold_c",
+                help=get_field_description(gpu_temp_pause_threshold_c_schema),
+            )
+            gpu_temp_resume_threshold_c = st.number_input(
+                get_field_title(gpu_temp_resume_threshold_c_schema, "GPU Temp Resume Threshold (°C)"),
+                value=80.0,
+                min_value=0.0,
+                key="training.gpu_temp_resume_threshold_c",
+                help=get_field_description(gpu_temp_resume_threshold_c_schema),
+            )
+
+            training_config["gpu_temp_guard_enabled"] = gpu_temp_guard_enabled
+            training_config["gpu_temp_pause_threshold_c"] = gpu_temp_pause_threshold_c
+            training_config["gpu_temp_resume_threshold_c"] = gpu_temp_resume_threshold_c
         
         # Mixed precision
         use_amp_schema = training_schema["properties"]["use_amp"]
         use_amp = st.checkbox(
-            use_amp_schema.get("title", "Use Automatic Mixed Precision"),
+            get_field_title(use_amp_schema, "Use Automatic Mixed Precision"),
             value=False,
             key="training.use_amp",
-            help=use_amp_schema.get("description", ""),
+            help=get_field_description(use_amp_schema),
         )
         training_config["use_amp"] = use_amp
         
@@ -673,6 +708,19 @@ def main(argv=None):
         return
     
     # Sidebar for command selection
+    if "ui_language" not in st.session_state:
+        st.session_state["ui_language"] = "en"
+    if "ui_language_selector" not in st.session_state:
+        st.session_state["ui_language_selector"] = "English"
+
+    selected_language_label = st.sidebar.selectbox(
+        get_ui_text("language_selector"),
+        list(LANGUAGE_OPTIONS.keys()),
+        index=0 if get_current_language() == "en" else 1,
+        key="ui_language_selector",
+    )
+    st.session_state["ui_language"] = LANGUAGE_OPTIONS[selected_language_label]
+
     st.sidebar.header("Command Selection")
     command_info = st.sidebar.selectbox(
         "Select Command",
