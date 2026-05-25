@@ -1,10 +1,83 @@
 from __future__ import annotations
 
 import argparse
+import json
+from pathlib import Path
+
+
+def _resolve_train_yaml_path(args: argparse.Namespace) -> str:
+    if args.config:
+        return str(Path(args.config).expanduser().resolve())
+
+    from .training.config_loader import list_config_paths
+
+    config_dir = Path(__file__).resolve().parents[1] / "configs"
+    config_paths = list_config_paths(str(config_dir))
+    selected = config_paths.get(args.config_name)
+    if not selected:
+        raise ValueError(f"Unknown config-name '{args.config_name}'")
+    return str(Path(selected).expanduser().resolve())
+
+
+def _validate_transformers_export_compatibility(yaml_path: str) -> tuple[bool, dict]:
+    from .deploy.transformers_export import check_yaml_export_compatibility
+
+    compatibility = check_yaml_export_compatibility(yaml_path)
+    is_compatible = bool(compatibility.get("is_compatible", False))
+    if not is_compatible:
+        print(
+            "Transformers export compatibility check failed:\n"
+            + json.dumps(compatibility, indent=2)
+        )
+    return is_compatible, compatibility
+
+
+def _run_transformers_export_to_subfolder(
+    *,
+    model_path: str,
+    yaml_path: str,
+    output_root: str,
+) -> int:
+    from .deploy.transformers_export import export_transformers_model
+
+    transformers_output = str(Path(output_root).expanduser().resolve() / "transformers-export")
+    result = export_transformers_model(
+        model_path=model_path,
+        yaml_path=yaml_path,
+        output_dir=transformers_output,
+    )
+    print(json.dumps(result, indent=2))
+    return 0 if result.get("status") == "ok" else 1
+
+
+def _latest_checkpoint_path(path: str = "checkpoints") -> str | None:
+    checkpoints_dir = Path(path).expanduser().resolve()
+    if not checkpoints_dir.exists():
+        return None
+    candidates = sorted(
+        checkpoints_dir.glob("*.pt"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    if not candidates:
+        return None
+    return str(candidates[0])
 
 
 def _run_train(args: argparse.Namespace) -> int:
     from .training.main import main as train_main
+
+    yaml_path = None
+    if args.transformers_export:
+        try:
+            yaml_path = _resolve_train_yaml_path(args)
+        except Exception as exc:
+            print(f"Unable to resolve training YAML for transformers export: {exc}")
+            return 2
+
+        is_compatible, _ = _validate_transformers_export_compatibility(yaml_path)
+        if not is_compatible:
+            return 1
 
     argv = [
         "--config-name",
@@ -37,11 +110,33 @@ def _run_train(args: argparse.Namespace) -> int:
     elif args.switch_on_thermal is False:
         argv.append("--no-switch-on-thermal")
     result = train_main(argv)
-    return int(result) if isinstance(result, int) else 0
+    rc = int(result) if isinstance(result, int) else 0
+    if rc != 0:
+        return rc
+
+    if args.transformers_export:
+        checkpoint_path = _latest_checkpoint_path("checkpoints")
+        if not checkpoint_path:
+            print("No checkpoint found in ./checkpoints for transformers export.")
+            return 1
+        return _run_transformers_export_to_subfolder(
+            model_path=checkpoint_path,
+            yaml_path=str(yaml_path),
+            output_root="checkpoints",
+        )
+    return rc
 
 
 def _run_deploy(args: argparse.Namespace) -> int:
     from .deploy.deploy import main as deploy_main
+
+    if args.transformers_export:
+        if not args.yaml:
+            print("`--yaml` is required when using `--transformers-export`.")
+            return 2
+        is_compatible, _ = _validate_transformers_export_compatibility(args.yaml)
+        if not is_compatible:
+            return 1
 
     argv = [
         "--checkpoint",
@@ -58,11 +153,29 @@ def _run_deploy(args: argparse.Namespace) -> int:
     if args.config:
         argv.extend(["--config", args.config])
     result = deploy_main(argv)
-    return int(result) if isinstance(result, int) else 0
+    rc = int(result) if isinstance(result, int) else 0
+    if rc != 0:
+        return rc
+
+    if args.transformers_export:
+        return _run_transformers_export_to_subfolder(
+            model_path=args.checkpoint,
+            yaml_path=args.yaml,
+            output_root=args.output,
+        )
+    return rc
 
 
 def _run_quantize(args: argparse.Namespace) -> int:
     from .deploy.deploy import main as deploy_main
+
+    if args.transformers_export:
+        if not args.yaml:
+            print("`--yaml` is required when using `--transformers-export`.")
+            return 2
+        is_compatible, _ = _validate_transformers_export_compatibility(args.yaml)
+        if not is_compatible:
+            return 1
 
     argv = [
         "--checkpoint",
@@ -79,11 +192,25 @@ def _run_quantize(args: argparse.Namespace) -> int:
     if args.config:
         argv.extend(["--config", args.config])
     result = deploy_main(argv)
-    return int(result) if isinstance(result, int) else 0
+    rc = int(result) if isinstance(result, int) else 0
+    if rc != 0:
+        return rc
+
+    if args.transformers_export:
+        return _run_transformers_export_to_subfolder(
+            model_path=args.checkpoint,
+            yaml_path=args.yaml,
+            output_root=args.output,
+        )
+    return rc
 
 
 def _run_infer(args: argparse.Namespace) -> int:
     from .deploy.inference import main as infer_main
+
+    if args.transformers_export:
+        print("`--transformers-export` is not supported for `infer`.")
+        return 2
 
     argv = [
         "--model",
@@ -109,6 +236,13 @@ def _run_infer(args: argparse.Namespace) -> int:
 
 def _run_sbert_train(args: argparse.Namespace) -> int:
     from .sbert.train_sbert import main as sbert_train_main
+
+    if args.transformers_export:
+        print(
+            "`--transformers-export` is not supported for `sbert-train`. "
+            "Use the dedicated `transformers-export` command with an MLM/decoder checkpoint + YAML."
+        )
+        return 2
 
     argv = [
         "--output_dir",
@@ -162,6 +296,10 @@ def _run_sbert_train(args: argparse.Namespace) -> int:
 
 def _run_sbert_infer(args: argparse.Namespace) -> int:
     from .sbert.inference_sbert import main as sbert_infer_main
+
+    if args.transformers_export:
+        print("`--transformers-export` is not supported for `sbert-infer`.")
+        return 2
 
     argv = [
         "--model_path",
@@ -279,6 +417,7 @@ def build_parser() -> argparse.ArgumentParser:
     switch_on_thermal_group.add_argument("--switch-on-thermal", dest="switch_on_thermal", action="store_true")
     switch_on_thermal_group.add_argument("--no-switch-on-thermal", dest="switch_on_thermal", action="store_false")
     train_parser.set_defaults(switch_on_thermal=None)
+    train_parser.add_argument("--transformers-export", action="store_true", default=False)
     train_parser.set_defaults(func=_run_train)
 
     deploy_parser = subparsers.add_parser("deploy", help="Convert checkpoint to deployment artifacts")
@@ -287,6 +426,8 @@ def build_parser() -> argparse.ArgumentParser:
     deploy_parser.add_argument("--format", type=str, choices=["quantized", "standard"], default="quantized")
     deploy_parser.add_argument("--validate", action="store_true")
     deploy_parser.add_argument("--config", type=str, default=None)
+    deploy_parser.add_argument("--yaml", type=str, default=None)
+    deploy_parser.add_argument("--transformers-export", action="store_true", default=False)
     deploy_parser.add_argument("--device", choices=["auto", "cpu", "cuda", "mps"], default="auto")
     deploy_parser.set_defaults(func=_run_deploy)
 
@@ -295,6 +436,8 @@ def build_parser() -> argparse.ArgumentParser:
     quantize_parser.add_argument("--output", type=str, required=True)
     quantize_parser.add_argument("--validate", action="store_true")
     quantize_parser.add_argument("--config", type=str, default=None)
+    quantize_parser.add_argument("--yaml", type=str, default=None)
+    quantize_parser.add_argument("--transformers-export", action="store_true", default=False)
     quantize_parser.add_argument("--device", choices=["auto", "cpu", "cuda", "mps"], default="auto")
     quantize_parser.set_defaults(func=_run_quantize)
 
@@ -307,6 +450,7 @@ def build_parser() -> argparse.ArgumentParser:
     infer_parser.add_argument("--fp16", action="store_true")
     infer_parser.add_argument("--batch-size", type=int, default=8)
     infer_parser.add_argument("--benchmark", action="store_true")
+    infer_parser.add_argument("--transformers-export", action="store_true", default=False)
     infer_parser.set_defaults(func=_run_infer)
 
     sbert_train_parser = subparsers.add_parser("sbert-train", help="Train SBERT model")
@@ -333,6 +477,7 @@ def build_parser() -> argparse.ArgumentParser:
     sbert_train_parser.add_argument("--no_amp", action="store_true")
     sbert_train_parser.add_argument("--no_resample", action="store_true")
     sbert_train_parser.add_argument("--resample_std", type=float, default=0.3)
+    sbert_train_parser.add_argument("--transformers-export", action="store_true", default=False)
     sbert_train_parser.add_argument("--device", choices=["auto", "cpu", "cuda", "mps"], default="auto")
     switch_on_thermal_group = sbert_train_parser.add_mutually_exclusive_group()
     switch_on_thermal_group.add_argument("--switch-on-thermal", dest="switch_on_thermal", action="store_true")
@@ -353,6 +498,7 @@ def build_parser() -> argparse.ArgumentParser:
     sbert_infer_parser.add_argument("--input_file", type=str, default=None)
     sbert_infer_parser.add_argument("--output_file", type=str, default=None)
     sbert_infer_parser.add_argument("--batch_size", type=int, default=32)
+    sbert_infer_parser.add_argument("--transformers-export", action="store_true", default=False)
     sbert_infer_parser.add_argument("--device", choices=["auto", "cpu", "cuda", "mps"], default="auto")
     sbert_infer_parser.set_defaults(func=_run_sbert_infer)
 

@@ -1,6 +1,5 @@
 """Unit tests for the CLI argument parser (no torch required)."""
 import unittest
-from argparse import ArgumentError
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
@@ -22,6 +21,7 @@ class BuildParserStructureTests(unittest.TestCase):
         self.assertIsNone(args.gpu_temp_guard)
         self.assertIsNone(args.batch_size)
         self.assertIsNone(args.model_mode)
+        self.assertFalse(args.transformers_export)
 
     def test_train_subcommand_device_choices(self):
         for device in ("auto", "cpu", "cuda", "mps"):
@@ -86,6 +86,8 @@ class BuildParserStructureTests(unittest.TestCase):
             "--output", "/tmp/out",
         ])
         self.assertEqual(args.format, "quantized")
+        self.assertFalse(args.transformers_export)
+        self.assertIsNone(args.yaml)
 
     def test_deploy_format_choices(self):
         for fmt in ("quantized", "standard"):
@@ -104,6 +106,8 @@ class BuildParserStructureTests(unittest.TestCase):
             "--output", "/tmp/out",
         ])
         self.assertEqual(args.command, "quantize")
+        self.assertFalse(args.transformers_export)
+        self.assertIsNone(args.yaml)
 
     def test_infer_subcommand_defaults(self):
         args = self.parser.parse_args(["infer", "--model", "/tmp/model"])
@@ -113,6 +117,7 @@ class BuildParserStructureTests(unittest.TestCase):
         self.assertEqual(args.batch_size, 8)
         self.assertFalse(args.fp16)
         self.assertFalse(args.benchmark)
+        self.assertFalse(args.transformers_export)
 
     def test_sbert_train_defaults(self):
         args = self.parser.parse_args(["sbert-train"])
@@ -121,6 +126,7 @@ class BuildParserStructureTests(unittest.TestCase):
         self.assertEqual(args.batch_size, 16)
         self.assertEqual(args.pooling_mode, "mean")
         self.assertFalse(args.no_amp)
+        self.assertFalse(args.transformers_export)
 
     def test_sbert_train_pooling_mode_choices(self):
         for mode in ("mean", "cls", "max"):
@@ -144,6 +150,36 @@ class BuildParserStructureTests(unittest.TestCase):
                 "--mode", mode,
             ])
             self.assertEqual(args.mode, mode)
+
+    def test_transformers_export_flag_available_in_other_commands(self):
+        train = self.parser.parse_args(["train", "--transformers-export"])
+        deploy = self.parser.parse_args([
+            "deploy",
+            "--checkpoint", "/tmp/ckpt.pt",
+            "--output", "/tmp/out",
+            "--transformers-export",
+        ])
+        quantize = self.parser.parse_args([
+            "quantize",
+            "--checkpoint", "/tmp/ckpt.pt",
+            "--output", "/tmp/out",
+            "--transformers-export",
+        ])
+        infer = self.parser.parse_args(["infer", "--model", "/tmp/model", "--transformers-export"])
+        sbert_train = self.parser.parse_args(["sbert-train", "--transformers-export"])
+        sbert_infer = self.parser.parse_args([
+            "sbert-infer",
+            "--model_path", "/tmp/sbert",
+            "--mode", "encode",
+            "--transformers-export",
+        ])
+
+        self.assertTrue(train.transformers_export)
+        self.assertTrue(deploy.transformers_export)
+        self.assertTrue(quantize.transformers_export)
+        self.assertTrue(infer.transformers_export)
+        self.assertTrue(sbert_train.transformers_export)
+        self.assertTrue(sbert_infer.transformers_export)
 
     def test_transformers_export_requires_model_yaml_and_output(self):
         args = self.parser.parse_args([
@@ -233,6 +269,148 @@ class MainDispatchTests(unittest.TestCase):
             ])
         self.assertEqual(rc, 0)
         mocked.assert_called_once()
+
+    def test_deploy_transformers_export_requires_yaml(self):
+        with patch.dict("sys.modules", {"src.deploy.deploy": SimpleNamespace(main=Mock(return_value=0))}):
+            rc = main([
+                "deploy",
+                "--checkpoint",
+                "/tmp/ckpt.pt",
+                "--output",
+                "/tmp/out",
+                "--transformers-export",
+            ])
+        self.assertEqual(rc, 2)
+
+    def test_quantize_transformers_export_requires_yaml(self):
+        with patch.dict("sys.modules", {"src.deploy.deploy": SimpleNamespace(main=Mock(return_value=0))}):
+            rc = main([
+                "quantize",
+                "--checkpoint",
+                "/tmp/ckpt.pt",
+                "--output",
+                "/tmp/out",
+                "--transformers-export",
+            ])
+        self.assertEqual(rc, 2)
+
+    def test_deploy_transformers_export_stops_on_incompatibility(self):
+        deploy_main = Mock(return_value=0)
+        with patch.dict("sys.modules", {"src.deploy.deploy": SimpleNamespace(main=deploy_main)}):
+            with patch("src.cli._validate_transformers_export_compatibility", return_value=(False, {"issues": ["x"]})):
+                rc = main([
+                    "deploy",
+                    "--checkpoint",
+                    "/tmp/ckpt.pt",
+                    "--output",
+                    "/tmp/out",
+                    "--yaml",
+                    "/tmp/train.yaml",
+                    "--transformers-export",
+                ])
+        self.assertEqual(rc, 1)
+        deploy_main.assert_not_called()
+
+    def test_deploy_transformers_export_runs_after_successful_deploy(self):
+        deploy_main = Mock(return_value=0)
+        with patch.dict("sys.modules", {"src.deploy.deploy": SimpleNamespace(main=deploy_main)}):
+            with patch("src.cli._validate_transformers_export_compatibility", return_value=(True, {"issues": []})):
+                with patch("src.cli._run_transformers_export_to_subfolder", return_value=0) as export_run:
+                    rc = main([
+                        "deploy",
+                        "--checkpoint",
+                        "/tmp/ckpt.pt",
+                        "--output",
+                        "/tmp/out",
+                        "--yaml",
+                        "/tmp/train.yaml",
+                        "--transformers-export",
+                    ])
+        self.assertEqual(rc, 0)
+        deploy_main.assert_called_once()
+        export_run.assert_called_once_with(
+            model_path="/tmp/ckpt.pt",
+            yaml_path="/tmp/train.yaml",
+            output_root="/tmp/out",
+        )
+
+    def test_quantize_transformers_export_runs_after_successful_quantize(self):
+        deploy_main = Mock(return_value=0)
+        with patch.dict("sys.modules", {"src.deploy.deploy": SimpleNamespace(main=deploy_main)}):
+            with patch("src.cli._validate_transformers_export_compatibility", return_value=(True, {"issues": []})):
+                with patch("src.cli._run_transformers_export_to_subfolder", return_value=0) as export_run:
+                    rc = main([
+                        "quantize",
+                        "--checkpoint",
+                        "/tmp/ckpt.pt",
+                        "--output",
+                        "/tmp/out",
+                        "--yaml",
+                        "/tmp/train.yaml",
+                        "--transformers-export",
+                    ])
+        self.assertEqual(rc, 0)
+        deploy_main.assert_called_once()
+        forwarded = deploy_main.call_args[0][0]
+        self.assertIn("quantized", forwarded)
+        export_run.assert_called_once_with(
+            model_path="/tmp/ckpt.pt",
+            yaml_path="/tmp/train.yaml",
+            output_root="/tmp/out",
+        )
+
+    def test_train_transformers_export_stops_on_incompatibility(self):
+        with patch("src.cli._resolve_train_yaml_path", return_value="/tmp/train.yaml"):
+            with patch("src.cli._validate_transformers_export_compatibility", return_value=(False, {"issues": ["x"]})):
+                with patch.dict("sys.modules", {"src.training.main": SimpleNamespace(main=Mock(return_value=0))}):
+                    rc = main(["train", "--transformers-export"])
+        self.assertEqual(rc, 1)
+
+    def test_train_transformers_export_runs_after_success(self):
+        train_main = Mock(return_value=0)
+        with patch("src.cli._resolve_train_yaml_path", return_value="/tmp/train.yaml"):
+            with patch("src.cli._validate_transformers_export_compatibility", return_value=(True, {"issues": []})):
+                with patch("src.cli._latest_checkpoint_path", return_value="/tmp/ckpt.pt"):
+                    with patch("src.cli._run_transformers_export_to_subfolder", return_value=0) as export_run:
+                        with patch.dict("sys.modules", {"src.training.main": SimpleNamespace(main=train_main)}):
+                            rc = main(["train", "--transformers-export"])
+        self.assertEqual(rc, 0)
+        train_main.assert_called_once()
+        export_run.assert_called_once_with(
+            model_path="/tmp/ckpt.pt",
+            yaml_path="/tmp/train.yaml",
+            output_root="checkpoints",
+        )
+
+    def test_train_transformers_export_fails_without_checkpoint(self):
+        train_main = Mock(return_value=0)
+        with patch("src.cli._resolve_train_yaml_path", return_value="/tmp/train.yaml"):
+            with patch("src.cli._validate_transformers_export_compatibility", return_value=(True, {"issues": []})):
+                with patch("src.cli._latest_checkpoint_path", return_value=None):
+                    with patch.dict("sys.modules", {"src.training.main": SimpleNamespace(main=train_main)}):
+                        rc = main(["train", "--transformers-export"])
+        self.assertEqual(rc, 1)
+
+    def test_infer_transformers_export_not_supported(self):
+        infer_main = Mock(return_value=0)
+        with patch.dict("sys.modules", {"src.deploy.inference": SimpleNamespace(main=infer_main)}):
+            rc = main(["infer", "--model", "/tmp/model", "--transformers-export"])
+        self.assertEqual(rc, 2)
+        infer_main.assert_not_called()
+
+    def test_sbert_train_transformers_export_not_supported(self):
+        sbert_train_main = Mock(return_value=0)
+        with patch.dict("sys.modules", {"src.sbert.train_sbert": SimpleNamespace(main=sbert_train_main)}):
+            rc = main(["sbert-train", "--transformers-export"])
+        self.assertEqual(rc, 2)
+        sbert_train_main.assert_not_called()
+
+    def test_sbert_infer_transformers_export_not_supported(self):
+        sbert_infer_main = Mock(return_value=0)
+        with patch.dict("sys.modules", {"src.sbert.inference_sbert": SimpleNamespace(main=sbert_infer_main)}):
+            rc = main(["sbert-infer", "--model_path", "/tmp/sbert", "--mode", "encode", "--transformers-export"])
+        self.assertEqual(rc, 2)
+        sbert_infer_main.assert_not_called()
 
 
 if __name__ == "__main__":

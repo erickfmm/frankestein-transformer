@@ -12,7 +12,10 @@ TORCH_AVAILABLE = find_spec("torch") is not None
 
 if TORCH_AVAILABLE:
     import torch
-    from src.deploy.transformers_export import export_transformers_model
+    from src.deploy.transformers_export import (
+        check_yaml_export_compatibility,
+        export_transformers_model,
+    )
     from src.model.tormented_bert_frankestein import TormentedBertFrankenstein, UltraConfig
 
 
@@ -148,6 +151,36 @@ class TransformersExportTests(unittest.TestCase):
 
             self.assertEqual(result["status"], "incompatible")
             self.assertTrue((out_dir / "compatibility_report.json").exists())
+
+    def test_yaml_precheck_reports_base_model_as_incompatible(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            train_yaml = tmp_path / "train.yaml"
+            train_yaml.write_text(
+                yaml.safe_dump(
+                    {
+                        "base_model": "answerdotai/ModernBERT-base",
+                        "training": {"task": "mlm"},
+                        "model": {"layer_pattern": ["standard_attn"]},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            compatibility = check_yaml_export_compatibility(str(train_yaml))
+            self.assertFalse(compatibility["is_compatible"])
+            self.assertTrue(any("base_model" in issue for issue in compatibility["issues"]))
+
+    def test_yaml_precheck_reports_missing_model_block(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            train_yaml = tmp_path / "train.yaml"
+            train_yaml.write_text(
+                yaml.safe_dump({"training": {"task": "mlm"}}),
+                encoding="utf-8",
+            )
+            compatibility = check_yaml_export_compatibility(str(train_yaml))
+            self.assertFalse(compatibility["is_compatible"])
+            self.assertTrue(any("model" in issue for issue in compatibility["issues"]))
 
 
 if __name__ == "__main__":

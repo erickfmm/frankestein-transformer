@@ -297,6 +297,36 @@ def _build_transformers_config(
     return payload
 
 
+def check_yaml_export_compatibility(yaml_path: str) -> Dict[str, Any]:
+    yaml_file = Path(yaml_path).expanduser().resolve()
+    if not yaml_file.exists():
+        raise FileNotFoundError(f"YAML file not found: {yaml_file}")
+
+    with yaml_file.open("r", encoding="utf-8") as handle:
+        yaml_data = yaml.safe_load(handle) or {}
+
+    model_config = _as_plain_dict(yaml_data.get("model"))
+    if not model_config:
+        compatibility = {
+            "is_compatible": False,
+            "issues": [
+                "YAML must include a `model` block for compatibility pre-check."
+            ],
+            "warnings": [],
+            "schema_layer_types": [],
+            "used_layer_types": [],
+        }
+        return compatibility
+
+    schema_layer_types = _load_schema_layer_enum(_repo_root() / "src" / "schema.yaml")
+    _, compatibility = _build_compatibility_report(
+        yaml_data=yaml_data,
+        model_config=model_config,
+        schema_layer_types=schema_layer_types,
+    )
+    return compatibility
+
+
 def export_transformers_model(model_path: str, yaml_path: str, output_dir: str) -> Dict[str, Any]:
     model_file = Path(model_path).expanduser().resolve()
     yaml_file = Path(yaml_path).expanduser().resolve()
@@ -328,12 +358,8 @@ def export_transformers_model(model_path: str, yaml_path: str, output_dir: str) 
     training_block = yaml_data.get("training", {}) or {}
     task = str(training_block.get("task") or "mlm").strip().lower()
 
-    schema_layer_types = _load_schema_layer_enum(_repo_root() / "src" / "schema.yaml")
-    is_compatible, compatibility = _build_compatibility_report(
-        yaml_data=yaml_data,
-        model_config=model_config,
-        schema_layer_types=schema_layer_types,
-    )
+    compatibility = check_yaml_export_compatibility(str(yaml_file))
+    is_compatible = bool(compatibility.get("is_compatible", False))
 
     output_path.mkdir(parents=True, exist_ok=True)
     if not is_compatible:
