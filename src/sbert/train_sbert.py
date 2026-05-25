@@ -707,7 +707,7 @@ class SBERTTrainer:
                 continue
             entries.append((mtime, full_path))
 
-        entries.sort(key=lambda item: item[0])
+        entries.sort(key=lambda item: (item[0], item[1]))
         while len(entries) > max_keep:
             _, old_path = entries.pop(0)
             try:

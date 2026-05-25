@@ -340,7 +340,7 @@ def export_transformers_model(model_path: str, yaml_path: str, output_dir: str) 
     with yaml_file.open("r", encoding="utf-8") as handle:
         yaml_data = yaml.safe_load(handle) or {}
 
-    checkpoint = torch.load(str(model_file), map_location="cpu")
+    checkpoint = torch.load(str(model_file), map_location="cpu", weights_only=False)
     if not isinstance(checkpoint, dict):
         raise ValueError("Checkpoint must be a dict-like payload")
 
