@@ -145,6 +145,18 @@ class BuildParserStructureTests(unittest.TestCase):
             ])
             self.assertEqual(args.mode, mode)
 
+    def test_transformers_export_requires_model_yaml_and_output(self):
+        args = self.parser.parse_args([
+            "transformers-export",
+            "--model", "/tmp/ckpt.pt",
+            "--yaml", "/tmp/train.yaml",
+            "--output", "/tmp/out",
+        ])
+        self.assertEqual(args.command, "transformers-export")
+        self.assertEqual(args.model, "/tmp/ckpt.pt")
+        self.assertEqual(args.yaml, "/tmp/train.yaml")
+        self.assertEqual(args.output, "/tmp/out")
+
     def test_web_server_defaults(self):
         args = self.parser.parse_args(["web-server"])
         self.assertEqual(args.command, "web-server")
@@ -205,6 +217,22 @@ class MainDispatchTests(unittest.TestCase):
         with patch.dict("sys.modules", {"src.training.main": fake_mod}):
             rc = main(["train"])
         self.assertEqual(rc, 1)
+
+    def test_transformers_export_dispatches_to_export_main(self):
+        mocked = Mock(return_value=0)
+        fake_mod = SimpleNamespace(main=mocked)
+        with patch.dict("sys.modules", {"src.deploy.transformers_export": fake_mod}):
+            rc = main([
+                "transformers-export",
+                "--model",
+                "/tmp/ckpt.pt",
+                "--yaml",
+                "/tmp/train.yaml",
+                "--output",
+                "/tmp/out",
+            ])
+        self.assertEqual(rc, 0)
+        mocked.assert_called_once()
 
 
 if __name__ == "__main__":

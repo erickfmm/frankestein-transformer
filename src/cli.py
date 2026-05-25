@@ -195,6 +195,21 @@ def _run_sbert_infer(args: argparse.Namespace) -> int:
     return int(result) if isinstance(result, int) else 0
 
 
+def _run_transformers_export(args: argparse.Namespace) -> int:
+    from .deploy.transformers_export import main as transformers_export_main
+
+    argv = [
+        "--model",
+        args.model,
+        "--yaml",
+        args.yaml,
+        "--output",
+        args.output,
+    ]
+    result = transformers_export_main(argv)
+    return int(result) if isinstance(result, int) else 0
+
+
 def _run_web_server(args: argparse.Namespace) -> int:
     """Run the Streamlit web server for building configurations."""
     import subprocess
@@ -340,6 +355,15 @@ def build_parser() -> argparse.ArgumentParser:
     sbert_infer_parser.add_argument("--batch_size", type=int, default=32)
     sbert_infer_parser.add_argument("--device", choices=["auto", "cpu", "cuda", "mps"], default="auto")
     sbert_infer_parser.set_defaults(func=_run_sbert_infer)
+
+    transformers_export_parser = subparsers.add_parser(
+        "transformers-export",
+        help="Export checkpoint + YAML into Hugging Face Transformers-compatible folder",
+    )
+    transformers_export_parser.add_argument("--model", type=str, required=True)
+    transformers_export_parser.add_argument("--yaml", type=str, required=True)
+    transformers_export_parser.add_argument("--output", type=str, required=True)
+    transformers_export_parser.set_defaults(func=_run_transformers_export)
 
     web_server_parser = subparsers.add_parser("web-server", help="Run Streamlit web server for building configurations")
     web_server_parser.add_argument("--server-port", type=int, default=8501, help="Port to run the Streamlit server on")
