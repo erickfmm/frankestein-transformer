@@ -32,15 +32,26 @@ jobs:
       # CUDA device is present.
       - name: Install CPU-only torch
         run: |
-          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install torch==2.6.0+cpu --index-url https://download.pytorch.org/whl/cpu
 
-      - name: Install package and dependencies
+      # Install all non-torch requirements from requirements.txt (CPU variant).
+      # Strip the --extra-index-url directive and the torch line so that the
+      # CPU torch installed above is not overridden.
+      - name: Install package requirements
         run: |
-          pip install -e ".[train]"
+          grep -v "^torch\|^--extra-index-url\|^#\|^$" requirements.txt \
+            > /tmp/requirements-ci.txt
+          pip install -r /tmp/requirements-ci.txt
+
+      # Install the package itself without pulling in deps (torch already
+      # installed as CPU above; --no-deps avoids overriding it with cu118).
+      - name: Install package
+        run: |
+          pip install -e . --no-deps
 
       - name: Install test dependencies
         run: |
-          pip install pytest tqdm datasets
+          pip install pytest
 
       - name: Run tests
         run: |
