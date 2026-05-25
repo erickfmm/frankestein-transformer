@@ -705,11 +705,13 @@ class SBERTTrainer:
                 mtime = os.path.getmtime(full_path)
             except OSError:
                 continue
-            entries.append((mtime, full_path))
+            m = re.search(r"(\d{8}_\d{6}_\d{6})$", entry)
+            embedded_ts = m.group(1) if m else ""
+            entries.append((mtime, embedded_ts, full_path))
 
-        entries.sort(key=lambda item: (item[0], item[1]))
+        entries.sort(key=lambda item: (item[0], item[1], item[2]))
         while len(entries) > max_keep:
-            _, old_path = entries.pop(0)
+            _, _, old_path = entries.pop(0)
             try:
                 if os.path.isdir(old_path):
                     shutil.rmtree(old_path)
