@@ -1,3 +1,16 @@
+"""Anon optimizer with continuously tunable adaptivity.
+
+Anon (Anon et al. 2026, arXiv:2605.02317) introduces a continuously tunable
+adaptivity exponent ``gamma`` that interpolates between SGD-like (gamma=0)
+and Adam-like (gamma=1) behaviour.  It uses an Incremental Delay Update (IDU)
+mechanism that accumulates second-moment information at exponentially spaced
+intervals, enabling stable convergence across all adaptivity values.
+
+Reference:
+    Anon, A., et al. (2026). Anon: Extrapolating Adaptivity Beyond SGD and
+    Adam. arXiv:2605.02317.
+"""
+
 from __future__ import annotations
 
 import torch
@@ -26,6 +39,17 @@ class Anon(Optimizer):
         fixed_decay:        use a fixed decay schedule (default: False).
         rectify:            enable RAdam-style rectification (default: False).
         degenerated_to_sgd: fallback to SGD behaviour (default: False).
+
+    Attributes:
+        defaults (dict): Default hyper-parameter values for each parameter
+            group.
+        param_groups (list): Parameter groups tracked by the optimizer.
+        state (dict): Per-parameter optimizer state (step counter, first and
+            second moment buffers, fixed learning-rate buffer, IDU counter).
+        degenerated_to_sgd (bool): Whether to fall back to SGD behaviour.
+        weight_decouple (bool): Whether to use decoupled weight decay.
+        rectify (bool): Whether RAdam-style rectification is enabled.
+        fixed_decay (bool): Whether a fixed decay schedule is used.
     """
 
     def __init__(
@@ -41,6 +65,27 @@ class Anon(Optimizer):
         rectify: bool = False,
         degenerated_to_sgd: bool = False,
     ) -> None:
+        """Initializes the Anon optimizer.
+
+        Args:
+            params: Iterable of parameters to optimize or dicts defining
+                parameter groups.
+            lr: Learning rate (default: 1e-3).
+            betas: Coefficients for first and second moment running averages
+                (default: ``(0.9, 0.999)``).
+            eps: Term added for numerical stability (default: 1e-16).
+            gamma: Adaptivity exponent; 0 → SGD-like, 1 → Adam-like
+                (default: 0.0).
+            weight_decay: Weight decay coefficient (default: 0.0).
+            weight_decouple: Use decoupled weight decay (default: False).
+            fixed_decay: Use a fixed decay schedule (default: False).
+            rectify: Enable RAdam-style rectification (default: False).
+            degenerated_to_sgd: Fall back to SGD behaviour (default: False).
+
+        Raises:
+            ValueError: If ``lr``, ``eps``, or ``betas`` are out of valid
+                range.
+        """
         if not 0.0 <= lr:
             raise ValueError(f"Invalid learning rate: {lr}")
         if not 0.0 <= eps:
@@ -72,10 +117,31 @@ class Anon(Optimizer):
         self.fixed_decay = fixed_decay
 
     def __setstate__(self, state: dict) -> None:
+        """Restores optimizer state from a serialized dict.
+
+        Args:
+            state: Serialized optimizer state dict.
+        """
         super().__setstate__(state)
 
     @torch.no_grad()
     def step(self, closure=None):
+        """Performs a single optimization step.
+
+        Applies the Incremental Delay Update (IDU) mechanism: the fixed
+        learning-rate buffer is updated at exponentially spaced steps
+        (step == 2^t) using the accumulated second-moment information.
+
+        Args:
+            closure: A closure that re-evaluates the model and returns the
+                loss.  Optional for most use cases.
+
+        Returns:
+            The loss value if ``closure`` is provided, otherwise ``None``.
+
+        Raises:
+            RuntimeError: If any parameter has sparse gradients.
+        """
         loss = None
         if closure is not None:
             with torch.enable_grad():

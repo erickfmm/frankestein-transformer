@@ -1,3 +1,12 @@
+"""Export Frankenstein checkpoints to HuggingFace Transformers format.
+
+Generates a self-contained directory with ``config.json``,
+``pytorch_model.bin``, custom ``configuration_frankestein.py`` and
+``modeling_frankestein.py`` wrappers, and the model source tree, enabling
+loading via ``AutoModelForMaskedLM`` or ``AutoModelForCausalLM`` with
+``trust_remote_code=True``.
+"""
+
 from __future__ import annotations
 
 import argparse
@@ -298,6 +307,22 @@ def _build_transformers_config(
 
 
 def check_yaml_export_compatibility(yaml_path: str) -> Dict[str, Any]:
+    """Check whether a training YAML is compatible with Transformers export.
+
+    Validates that the YAML does not use ``base_model`` or ``sbert`` task,
+    and that all layer types in ``layer_pattern`` are known schema values.
+
+    Args:
+        yaml_path: Path to the training YAML file.
+
+    Returns:
+        Dictionary with ``is_compatible`` (bool), ``issues`` (list of str),
+        ``warnings`` (list of str), ``schema_layer_types``, and
+        ``used_layer_types``.
+
+    Raises:
+        FileNotFoundError: If the YAML file does not exist.
+    """
     yaml_file = Path(yaml_path).expanduser().resolve()
     if not yaml_file.exists():
         raise FileNotFoundError(f"YAML file not found: {yaml_file}")
@@ -328,6 +353,26 @@ def check_yaml_export_compatibility(yaml_path: str) -> Dict[str, Any]:
 
 
 def export_transformers_model(model_path: str, yaml_path: str, output_dir: str) -> Dict[str, Any]:
+    """Export a checkpoint and training YAML to a HuggingFace Transformers folder.
+
+    Produces a self-contained directory with ``config.json``,
+    ``pytorch_model.bin``, custom configuration/modeling Python wrappers,
+    the model source tree, and a compatibility report.
+
+    Args:
+        model_path: Path to the training checkpoint (``.pt``).
+        yaml_path: Path to the YAML config used during training.
+        output_dir: Directory to write the exported model into.
+
+    Returns:
+        Dictionary with ``status`` (``"ok"`` or ``"incompatible"``),
+        ``output_dir``, ``modeling_class``, and ``compatibility_report``.
+
+    Raises:
+        FileNotFoundError: If model or YAML file does not exist.
+        ValueError: If the checkpoint is not a dict or model config
+            cannot be inferred.
+    """
     model_file = Path(model_path).expanduser().resolve()
     yaml_file = Path(yaml_path).expanduser().resolve()
     output_path = Path(output_dir).expanduser().resolve()

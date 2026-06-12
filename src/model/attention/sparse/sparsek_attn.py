@@ -1,3 +1,18 @@
+"""SparseK attention (Lou et al., 2024; arXiv:2406.16747).
+
+Implements a differentiable top-k selection mechanism for sparse attention.
+Instead of using fixed or random patterns, SparseK learns to select the most
+relevant key-value pairs for each query using a learned scoring network and a
+differentiable top-k operator. This achieves linear time complexity during
+training and constant memory usage during autoregressive generation, as only
+the top-k keys and values are retained.
+
+Reference:
+    Lou, C., Jia, Z., & Tu, Z. (2024).
+    "SparseK: Differentiable Top-k Sparse Attention for Long-Context LLMs."
+    arXiv:2406.16747.
+"""
+
 from typing import Optional
 
 import math
@@ -10,10 +25,35 @@ from ..common import BitLinear
 
 
 class SparseKOperator(torch.autograd.Function):
-    """Differentiable SparseK projection used by SparseK attention."""
+    """Differentiable top-k projection operator for SparseK attention.
+
+    Implements a differentiable approximation of the top-k selection operation
+    using the method described in Lou et al. (2024). The forward pass computes
+    a threshold such that exactly ``k`` elements survive after clamping, and
+    the backward pass propagates gradients only through the selected elements
+    with a mean-subtraction correction to preserve gradient flow.
+
+    This is a ``torch.autograd.Function`` subclass and should be invoked via
+    ``SparseKOperator.apply(scores, k)``.
+    """
 
     @staticmethod
     def forward(ctx, scores: torch.Tensor, k: int):
+        """Forward pass: compute thresholded top-k projection.
+
+        Sorts scores descending, computes cumulative sums, and determines a
+        per-row threshold ``tau`` such that ``(scores - tau).clamp(min=0)``
+        yields exactly ``k`` non-zero elements per row.
+
+        Args:
+            ctx: Autograd context for saving tensors.
+            scores (torch.Tensor): Input scores of shape ``(batch, heads, seq_len, seq_len)``.
+            k (int): Number of elements to retain per row.
+
+        Returns:
+            torch.Tensor: Thresholded scores of the same shape as input,
+                with at most ``k`` non-zero entries per row.
+        """
         sorted_scores, _ = scores.sort(dim=-1, descending=True)
         cumsum = sorted_scores.cumsum(dim=-1)
         arange = torch.arange(1, scores.shape[-1] + 1, device=scores.device, dtype=scores.dtype)
@@ -27,6 +67,22 @@ class SparseKOperator(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, grad_output: torch.Tensor):
+        """Backward pass: propagate gradients through selected elements only.
+
+        Gradients flow only through positions where the forward output was
+        positive. A mean-subtraction correction is applied within each row's
+        support set to ensure unbiased gradient estimates.
+
+        Args:
+            ctx: Autograd context with saved tensors.
+            grad_output (torch.Tensor): Gradient of the loss with respect to
+                the forward output.
+
+        Returns:
+            tuple: ``(grad_scores, None)`` where ``grad_scores`` has the same
+                shape as the forward input and ``None`` is the gradient for
+                the non-differentiable ``k`` parameter.
+        """
         (out,) = ctx.saved_tensors
         support = (out > 0).to(grad_output.dtype)
         n_support = support.sum(dim=-1, keepdim=True).clamp(min=1)
@@ -35,13 +91,57 @@ class SparseKOperator(torch.autograd.Function):
 
 
 class SparseKAttention(nn.Module):
-    """SparseK attention (Lou et al., 2024; arXiv:2406.16747).
+    """Differentiable top-k sparse attention with learned key-value selection.
 
-    Applies a differentiable top-k style selection over key/value candidates before
-    running scaled dot-product attention on the selected subset.
+    Uses a small feed-forward scoring network to assign importance scores to
+    each key position. A differentiable top-k operator selects the ``k`` most
+    important keys, and scaled dot-product attention is computed only over the
+    selected subset. This yields O(n * k) complexity where ``k`` is a fixed
+    constant, independent of sequence length.
+
+    In decoder mode, future positions among the selected keys are masked out
+    using position-based causal filtering.
+
+    Attributes:
+        hidden_size (int): Dimensionality of the input and output embeddings.
+        num_heads (int): Number of attention heads.
+        head_dim (int): Dimensionality of each attention head.
+        scale (float): Scaling factor for dot-product scores (1 / sqrt(head_dim)).
+        k (int): Number of key-value pairs to select per query (top-k).
+        q_proj (nn.Module): Query projection (BitLinear or nn.Linear).
+        k_proj (nn.Module): Key projection (BitLinear or nn.Linear).
+        v_proj (nn.Module): Value projection (BitLinear or nn.Linear).
+        out_proj (nn.Module): Output projection (BitLinear or nn.Linear).
+        score_net (nn.Sequential): Two-layer MLP that scores each key position
+            for selection importance.
+        dropout (nn.Dropout): Dropout applied to attention weights.
+        mode (str): ``"encoder"`` or ``"decoder"``. Decoder mode applies causal
+            masking on the selected key subset.
+
+    Reference:
+        Lou, C., Jia, Z., & Tu, Z. (2024).
+        "SparseK: Differentiable Top-k Sparse Attention for Long-Context LLMs."
+        arXiv:2406.16747.
     """
 
     def __init__(self, config):
+        """Initialize SparseKAttention.
+
+        Args:
+            config: Configuration object with the following expected attributes:
+                hidden_size (int): Model hidden dimension.
+                num_heads (int): Number of attention heads. Must divide
+                    ``hidden_size`` evenly.
+                dropout (float): Dropout probability for attention weights.
+                use_bitnet (bool): If True, use BitLinear projections.
+                sparsek_k (int, optional): Number of keys to select per query.
+                    Defaults to 128.
+                mode (str, optional): ``"encoder"`` or ``"decoder"``.
+                    Defaults to ``"encoder"``.
+
+        Raises:
+            ValueError: If ``hidden_size`` is not divisible by ``num_heads``.
+        """
         super().__init__()
         self.hidden_size = config.hidden_size
         self.num_heads = config.num_heads
@@ -68,6 +168,25 @@ class SparseKAttention(nn.Module):
         self.mode = getattr(config, "mode", "encoder")
 
     def forward(self, x: torch.Tensor, logical_layer_idx: Optional[int] = None) -> torch.Tensor:
+        """Compute SparseK attention with differentiable top-k selection.
+
+        Projects queries, keys, and values. Scores each key position using
+        ``score_net``, applies the differentiable top-k operator to select
+        the most important keys, gathers the corresponding key-value pairs,
+        and computes scaled dot-product attention over the selected subset.
+
+        In decoder mode, selected keys whose original positions are ahead of
+        the query position are masked out.
+
+        Args:
+            x (torch.Tensor): Input tensor of shape ``(batch, seq_len, hidden_size)``.
+            logical_layer_idx (Optional[int]): Logical layer index for
+                potential layer-specific behavior. Not used by this
+                implementation.
+
+        Returns:
+            torch.Tensor: Output tensor of shape ``(batch, seq_len, hidden_size)``.
+        """
         bsz, seq_len, hidden = x.shape
 
         q = self.q_proj(x).view(bsz, seq_len, self.num_heads, self.head_dim).transpose(1, 2)

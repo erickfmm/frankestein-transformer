@@ -1,3 +1,11 @@
+"""GPU temperature guard for CUDA training safety.
+
+Provides a thermal guard that pauses training when GPU temperature exceeds
+a configurable threshold and resumes once the temperature drops below a
+recovery threshold. Supports NVML and nvidia-smi backends for temperature
+reading, with automatic fallback.
+"""
+
 from __future__ import annotations
 
 import logging
@@ -12,11 +20,21 @@ import torch
 
 
 class GPUTelemetryError(RuntimeError):
-    """Fatal telemetry error. Training must stop to avoid unsafe execution."""
+    """Fatal telemetry error indicating training must stop to avoid unsafe execution."""
 
 
 @dataclass
 class GPUTempCheckResult:
+    """Result of a single GPU temperature check cycle.
+
+    Attributes:
+        temp_c: Current GPU temperature in degrees Celsius.
+        paused: Whether training was paused during this check.
+        pause_duration_s: Total seconds spent paused (0 if not paused).
+        checks_during_pause: Number of temperature polls performed while paused.
+        critical_seen: Whether the critical threshold was reached at any point.
+    """
+
     temp_c: float
     paused: bool
     pause_duration_s: float
@@ -25,6 +43,7 @@ class GPUTempCheckResult:
 
     @property
     def repair_action(self) -> str:
+        """Human-readable label describing the thermal action taken."""
         if not self.paused:
             return "none"
         prefix = "thermal_pause_critical" if self.critical_seen else "thermal_pause"
@@ -32,7 +51,23 @@ class GPUTempCheckResult:
 
 
 class GPUTemperatureGuard:
-    """Thermal guard with strict telemetry semantics for CUDA training."""
+    """Thermal guard with strict telemetry semantics for CUDA training.
+
+    Monitors GPU temperature via NVML (primary) or nvidia-smi (fallback) and
+    enforces pause/resume thresholds. Supports an optional critical threshold
+    for triggering emergency offload actions.
+
+    Attributes:
+        is_active: Whether the guard is actively monitoring (CUDA available
+            and guard enabled).
+        pause_threshold_c: Temperature above which training is paused.
+        resume_threshold_c: Temperature below which training resumes.
+        critical_threshold_c: Optional critical temperature threshold.
+        poll_interval_seconds: Seconds between temperature polls while paused.
+        last_temperature_c: Most recently read temperature, or ``None``.
+        total_pause_events: Cumulative count of pause events.
+        total_paused_seconds: Cumulative seconds spent paused.
+    """
 
     def __init__(
         self,
@@ -45,6 +80,24 @@ class GPUTemperatureGuard:
         critical_threshold_c: Optional[float] = None,
         poll_interval_seconds: float = 30.0,
     ):
+        """Initialize the GPU temperature guard.
+
+        Args:
+            enabled: Whether thermal guarding is enabled.
+            device: Target device string (guard only activates for CUDA).
+            nvml_device_index: NVML device index for multi-GPU systems.
+            pause_threshold_c: Temperature in Celsius above which training
+                is paused. Must be > 0.
+            resume_threshold_c: Temperature in Celsius below which training
+                resumes. Must be > 0 and < ``pause_threshold_c``.
+            critical_threshold_c: Optional critical temperature. When set
+                and reached, the caller may trigger emergency offload.
+            poll_interval_seconds: Seconds between temperature polls while
+                paused. Must be > 0.
+
+        Raises:
+            ValueError: If threshold or poll interval constraints are violated.
+        """
         self._logger = logging.getLogger(__name__)
         self._device = str(device or "cpu")
         self._enabled = bool(enabled)
@@ -180,6 +233,19 @@ class GPUTemperatureGuard:
         return self._parse_temperature(lines[0])
 
     def read_temperature_c(self) -> float:
+        """Read current GPU temperature in degrees Celsius.
+
+        Attempts NVML first, falling back to nvidia-smi. Raises a fatal
+        :class:`GPUTelemetryError` if both backends fail.
+
+        Returns:
+            Current GPU temperature in Celsius, or ``0.0`` if the guard
+            is not active.
+
+        Raises:
+            GPUTelemetryError: If both NVML and nvidia-smi fail to provide
+                a valid temperature reading.
+        """
         if not self._active:
             self.last_temperature_c = None
             return 0.0
@@ -213,6 +279,20 @@ class GPUTemperatureGuard:
             ) from smi_exc
 
     def wait_until_safe(self, *, context: str = "") -> GPUTempCheckResult:
+        """Block until GPU temperature drops below the resume threshold.
+
+        If the current temperature is already at or below the pause threshold,
+        returns immediately without pausing. Otherwise, polls temperature at
+        the configured interval until it drops below the resume threshold.
+
+        Args:
+            context: Optional human-readable label for log messages
+                (e.g. ``"mlm epoch=1 batch=42"``).
+
+        Returns:
+            A :class:`GPUTempCheckResult` describing the temperature check
+            outcome, including whether a pause occurred and its duration.
+        """
         if not self._active:
             return GPUTempCheckResult(
                 temp_c=0.0,

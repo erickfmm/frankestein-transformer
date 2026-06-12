@@ -1,3 +1,11 @@
+"""Streaming MLM dataset with fault-tolerant parallel processing.
+
+Provides :class:`StreamingMLMDataset`, a PyTorch ``Dataset`` that streams
+text from HuggingFace datasets or local Parquet files, tokenizes and applies
+MLM masking in parallel via process-pool workers, and caches processed
+batches to disk for fault-tolerant resumption.
+"""
+
 from bisect import bisect_right
 from concurrent.futures import ProcessPoolExecutor
 import json
@@ -22,6 +30,20 @@ except ImportError:
 
 
 def _load_tokenizer_from_spec(tokenizer_spec: Dict[str, Any]):
+    """Reconstruct a tokenizer from a serialized specification dict.
+
+    Args:
+        tokenizer_spec: Dictionary with ``backend`` (``"spm"`` or ``"hf"``)
+            and backend-specific fields.
+
+    Returns:
+        A tokenizer instance (:class:`SpanishSPMTokenizer` or HuggingFace
+        ``AutoTokenizer``).
+
+    Raises:
+        RuntimeError: If ``transformers`` is not installed for HF backend.
+        ValueError: If the backend is unsupported.
+    """
     backend = tokenizer_spec["backend"]
     if backend == "spm":
         return SpanishSPMTokenizer(model_path=tokenizer_spec["model_path"])
@@ -49,6 +71,17 @@ def _encode_text_with_spec(
     text: str,
     max_length: int,
 ) -> Dict[str, List[int]]:
+    """Encode text to token IDs using the appropriate tokenizer backend.
+
+    Args:
+        tokenizer_spec: Tokenizer specification dict with ``backend`` key.
+        tokenizer: Pre-loaded tokenizer instance.
+        text: Raw input text string.
+        max_length: Maximum sequence length for truncation/padding.
+
+    Returns:
+        Dictionary with ``"input_ids"`` and ``"attention_mask"`` lists.
+    """
     backend = tokenizer_spec["backend"]
 
     if backend == "spm":
@@ -77,7 +110,25 @@ def _apply_mlm_mask_standalone(
     special_token_ids: List[int],
     pad_token_id: int,
 ) -> Tuple[List[int], List[int]]:
-    """Apply MLM masking with tokenizer-aware special IDs."""
+    """Apply standard BERT-style MLM masking to token IDs.
+
+    Masks 15% of eligible tokens: 80% replaced with ``[MASK]``, 10% with
+    random tokens, 10% left unchanged. Special tokens and padding are
+    excluded from masking.
+
+    Args:
+        input_ids: List of token IDs.
+        attention_mask: List of attention mask values (1 = attend).
+        mlm_probability: Fraction of eligible tokens to mask.
+        vocab_size: Vocabulary size for random token replacement.
+        mask_token_id: Token ID for ``[MASK]``.
+        special_token_ids: Token IDs excluded from masking.
+        pad_token_id: Padding token ID excluded from masking.
+
+    Returns:
+        Tuple of ``(masked_input_ids, labels)`` where ``labels`` is a copy
+        of the original ``input_ids``.
+    """
     labels = input_ids.copy()
     special_tokens = set(int(token_id) for token_id in special_token_ids)
 
@@ -106,7 +157,19 @@ def _apply_mlm_mask_standalone(
 
 
 def _process_single_example(args):
-    """Process a single example (tokenize + MLM). Used for parallel processing."""
+    """Process a single text example: tokenize and apply MLM masking.
+
+    Designed for use with :class:`ProcessPoolExecutor` for parallel
+    processing. Each worker reconstructs its own tokenizer from the
+    serialized spec to avoid pickling issues.
+
+    Args:
+        args: Tuple of ``(text, tokenizer_spec, max_length, mlm_probability)``.
+
+    Returns:
+        Dictionary with ``"input_ids"``, ``"attention_mask"``, and
+        ``"labels"``, or ``None`` on error.
+    """
     text, tokenizer_spec, max_length, mlm_probability = args
 
     try:
@@ -133,7 +196,25 @@ def _process_single_example(args):
 
 
 class StreamingMLMDataset(TorchDataset):
-    """Streaming MLM dataset with fault-tolerant parallel processing."""
+    """Streaming MLM dataset with fault-tolerant parallel processing.
+
+    Streams raw text from HuggingFace datasets or local Parquet files,
+    tokenizes and applies MLM masking in parallel using process-pool workers,
+    and caches processed batches to disk as pickle files. Supports resumption
+    from partially completed caches and optional context-window joining for
+    longer contiguous sequences.
+
+    Attributes:
+        tokenizer: The tokenizer instance.
+        max_length: Maximum sequence length for tokenization.
+        mlm_probability: Fraction of tokens to mask for MLM.
+        max_samples: Target maximum number of processed examples.
+        batch_size: Number of examples per cached batch file.
+        num_workers: Number of parallel process-pool workers.
+        total_examples: Total indexed examples available for ``__getitem__``.
+        cache_dir: Active cache directory path.
+        data_source: Label describing the data source used.
+    """
 
     def __init__(
         self,
@@ -152,6 +233,31 @@ class StreamingMLMDataset(TorchDataset):
         join_temp_data_context_window: int = 0,
         join_temp_data_min_remainder_tokens: int = 128,
     ):
+        """Initialize the streaming MLM dataset.
+
+        Args:
+            tokenizer: Tokenizer instance (SPM or HuggingFace).
+            max_length: Maximum sequence length after tokenization.
+            mlm_probability: Fraction of eligible tokens to mask.
+            max_samples: Target maximum number of examples to produce.
+            batch_size: Number of examples per cached batch file.
+            num_workers: Number of parallel workers. Defaults to
+                ``min(8, cpu_count // 2)``.
+            cache_dir: Directory for cached batch files. Defaults to
+                ``./temp_data/dataset_cache``.
+            max_batch_in_memory: Maximum in-memory batch size during
+                processing. Defaults to ``min(batch_size, 2000)``.
+            parallel_chunksize: Chunksize for ``ProcessPoolExecutor.map``.
+            local_parquet_dir: Optional path to local Parquet files.
+            prefer_local_cache: If ``True``, prefer local Parquet over
+                streaming from HuggingFace.
+            stream_local_parquet: If ``True``, stream local Parquet files
+                instead of loading them entirely into memory.
+            join_temp_data_context_window: If > 0, join cached examples
+                into contiguous sequences of this length.
+            join_temp_data_min_remainder_tokens: Minimum remaining tokens
+                to form a final joined sequence.
+        """
         self.tokenizer = tokenizer
         self.max_length = int(max_length)
         self.mlm_probability = float(mlm_probability)
@@ -823,6 +929,14 @@ class StreamingMLMDataset(TorchDataset):
         )
 
     def get_stats(self) -> Dict[str, Any]:
+        """Return dataset statistics and configuration summary.
+
+        Returns:
+            Dictionary with keys including ``total_examples``,
+            ``completed_batches``, ``total_samples_processed``,
+            ``batch_size``, ``num_workers``, ``cache_dir``,
+            ``data_source``, and tokenizer backend.
+        """
         return {
             "total_examples": self.total_examples,
             "completed_batches": len(self.metadata.get("completed_batches", [])),

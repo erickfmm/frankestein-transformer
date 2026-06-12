@@ -1,3 +1,17 @@
+"""Adafactor optimizer with factorized second-moment estimation.
+
+Adafactor (Shazeer & Stern 2018, arXiv:1804.04235) reduces memory consumption
+by factorizing the second-moment accumulator for matrix-shaped parameters into
+row and column running averages, achieving sublinear (O(n + m)) memory instead
+of the O(nm) required by Adam.  Scalar and vector parameters fall back to a
+full second-moment buffer.  A relative-step clipping mechanism stabilises
+updates without per-parameter learning rates.
+
+Reference:
+    Shazeer, N., & Stern, M. (2018). Adafactor: Adaptive Learning Rates with
+    Sublinear Memory Cost. arXiv:1804.04235.
+"""
+
 from __future__ import annotations
 
 import torch
@@ -5,6 +19,40 @@ from torch.optim import Optimizer
 
 
 class Adafactor(Optimizer):
+    """Adafactor optimizer with factorized second-moment estimation.
+
+    Factorizes the exponentially weighted moving average of squared gradients
+    into row-wise and column-wise components for matrix parameters, reducing
+    memory from O(nm) to O(n + m).  Scalar and vector parameters use a
+    standard full second-moment buffer.  Relative-step clipping caps the
+    root-mean-square of the update to ``clip_threshold``.
+
+    Reference:
+        Shazeer, N., & Stern, M. (2018). Adafactor: Adaptive Learning Rates
+        with Sublinear Memory Cost. arXiv:1804.04235.
+
+    Args:
+        params: Iterable of parameters to optimize or dicts defining
+            parameter groups.
+        lr: Learning rate (default: 1e-3).
+        beta2_decay: Exponent controlling the decay schedule for the
+            second-moment running average.  The effective beta2 at step t is
+            ``1.0 - t ** (-beta2_decay)`` (default: 0.8).
+        eps: Tuple of ``(eps1, eps2)``.  ``eps1`` is added inside the square
+            root for numerical stability; ``eps2`` is added outside
+            (default: ``(1e-30, 1e-3)``).
+        clip_threshold: Root-mean-square clipping threshold.  When the RMS of
+            the update exceeds this value, the update is scaled down
+            proportionally (default: 1.0).
+
+    Attributes:
+        defaults (dict): Default hyper-parameter values for each parameter
+            group.
+        param_groups (list): Parameter groups tracked by the optimizer.
+        state (dict): Per-parameter optimizer state (step counter, row/column
+            running averages, or full second-moment buffer).
+    """
+
     def __init__(
         self,
         params,
@@ -13,6 +61,17 @@ class Adafactor(Optimizer):
         eps=(1e-30, 1e-3),
         clip_threshold=1.0,
     ):
+        """Initializes the Adafactor optimizer.
+
+        Args:
+            params: Iterable of parameters to optimize or dicts defining
+                parameter groups.
+            lr: Learning rate (default: 1e-3).
+            beta2_decay: Exponent for the beta2 decay schedule (default: 0.8).
+            eps: Tuple of ``(eps1, eps2)`` for numerical stability
+                (default: ``(1e-30, 1e-3)``).
+            clip_threshold: RMS clipping threshold (default: 1.0).
+        """
         defaults = dict(
             lr=lr,
             beta2_decay=beta2_decay,
@@ -23,6 +82,15 @@ class Adafactor(Optimizer):
 
     @torch.no_grad()
     def step(self, closure=None):
+        """Performs a single optimization step.
+
+        Args:
+            closure: A closure that re-evaluates the model and returns the
+                loss.  Optional for most use cases.
+
+        Returns:
+            The loss value if ``closure`` is provided, otherwise ``None``.
+        """
         loss = None
         if closure is not None:
             with torch.enable_grad():

@@ -1,3 +1,20 @@
+"""ODE-style continuous-depth attention block.
+
+Models the attention transformation as an ordinary differential equation
+initial value problem::
+
+    z(1) = z(0) + integral_0^1 f(z(t), t) dt
+
+where ``f`` is a self-attention derivative function. The ODE is solved via
+explicit numerical integration (Euler or RK4) with a configurable number of
+steps. Weights are shared across all integration steps, providing a
+continuous-depth parameterization.
+
+Reference:
+    Zhang et al. (2021), "ODE Transformer: An Ordinary Differential Equation
+    Inspired Transformer", ACL 2022.
+"""
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -6,9 +23,34 @@ from .common import BitLinear, get_norm
 
 
 class ODEFunc(nn.Module):
-    """
-    La funcion derivada dx/dt modelada como Self-Attention.
-    Usa BitLinear internamente.
+    """Derivative function ``dx/dt`` modeled as multi-head self-attention.
+
+    This module represents the right-hand side ``f(z(t), t)`` of the ODE.
+    It applies normalization, a fused QKV projection, scaled dot-product
+    attention with softmax, and an output projection. The same weights are
+    reused at every integration step, enabling a continuous-depth
+    parameterization with constant parameter count regardless of the number
+    of solver steps.
+
+    Reference:
+        Zhang et al. (2021), "ODE Transformer", ACL 2022.
+
+    Args:
+        config: Model configuration object with attributes ``hidden_size``,
+            ``num_heads``, ``dropout``, ``use_bitnet``, ``norm_type``, and
+            optionally ``mode`` (``"encoder"`` or ``"decoder"``).
+
+    Attributes:
+        dim: Dimensionality of the input and output embeddings.
+        num_heads: Number of parallel attention heads.
+        head_dim: Dimensionality of each attention head (``dim // num_heads``).
+        scale: Scaling factor ``1 / sqrt(head_dim)`` applied to dot products.
+        qkv: Fused linear (or BitLinear) projection for queries, keys, and
+            values (outputs ``dim * 3`` features).
+        out_proj: Linear (or BitLinear) output projection.
+        norm: Normalization layer applied before the QKV projection.
+        dropout: Dropout layer applied to attention weights.
+        mode: ``"encoder"`` for bidirectional, ``"decoder"`` for causal.
     """
 
     def __init__(self, config):
@@ -26,6 +68,17 @@ class ODEFunc(nn.Module):
         self.mode = getattr(config, "mode", "encoder")
 
     def forward(self, t, x):
+        """Evaluate the derivative function at time ``t``.
+
+        Args:
+            t: Current integration time (float; unused in the attention
+                computation but accepted for ODE solver interface).
+            x: State tensor of shape ``(batch_size, seq_len, dim)``.
+
+        Returns:
+            Derivative tensor ``dx/dt`` of shape
+            ``(batch_size, seq_len, dim)``.
+        """
         bsz, seq_len, dim = x.shape
 
         h = self.norm(x)
@@ -45,9 +98,30 @@ class ODEFunc(nn.Module):
 
 
 class ODEAttentionBlock(nn.Module):
-    """
-    Resuelve: z(1) = z(0) + integral_0^1 f(z(t), t) dt
-    Usa un solver RK4 manual para evitar dependencias externas y overhead.
+    """Continuous-depth attention block via ODE integration.
+
+    Solves the initial value problem::
+
+        z(1) = z(0) + integral_0^1 f(z(t), t) dt
+
+    using an explicit numerical ODE solver (Euler or classical RK4). The
+    number of integration steps is configurable. Weights in ``ODEFunc`` are
+    shared across all steps, so the parameter count is independent of the
+    number of solver steps.
+
+    Reference:
+        Zhang et al. (2021), "ODE Transformer", ACL 2022.
+
+    Args:
+        config: Model configuration object with attributes ``hidden_size``,
+            ``num_heads``, ``dropout``, ``use_bitnet``, ``norm_type``,
+            ``ode_solver`` (``"euler"`` or ``"rk4"``), ``ode_steps``, and
+            optionally ``mode``.
+
+    Attributes:
+        ode_func: The ``ODEFunc`` module representing ``f(z, t)``.
+        solver: Integration method (``"euler"`` or ``"rk4"``).
+        steps: Number of integration steps from ``t=0`` to ``t=1``.
     """
 
     def __init__(self, config):
@@ -57,6 +131,16 @@ class ODEAttentionBlock(nn.Module):
         self.steps = config.ode_steps
 
     def forward(self, x):
+        """Integrate the ODE from ``t=0`` to ``t=1``.
+
+        Args:
+            x: Initial state tensor of shape
+                ``(batch_size, seq_len, hidden_size)``.
+
+        Returns:
+            Final state ``z(1)`` of shape
+            ``(batch_size, seq_len, hidden_size)``.
+        """
         dt = 1.0 / self.steps
         t = 0.0
         z = x

@@ -1,3 +1,10 @@
+"""SentencePiece tokenizer for Spanish text trained on RedPajama.
+
+Provides :class:`SpanishSPMTokenizer`, a BPE SentencePiece tokenizer
+trained on the ``erickfmm/red_pajama_es_hq_35`` dataset with special
+tokens ``[CLS]``, ``[SEP]``, ``[MASK]``, and ``[PAD]``.
+"""
+
 import os
 from typing import List, Dict
 import logging
@@ -9,11 +16,31 @@ try:
 except ImportError:
     from utils.storage_manager import StorageManager
 
-# ==================== SPM TOKENIZER ====================
+
 class SpanishSPMTokenizer:
-    """Spanish SentencePiece Tokenizer trained on RedPajama"""
-    
+    """Spanish SentencePiece BPE tokenizer trained on RedPajama data.
+
+    Supports training a new tokenizer from the streaming dataset, loading
+    a pre-trained model file, and encoding text with special tokens
+    (``[CLS]``, ``[SEP]``, ``[PAD]``) and configurable max length.
+
+    Attributes:
+        vocab_size: Vocabulary size (may be updated after loading).
+        model_path: Path to the ``.model`` file, or ``None``.
+        sp_model: The underlying ``SentencePieceProcessor``, or ``None``.
+        vocab: Token-to-ID mapping dictionary.
+        inverse_vocab: ID-to-token mapping dictionary.
+        storage_manager: :class:`StorageManager` for temp file tracking.
+    """
+
     def __init__(self, vocab_size: int = 50000, model_path: str = None):
+        """Initialize the tokenizer.
+
+        Args:
+            vocab_size: Target vocabulary size for training.
+            model_path: Optional path to an existing ``.model`` file.
+                If provided and exists, the model is loaded immediately.
+        """
         self.vocab_size = vocab_size
         self.model_path = model_path
         self.sp_model = None
@@ -188,7 +215,14 @@ class SpanishSPMTokenizer:
         return model_path
     
     def load(self, model_path: str):
-        """Load an existing SentencePiece model"""
+        """Load an existing SentencePiece model from disk.
+
+        Args:
+            model_path: Path to the ``.model`` file.
+
+        Raises:
+            FileNotFoundError: If the model file does not exist.
+        """
         if not os.path.exists(model_path):
             raise FileNotFoundError(f"Model file not found: {model_path}")
         
@@ -210,7 +244,24 @@ class SpanishSPMTokenizer:
         logging.info(f"Loaded tokenizer from {model_path} with {len(self.vocab)} tokens")
     
     def encode(self, text: str, max_length: int = 512) -> Dict[str, List[int]]:
-        """Encode text with special tokens"""
+        """Encode text with special tokens and padding/truncation.
+
+        Prepends ``[CLS]``, appends ``[SEP]``, and pads with ``[PAD]``
+        to reach ``max_length``. Truncates if the tokenized sequence
+        exceeds ``max_length``.
+
+        Args:
+            text: Raw input text string.
+            max_length: Maximum sequence length including special tokens.
+
+        Returns:
+            Dictionary with ``"input_ids"`` and ``"attention_mask"``
+            lists, both of length ``max_length``.
+
+        Raises:
+            RuntimeError: If the tokenizer has not been initialized
+                (call :meth:`train` or :meth:`load` first).
+        """
         if self.sp_model is None:
             raise RuntimeError("Tokenizer not initialized. Call train() or load() first.")
         

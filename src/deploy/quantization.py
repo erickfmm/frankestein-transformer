@@ -1,13 +1,9 @@
 #!/usr/bin/env python3
-"""
-BitNet Quantization and Compression Utilities for TORMENTED-BERT
-Provides additional compression beyond base BitNet b1.58 implementation.
+"""BitNet quantization and compression utilities for TORMENTED-BERT.
 
-Features:
-- Ternary weight packing (1.58 bits per weight)
-- INT8 activation quantization
-- Model size reduction (3-4x smaller checkpoints)
-- Fast serialization/deserialization
+Provides ternary weight packing (1.58 bits per weight), INT8 activation
+quantization, model size estimation, and fast serialization/deserialization
+for quantized checkpoints.
 """
 
 import torch
@@ -22,12 +18,19 @@ logger = logging.getLogger(__name__)
 
 
 class BitNetQuantizer:
+    """Quantization manager for BitNet ternary weight models.
+
+    Handles packing/unpacking of ternary weights (``{-1, 0, 1}``) into
+    2-bit-per-element byte arrays and dequantization back to float tensors.
+    Also provides full-model quantization and dequantization.
+
+    Attributes:
+        quantization_config: Dictionary with ``weight_bits`` (1.58) and
+            ``activation_bits`` (8).
     """
-    Quantization manager for BitNet models.
-    Handles packing/unpacking of ternary weights and activation quantization.
-    """
-    
+
     def __init__(self):
+        """Initialize the quantizer with default BitNet b1.58 config."""
         self.quantization_config = {
             'weight_bits': 1.58,  # Ternary: {-1, 0, 1}
             'activation_bits': 8,   # INT8 for activations
@@ -198,20 +201,23 @@ class BitNetQuantizer:
 
 
 class ActivationQuantizer:
+    """Runtime activation quantization for inference optimization.
+
+    Provides static methods for quantizing activations to INT8 and
+    dequantizing back to float, enabling efficient integer-arithmetic
+    computation during inference.
     """
-    Runtime activation quantization for inference optimization.
-    """
-    
+
     @staticmethod
     def quantize_activation_int8(x: torch.Tensor) -> Tuple[torch.Tensor, float]:
-        """
-        Quantize activations to INT8 for efficient computation.
-        
+        """Quantize activations to INT8 range ``[-128, 127]``.
+
         Args:
-            x: Activation tensor
-            
+            x: Activation tensor of any shape.
+
         Returns:
-            Quantized tensor and scale factor
+            Tuple of ``(quantized_tensor, scale)`` where ``scale`` is the
+            factor used for quantization (for later dequantization).
         """
         scale = 127.0 / x.abs().max().clamp(min=1e-5)
         x_q = (x * scale).round().clamp(-128, 127)
@@ -222,8 +228,14 @@ class ActivationQuantizer:
         x_q: torch.Tensor,
         scale: float
     ) -> torch.Tensor:
-        """
-        Dequantize INT8 activations back to float.
+        """Dequantize INT8 activations back to float.
+
+        Args:
+            x_q: Quantized INT8 tensor.
+            scale: The scale factor from :meth:`quantize_activation_int8`.
+
+        Returns:
+            Dequantized float tensor.
         """
         return x_q.float() / scale
 

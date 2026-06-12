@@ -1,17 +1,9 @@
 #!/usr/bin/env python3
-"""
-TORMENTED-BERT Inference Pipeline
-High-performance inference for deployed models with BitNet quantization.
+"""High-performance inference engine for deployed TORMENTED-BERT models.
 
-Usage:
-    # Interactive mode
-    python inference.py --model deployed_model/
-    
-    # Single prediction
-    python inference.py --model deployed_model/ --text "Tu texto aquí"
-    
-    # Batch inference
-    python inference.py --model deployed_model/ --input texts.txt --output predictions.txt
+Provides :class:`TormentedBertInference` for loading quantized or standard
+deployment artifacts and running MLM predictions, masked token prediction,
+batch inference, and performance benchmarking.
 """
 
 import torch
@@ -41,23 +33,37 @@ logger = logging.getLogger(__name__)
 
 
 class TormentedBertInference:
+    """Optimized inference engine for TORMENTED-BERT deployed models.
+
+    Loads deployment artifacts (config, quantized or standard weights,
+    optional tokenizer) and provides methods for single/batch prediction,
+    masked token prediction, and performance benchmarking.
+
+    Attributes:
+        model_dir: Path to the deployment directory.
+        device: Resolved PyTorch device string.
+        use_half_precision: Whether FP16 inference is enabled (CUDA only).
+        config: Loaded :class:`UltraConfig`.
+        model: Loaded :class:`TormentedBertFrankenstein` in eval mode.
+        tokenizer: Optional :class:`SpanishSPMTokenizer` instance.
     """
-    Optimized inference engine for TORMENTED-BERT.
-    """
-    
+
     def __init__(
         self,
         model_dir: str,
         device: str = 'auto',
         use_half_precision: bool = False
     ):
-        """
-        Initialize inference engine.
-        
+        """Initialize the inference engine.
+
         Args:
             model_dir: Directory containing deployment artifacts
-            device: 'auto', 'cuda', 'mps', or 'cpu'
-            use_half_precision: Use FP16 for faster inference (GPU only)
+                (``config.json``, ``model*.pt``, optional
+                ``tokenizer.model``).
+            device: Device string (``"auto"``, ``"cuda"``, ``"mps"``,
+                or ``"cpu"``).
+            use_half_precision: If ``True``, use FP16 for faster inference
+                (CUDA only).
         """
         self.model_dir = Path(model_dir)
         self.device = resolve_torch_device(device)

@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""
-Model Deployment Pipeline for TORMENTED-BERT-Frankenstein
-Converts trained checkpoints to optimized, quantized deployable format.
+"""Model deployment pipeline for TORMENTED-BERT-Frankenstein.
 
-Usage:
-    python deploy.py --checkpoint path/to/checkpoint.pt --output deployed_model/
+Converts trained checkpoints to optimized, quantized deployable artifacts.
+Supports both BitNet-quantized and standard FP32 deployment formats, with
+optional post-deployment validation.
 """
 
 import torch
@@ -41,11 +40,25 @@ logger = logging.getLogger(__name__)
 
 
 class ModelDeployer:
+    """Handles conversion of trained models to deployment-ready format.
+
+    Loads a training checkpoint, initializes the model, and exports it
+    in either quantized (BitNet ternary) or standard FP32 format, along
+    with config JSON and deployment metadata.
+
+    Attributes:
+        config: :class:`UltraConfig` for the model.
+        device: PyTorch device for deployment conversion.
+        model: The loaded :class:`TormentedBertFrankenstein` instance.
     """
-    Handles conversion of trained models to deployment-ready format.
-    """
-    
+
     def __init__(self, config: UltraConfig, device: str = "cpu"):
+        """Initialize the deployer.
+
+        Args:
+            config: Model configuration.
+            device: PyTorch device string for conversion.
+        """
         self.config = config
         self.device = device
         self.model = None

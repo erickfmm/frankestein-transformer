@@ -1,3 +1,16 @@
+"""Turbo-Muon optimizer with AOL-preconditioned orthogonalization.
+
+Turbo-Muon (Boissin et al. 2025, arXiv:2512.04632) extends Muon by applying
+an Approximate Orthogonalization via Lowdin (AOL) preconditioner before the
+Newton-Schulz iterations.  The AOL step scales rows by the inverse square
+root of the row-wise absolute sum of the Gram matrix, accelerating convergence
+and reducing the number of Newton-Schulz iterations from 5 to 4.
+
+Reference:
+    Boissin, T., Fournier, L., & Gidel, G. (2025). Turbo-Muon: Accelerating
+    Muon with AOL Preconditioning. arXiv:2512.04632.
+"""
+
 from __future__ import annotations
 
 import torch
@@ -5,6 +18,36 @@ from torch.optim import Optimizer
 
 
 class TurboMuon(Optimizer):
+    """Turbo-Muon optimizer with AOL-preconditioned orthogonalization.
+
+    Applies momentum to matrix-shaped gradients, preconditions with AOL
+    (row-wise absolute-sum scaling of the Gram matrix), then orthogonalizes
+    via Newton-Schulz iterations.  Only parameters with ``ndim >= 2`` are
+    processed.
+
+    Reference:
+        Boissin, T., Fournier, L., & Gidel, G. (2025). Turbo-Muon:
+        Accelerating Muon with AOL Preconditioning. arXiv:2512.04632.
+
+    Args:
+        params: Iterable of parameters to optimize or dicts defining
+            parameter groups.
+        lr: Learning rate (default: 0.02).
+        momentum: Momentum coefficient for the gradient buffer
+            (default: 0.95).
+        nesterov: Whether to use Nesterov-style momentum (default: True).
+        ns_steps: Number of Newton-Schulz iterations (default: 4).
+        ns_eps: Epsilon for numerical stability in AOL scaling and
+            normalization (default: 1e-7).
+        weight_decay: Decoupled weight decay coefficient (default: 0.0).
+
+    Attributes:
+        defaults (dict): Default hyper-parameter values for each parameter
+            group.
+        param_groups (list): Parameter groups tracked by the optimizer.
+        state (dict): Per-parameter optimizer state (momentum buffer).
+    """
+
     def __init__(
         self,
         params,
@@ -15,6 +58,18 @@ class TurboMuon(Optimizer):
         ns_eps=1e-7,
         weight_decay=0.0,
     ):
+        """Initializes the Turbo-Muon optimizer.
+
+        Args:
+            params: Iterable of parameters to optimize or dicts defining
+                parameter groups.
+            lr: Learning rate (default: 0.02).
+            momentum: Momentum coefficient (default: 0.95).
+            nesterov: Use Nesterov momentum (default: True).
+            ns_steps: Newton-Schulz iteration count (default: 4).
+            ns_eps: Numerical stability epsilon (default: 1e-7).
+            weight_decay: Decoupled weight decay coefficient (default: 0.0).
+        """
         defaults = dict(
             lr=lr,
             momentum=momentum,
@@ -27,6 +82,15 @@ class TurboMuon(Optimizer):
 
     @torch.no_grad()
     def step(self, closure=None):
+        """Performs a single optimization step.
+
+        Args:
+            closure: A closure that re-evaluates the model and returns the
+                loss.  Optional for most use cases.
+
+        Returns:
+            The loss value if ``closure`` is provided, otherwise ``None``.
+        """
         loss = None
         if closure is not None:
             with torch.enable_grad():
@@ -57,10 +121,6 @@ class TurboMuon(Optimizer):
                     x = x.T
                     transposed = True
 
-                # Turbo-Muon pre-conditioning: row-wise absolute-sum scaling
-                # x is [R, C] where R <= C (after optional transpose)
-                # a_mat = x @ x.T is [R, R]
-                # s must be [R, 1] to broadcast against x [R, C]
                 a_mat = x @ x.T
                 s = torch.sum(torch.abs(a_mat), dim=1, keepdim=True).clamp(min=group["ns_eps"]).pow(-0.5)
                 x = x * s

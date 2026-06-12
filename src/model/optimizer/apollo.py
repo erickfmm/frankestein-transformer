@@ -1,22 +1,78 @@
+"""APOLLO optimizer with structured scaling from projected moments.
+
+APOLLO (Zhu et al. 2025, arXiv:2502.xxxxx) projects 2D gradients into a
+low-rank subspace via Gaussian random matrices, computes Adam-style first and
+second moments in the compressed space, and then scales the original gradient
+element-wise or channel-wise using the ratio of the normalized low-rank
+moment to the low-rank gradient norm.  This provides structured adaptive
+scaling with sublinear memory overhead.
+
+Reference:
+    Zhu, Z., Li, Y., Wang, Z., & Anandkumar, A. (2025). APOLLO: SGD-like
+    Memory, Adam-like Performance. arXiv:2502.xxxxx.
+"""
+
 from __future__ import annotations
 
 import math
 import torch
 from torch.optim import Optimizer
 
-# Simple LCG constants for deterministic projector seed advancement per-parameter.
 LCG_MULTIPLIER = 1103515245
 LCG_INCREMENT = 12345
 LCG_MODULUS = 2**31 - 1
-# Fira-style norm-growth limiter threshold.
 NORM_LIMITER_THRESHOLD = 1.01
 EPS = 1e-8
 
 
 class Apollo(Optimizer):
-    """
-    APOLLO optimizer: Adam-style low-rank auxiliary moments with projected
-    gradient scaling back in the original parameter space.
+    """APOLLO optimizer with structured scaling from projected moments.
+
+    Projects 2D gradients into a low-rank subspace via Gaussian random
+    projection matrices, maintains Adam-style first and second moments in the
+    compressed space, and scales the original gradient using the ratio of the
+    normalized low-rank moment to the low-rank gradient norm.  Supports
+    channel-wise and tensor-wise scaling, optional norm-growth limiting, and
+    configurable projection side.
+
+    Reference:
+        Zhu, Z., Li, Y., Wang, Z., & Anandkumar, A. (2025). APOLLO: SGD-like
+        Memory, Adam-like Performance. arXiv:2502.xxxxx.
+
+    Args:
+        params: Iterable of parameters to optimize or dicts defining
+            parameter groups.
+        lr: Learning rate (default: 1e-3).
+        rank: Rank of the Gaussian random projection subspace (default: 128).
+        update_proj_gap: Number of steps between projector resampling
+            (default: 200).
+        scale: Global scale multiplier applied to the structured update
+            (default: 1.0).
+        scale_type: Scaling granularity, either ``"channel"`` (per-row or
+            per-column) or ``"tensor"`` (single scalar per tensor)
+            (default: ``"channel"``).
+        proj_type: Projection side strategy.  ``"std"`` projects from the
+            larger dimension, ``"reverse_std"`` from the smaller,
+            ``"left"`` and ``"right"`` force a specific side
+            (default: ``"std"``).
+        betas: Coefficients for first and second moment running averages
+            (default: ``(0.9, 0.999)``).
+        eps: Term added for numerical stability (default: 1e-8).
+        weight_decay: Decoupled weight decay coefficient (default: 0.0).
+        correct_bias: Whether to apply Adam-style bias correction
+            (default: True).
+        scale_front: Whether to apply the global scale multiplier before
+            norm-growth limiting instead of after (default: False).
+        disable_nl: Whether to disable the Fira-style norm-growth limiter
+            (default: False).
+
+    Attributes:
+        defaults (dict): Default hyper-parameter values for each parameter
+            group.
+        param_groups (list): Parameter groups tracked by the optimizer.
+        state (dict): Per-parameter optimizer state (step counter, projector
+            matrix, projector seed, low-rank moment buffers, scaled gradient
+            norm).
     """
 
     def __init__(
@@ -35,6 +91,30 @@ class Apollo(Optimizer):
         scale_front=False,
         disable_nl=False,
     ):
+        """Initializes the APOLLO optimizer.
+
+        Args:
+            params: Iterable of parameters to optimize or dicts defining
+                parameter groups.
+            lr: Learning rate (default: 1e-3).
+            rank: Projection rank (default: 128).
+            update_proj_gap: Projector resampling interval (default: 200).
+            scale: Global scale multiplier (default: 1.0).
+            scale_type: ``"channel"`` or ``"tensor"`` (default: ``"channel"``).
+            proj_type: ``"std"``, ``"reverse_std"``, ``"left"``, or
+                ``"right"`` (default: ``"std"``).
+            betas: Momentum decay coefficients (default: ``(0.9, 0.999)``).
+            eps: Numerical stability term (default: 1e-8).
+            weight_decay: Decoupled weight decay coefficient (default: 0.0).
+            correct_bias: Apply bias correction (default: True).
+            scale_front: Apply scale before norm limiter (default: False).
+            disable_nl: Disable norm-growth limiter (default: False).
+
+        Raises:
+            ValueError: If ``scale_type`` is not ``"channel"`` or
+                ``"tensor"``, or ``proj_type`` is not one of the valid
+                options.
+        """
         if scale_type not in {"channel", "tensor"}:
             raise ValueError("scale_type must be one of: channel, tensor")
         if proj_type not in {"std", "reverse_std", "left", "right"}:
@@ -57,6 +137,17 @@ class Apollo(Optimizer):
         super().__init__(params, defaults)
 
     def _load_moments(self, state, grad_like):
+        """Loads or initializes the first and second moment buffers.
+
+        Args:
+            state: Per-parameter optimizer state dict.
+            grad_like: Tensor whose shape and dtype are used to initialize
+                missing or shape-mismatched buffers.
+
+        Returns:
+            Tuple of ``(exp_avg, exp_avg_sq)`` tensors matching the shape
+            and dtype of ``grad_like``.
+        """
         exp_avg = state.get("exp_avg")
         exp_avg_sq = state.get("exp_avg_sq")
         if exp_avg is None or exp_avg_sq is None or exp_avg.shape != grad_like.shape:
@@ -65,11 +156,33 @@ class Apollo(Optimizer):
         return exp_avg, exp_avg_sq
 
     def _store_moments(self, state, exp_avg, exp_avg_sq):
+        """Stores the first and second moment buffers in the optimizer state.
+
+        Args:
+            state: Per-parameter optimizer state dict.
+            exp_avg: First moment (exponential moving average of gradients).
+            exp_avg_sq: Second moment (exponential moving average of squared
+                gradients).
+        """
         state["exp_avg"] = exp_avg
         state["exp_avg_sq"] = exp_avg_sq
 
     @staticmethod
     def _sample_projector(shape, rank, side, *, device, dtype, seed):
+        """Samples a Gaussian random projection matrix.
+
+        Args:
+            shape: Shape ``(m, n)`` of the gradient tensor.
+            rank: Rank of the projection subspace.
+            side: ``"left"`` to produce an ``(m, rank)`` matrix, ``"right"``
+                for ``(rank, n)``.
+            device: Torch device for the projector.
+            dtype: Torch dtype for the projector.
+            seed: Integer seed for the random generator.
+
+        Returns:
+            A Gaussian random matrix scaled by ``1 / sqrt(rank)``.
+        """
         generator = torch.Generator(device=device).manual_seed(int(seed))
         if side == "left":
             mat = torch.randn((shape[0], rank), generator=generator, device=device, dtype=dtype)
@@ -78,6 +191,24 @@ class Apollo(Optimizer):
         return mat / math.sqrt(max(rank, 1))
 
     def _project_grad(self, grad, state, group):
+        """Projects a 2D gradient into a low-rank subspace.
+
+        Determines the projection side based on ``proj_type``, samples or
+        reuses a Gaussian random projector, and applies the projection.
+        The projector is resampled every ``update_proj_gap`` steps or when
+        the gradient shape changes.
+
+        Args:
+            grad: 2D gradient tensor of shape ``(m, n)``.
+            state: Per-parameter optimizer state dict.
+            group: Parameter group dict with ``rank``, ``update_proj_gap``,
+                and ``proj_type``.
+
+        Returns:
+            Tuple of ``(low_grad, norm_dim)`` where ``low_grad`` is the
+            projected gradient and ``norm_dim`` is the dimension index (0 or
+            1) along which norms should be computed for channel-wise scaling.
+        """
         rank = max(1, min(int(group["rank"]), min(grad.shape)))
         step = int(state.get("step", 0))
         gap = max(1, int(group["update_proj_gap"]))
@@ -126,6 +257,18 @@ class Apollo(Optimizer):
 
     @torch.no_grad()
     def step(self, closure=None):
+        """Performs a single optimization step.
+
+        Args:
+            closure: A closure that re-evaluates the model and returns the
+                loss.  Optional for most use cases.
+
+        Returns:
+            The loss value if ``closure`` is provided, otherwise ``None``.
+
+        Raises:
+            RuntimeError: If any parameter has sparse gradients.
+        """
         loss = None
         if closure is not None:
             with torch.enable_grad():

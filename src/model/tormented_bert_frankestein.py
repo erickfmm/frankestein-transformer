@@ -1,18 +1,49 @@
 #!/usr/bin/env python3
-"""
-TORMENTED-BERT-Frankenstein: The Ultimate Hybrid Transformer (SOTA 2026)
-TORMENTED = Ternary ODE Retention Mamba Experts Neural Tanh Encoder Depth
+"""TORMENTED-BERT-Frankenstein: The Ultimate Hybrid Transformer (SOTA 2026).
 
-Integrates:
-- BitNet b1.58 (Ternary Weights everywhere)
-- Neural ODE Attention (Continuous depth dynamics)
-- RetNet (Multi-Scale Retention)
-- Mamba-2 (State Space Models)
-- Sparse Mixture-of-Experts
-- Dynamic Tanh Normalization
-- Recursive Depth via Loops
+**TORMENTED** = **T**ernary **O**DE **R**etention **M**amba **E**xperts **N**eural **T**anh **E**ncoder **D**epth.
 
-Hardware Target: Dual Xeon E5-2680v4 + Nvidia Tesla P40 (24GB)
+This module implements a mixed-architecture Transformer encoder/decoder that
+integrates 17+ attention mixer families, Mixture-of-Experts (MoE) FFN routing,
+BitNet b1.58 ternary weight quantization, factorized embeddings, looped depth
+for parameter-efficient recursion, Mixture-of-Depths token routing, and Engram
+conditional memory layers.
+
+Core components:
+
+* :class:`UltraConfig` — single-source-of-truth dataclass for all model
+  hyperparameters.
+* :class:`TormentedBertFrankenstein` — full hybrid encoder with looped depth,
+  MoE, BitNet, factorized embeddings, and Mixture-of-Depths.
+* :class:`TormentedBertMini` — simplified encoder variant preset for
+  constrained GPU training.
+* :class:`FrankensteinDecoder` — autoregressive causal decoder for LLM-style
+  text generation.
+* :class:`HybridLayer` — per-layer dispatcher that routes to the configured
+  attention mixer and FFN (dense or MoE).
+* :class:`FactorizedEmbedding` — reduced-dimension embedding with optional
+  Conv1d pre-projection.
+
+Supported attention mixer families (17+):
+
+* ``standard_attn`` — scaled dot-product self-attention.
+* ``sigmoid_attn`` — sigmoid-based linear attention.
+* ``retnet`` / ``retnet_attn`` — multi-scale retention.
+* ``ode`` — Neural ODE attention block (RK4 / Euler solvers).
+* ``titan_attn`` — Titan memory-augmented attention.
+* ``mamba`` — state-space model placeholder.
+* Sparse family (7 variants): ``sparse_transformer_attn``, ``longformer_attn``,
+  ``bigbird_attn``, ``sparsek_attn``, ``nsa_attn``, ``sparge_attn``,
+  ``fasa_attn``.
+* Gated family (7 variants): ``gla_attn``, ``deltanet_attn``,
+  ``gated_deltanet_attn``, ``hgrn2_attn``, ``fox_attn``,
+  ``gated_softmax_attn``.
+* ``engram_attn`` — Engram conditional memory via scalable lookup.
+
+Training-free policy: ``fasa_attn`` and ``sparge_attn`` raise a RuntimeError
+when called in training mode; they are eval/inference-only blocks.
+
+Hardware Target: Dual Xeon E5-2680v4 + Nvidia Tesla P40 (24GB).
 """
 
 import math
@@ -50,47 +81,141 @@ from .attention.standard import StandardAttention
 from .attention.titan import TitanAttention
 
 
-# ==================== CONFIGURACION DE RIESGO ====================
 @dataclass
 class UltraConfig:
-    # Dimensiones
+    """Single-source-of-truth configuration for all Frankenstein model variants.
+
+    Every hyperparameter lives here. The schema is validated in
+    ``__post_init__`` and enforced by ``configs/schema.yaml`` for YAML-based
+    training configs.
+
+    Attributes:
+        vocab_size: Vocabulary size for token embeddings. Default: 50000.
+        hidden_size: Dimensionality of hidden states throughout the model.
+            Must be divisible by ``num_heads``. Default: 2048.
+        num_layers: Number of physical :class:`HybridLayer` blocks in the
+            stack. Default: 12.
+        num_loops: Number of times the layer stack is repeated (looped depth).
+            Logical depth = ``num_layers * num_loops``. Default: 2.
+        layer_pattern: Ordered list of mixer types assigned to each physical
+            layer. The pattern is cycled modulo its length when
+            ``num_layers`` exceeds the pattern length. Supported values:
+            ``"ode"``, ``"retnet"``, ``"retnet_attn"``, ``"titan_attn"``,
+            ``"standard_attn"``, ``"sigmoid_attn"``, ``"mamba"``,
+            ``"sparse_transformer_attn"``, ``"longformer_attn"``,
+            ``"bigbird_attn"``, ``"sparsek_attn"``, ``"nsa_attn"``,
+            ``"sparge_attn"``, ``"fasa_attn"``, ``"gla_attn"``,
+            ``"deltanet_attn"``, ``"gated_deltanet_attn"``,
+            ``"hgrn2_attn"``, ``"fox_attn"``, ``"gated_softmax_attn"``,
+            ``"engram_attn"``. Default: ``["retnet", "ode", "mamba",
+            "titan_attn"] * 3``.
+        ode_solver: ODE solver for ``ode`` mixer layers. One of ``"rk4"``
+            (Runge-Kutta 4th order) or ``"euler"``. Default: ``"rk4"``.
+        ode_steps: Number of ODE integration steps per ``ode`` layer.
+            Default: 2.
+        retention_heads: Number of retention heads for ``retnet`` /
+            ``retnet_attn`` layers. Default: 8.
+        num_heads: Number of attention heads for standard / sparse / gated
+            attention mixers. Default: 16.
+        num_experts: Total number of FFN experts when ``use_moe`` is True.
+            Default: 8.
+        top_k_experts: Number of experts activated per token in MoE routing.
+            Default: 2.
+        dropout: Dropout probability applied after embeddings and within
+            attention layers. Default: 0.1.
+        use_bitnet: If True, replace all ``nn.Linear`` layers with
+            :class:`BitLinear` (ternary weight quantization, BitNet b1.58).
+            Default: True.
+        norm_type: Normalization layer type. One of ``"layer_norm"``,
+            ``"dynamic_tanh"`` (DyT), or ``"derf"`` (Dynamic Erf).
+            ``"rms_norm"`` is NOT valid. Default: ``"dynamic_tanh"``.
+        use_factorized_embedding: If True, use :class:`FactorizedEmbedding`
+            with reduced embedding dimension + projection. Default: False.
+        factorized_embedding_dim: Embedding dimension when factorization is
+            enabled. Default: 128.
+        use_embedding_conv: If True, apply a Conv1d over the factorized
+            embedding stream before projection. Default: True.
+        hope_base: Base frequency for HoPE (Hybrid Positional Encoding).
+            Default: 10000.0.
+        hope_damping: Damping factor for HoPE high-frequency components.
+            Default: 0.01.
+        rope_base: Base frequency for RoPE (Rotary Position Embedding).
+            Default: 10000.0.
+        rope_scaling: Scaling factor applied to RoPE frequencies.
+            Default: 1.0.
+        use_hope: Legacy toggle for HoPE. Automatically aligned with
+            ``positional_encoding`` in ``__post_init__``. Default: True.
+        positional_encoding: Explicit positional encoding scheme. One of
+            ``"hope"`` or ``"rope"``. If None, inferred from ``use_hope``.
+            Default: None.
+        use_moe: If True, replace the dense FFN with a Mixture-of-Experts
+            FFN block. Default: True.
+        use_mixture_of_depths: If True, apply per-layer token routing where
+            only the top-capacity tokens are updated; remaining tokens are
+            passed through unchanged. Default: False.
+        mixture_of_depths_capacity_ratio: Fraction of tokens selected per
+            layer when Mixture-of-Depths is active. Must be in (0, 1].
+            Default: 0.5.
+        mixture_of_depths_router_aux_loss_weight: Weight for the auxiliary
+            load-balancing loss in Mixture-of-Depths routing. Must be >= 0.
+            Default: 0.0.
+        ffn_hidden_size: Hidden size of the FFN intermediate layer. If None,
+            defaults to ``hidden_size * 2``. Default: None.
+        ffn_activation: FFN activation function. One of ``"silu"`` (SiLU /
+            Swish) or ``"gelu"`` (GELU). Default: ``"silu"``.
+        embedding_conv_kernel: Kernel size for the embedding Conv1d when
+            ``use_embedding_conv`` is True. Default: 3.
+        mode: Model mode. ``"encoder"`` for bidirectional (MLM) or
+            ``"decoder"`` for autoregressive causal generation. The
+            ``model_class=frankesteindecoder`` preset forces ``mode=decoder``
+            at runtime. Default: ``"encoder"``.
+        engram_max_ngram_size: Highest N-gram order for Engram memory layers
+            (range 2..max). Default: 3.
+        engram_n_heads_per_ngram: Number of hash heads per N-gram order in
+            Engram layers. Default: 4.
+        engram_embed_dim_per_head: Embedding dimension per Engram hash head.
+            Default: 32.
+        engram_kernel_size: ShortConv kernel width for Engram layers.
+            Default: 4.
+        engram_seed: RNG seed for Engram hash multipliers. Default: 42.
+
+    Raises:
+        ValueError: If ``positional_encoding`` is not ``"hope"`` or
+            ``"rope"``.
+        ValueError: If ``mode`` is not ``"encoder"`` or ``"decoder"``.
+        ValueError: If ``mixture_of_depths_capacity_ratio`` is not in (0, 1].
+        ValueError: If ``mixture_of_depths_router_aux_loss_weight`` is < 0.
+    """
+
     vocab_size: int = 50000
     hidden_size: int = 2048
     num_layers: int = 12
     num_loops: int = 2
 
-    # Arquitectura Hibrida
     layer_pattern: List[str] = field(default_factory=lambda: ["retnet", "ode", "mamba", "titan_attn"] * 3)
 
-    # ODE Settings
     ode_solver: str = "rk4"
     ode_steps: int = 2
 
-    # RetNet Settings
     retention_heads: int = 8
 
-    # General
     num_heads: int = 16
     num_experts: int = 8
     top_k_experts: int = 2
     dropout: float = 0.1
 
-    # Toggles
     use_bitnet: bool = True
     norm_type: str = "dynamic_tanh"
 
-    # Mini / Embedding factorization
     use_factorized_embedding: bool = False
     factorized_embedding_dim: int = 128
     use_embedding_conv: bool = True
 
-    # HoPE / RoPE settings
     hope_base: float = 10_000.0
     hope_damping: float = 0.01
     rope_base: float = 10_000.0
     rope_scaling: float = 1.0
 
-    # Attention / FFN toggles
     use_hope: bool = True
     positional_encoding: Optional[str] = None
     use_moe: bool = True
@@ -102,14 +227,22 @@ class UltraConfig:
     embedding_conv_kernel: int = 3
     mode: str = "encoder"
 
-    # Engram: Conditional Memory via Scalable Lookup (arXiv:2601.07372)
-    engram_max_ngram_size: int = 3       # highest N-gram order (2..max)
-    engram_n_heads_per_ngram: int = 4    # hash heads per N-gram order
-    engram_embed_dim_per_head: int = 32  # embedding dim per head
-    engram_kernel_size: int = 4          # ShortConv kernel width
-    engram_seed: int = 42                # RNG seed for hash multipliers
+    engram_max_ngram_size: int = 3
+    engram_n_heads_per_ngram: int = 4
+    engram_embed_dim_per_head: int = 32
+    engram_kernel_size: int = 4
+    engram_seed: int = 42
 
     def __post_init__(self):
+        """Validate and derive dependent configuration fields after dataclass init.
+
+        Derives ``ffn_hidden_size``, ``positional_encoding``, and aligns the
+        legacy ``use_hope`` flag. Validates ``mode``, ``positional_encoding``,
+        and Mixture-of-Depths parameter ranges.
+
+        Raises:
+            ValueError: If any field fails validation constraints.
+        """
         if self.ffn_hidden_size is None:
             self.ffn_hidden_size = self.hidden_size * 2
 
@@ -120,7 +253,6 @@ class UltraConfig:
             if self.positional_encoding not in {"hope", "rope"}:
                 raise ValueError("positional_encoding must be one of {'hope', 'rope'}")
 
-        # Keep legacy flag semantically aligned with the selected encoder.
         self.use_hope = self.positional_encoding == "hope"
 
         if self.mode not in {"encoder", "decoder"}:
@@ -134,9 +266,31 @@ class UltraConfig:
 
 
 class FactorizedEmbedding(nn.Module):
-    """Factorized token embedding with optional Conv1d pre-projection."""
+    """Factorized token embedding with optional Conv1d pre-projection.
+
+    Reduces the embedding lookup dimension to ``factorized_embedding_dim``,
+    then projects up to ``hidden_size`` via a linear (or BitLinear) layer.
+    Optionally applies a 1D convolution over the embedding stream for local
+    context smoothing before projection.
+
+    Attributes:
+        low_dim: Reduced embedding dimension.
+        use_conv: Whether the Conv1d pre-projection is active.
+        embedding: Token embedding lookup table.
+        conv: Optional Conv1d layer for local context smoothing.
+        proj: Linear (or BitLinear) projection from ``low_dim`` to
+            ``hidden_size``.
+    """
 
     def __init__(self, config: UltraConfig):
+        """Initialize factorized embedding from an UltraConfig.
+
+        Args:
+            config: Model configuration. Reads ``factorized_embedding_dim``,
+                ``vocab_size``, ``use_embedding_conv``,
+                ``embedding_conv_kernel``, ``use_bitnet``, and
+                ``hidden_size``.
+        """
         super().__init__()
         self.low_dim = config.factorized_embedding_dim
         self.use_conv = config.use_embedding_conv
@@ -152,11 +306,21 @@ class FactorizedEmbedding(nn.Module):
         self.proj = proj_cls(self.low_dim, config.hidden_size, bias=False)
 
     def forward(self, input_ids: torch.Tensor) -> torch.Tensor:
+        """Embed token IDs and optionally apply Conv1d + projection.
+
+        Sequence length is forced to match ``input_ids`` after convolution
+        to keep MLM labels aligned (even-kernel symmetric padding can shift
+        length by +1).
+
+        Args:
+            input_ids: Integer token indices of shape ``(B, S)``.
+
+        Returns:
+            Tensor of shape ``(B, S, hidden_size)``.
+        """
         x = self.embedding(input_ids)
         if self.conv is not None:
             x = self.conv(x.transpose(1, 2)).transpose(1, 2)
-            # Even kernels with symmetric padding can shift length by +1.
-            # Force sequence length to match inputs to keep MLM labels aligned.
             if x.size(1) != input_ids.size(1):
                 target_len = input_ids.size(1)
                 if x.size(1) > target_len:
@@ -167,11 +331,54 @@ class FactorizedEmbedding(nn.Module):
         return self.proj(x)
 
 
-# ==================== TITAN HYBRID LAYER ====================
 class HybridLayer(nn.Module):
+    """Per-layer dispatcher: attention mixer + FFN (dense or MoE) + optional Mixture-of-Depths.
+
+    Each :class:`HybridLayer` instantiates the attention mixer specified by
+    ``layer_type``, a normalization layer, and a feed-forward block. The FFN
+    can be a standard dense MLP or a Mixture-of-Experts (MoE) block with
+    top-k expert routing. When ``use_mixture_of_depths`` is enabled, only the
+    top-capacity tokens are passed through the full layer; remaining tokens
+    are scattered back unchanged.
+
+    Training-free layers (``fasa_attn``, ``sparge_attn``) raise a
+    RuntimeError if called in training mode.
+
+    Attributes:
+        layer_type: The mixer type string (e.g. ``"retnet"``, ``"ode"``).
+        norm1: Pre-attention normalization layer.
+        norm2: Pre-FFN normalization layer.
+        mixer: The instantiated attention mixer module.
+        router: MoE router linear layer (None if dense FFN).
+        experts: ModuleList of MoE expert FFNs (None if dense FFN).
+        top_k: Number of experts activated per token in MoE mode.
+        ffn: Dense FFN sequential block (None if MoE mode).
+        depth_router: Mixture-of-Depths token router (None if disabled).
+        use_moe: Whether MoE FFN is active.
+        use_mixture_of_depths: Whether Mixture-of-Depths routing is active.
+        mixture_of_depths_capacity_ratio: Fraction of tokens selected.
+        mixture_of_depths_router_aux_loss_weight: Aux loss weight.
+        last_mixture_of_depths_aux_loss: Aux loss from the most recent
+            forward pass (None if MoD disabled).
+        last_mixture_of_depths_selected_fraction: Fraction of tokens
+            selected in the most recent forward pass.
+        last_mixture_of_depths_capacity: Token capacity used in the most
+            recent forward pass.
+    """
+
     TRAINING_FREE_LAYERS = {"fasa_attn", "sparge_attn"}
 
     def __init__(self, config, layer_type):
+        """Initialize a hybrid layer for the given mixer type.
+
+        Args:
+            config: :class:`UltraConfig` instance with model hyperparameters.
+            layer_type: String identifying the attention mixer. Must be one
+                of the keys in the internal mixer registry or ``"mamba"``.
+
+        Raises:
+            ValueError: If ``layer_type`` is not recognized.
+        """
         super().__init__()
         self.layer_type = layer_type
         self.norm1 = get_norm(config)
@@ -213,7 +420,6 @@ class HybridLayer(nn.Module):
         }
 
         if layer_type == "mamba":
-            # Placeholder simple para Mamba (en prod usar mamba-ssm)
             self.mixer = proj_cls(config.hidden_size, config.hidden_size)
         elif layer_type in mixer_registry:
             self.mixer = mixer_registry[layer_type](config)
@@ -258,6 +464,21 @@ class HybridLayer(nn.Module):
         logical_layer_idx: Optional[int] = None,
         input_ids: Optional[torch.Tensor] = None,
     ):
+        """Run the full attention + FFN path for all tokens (no MoD routing).
+
+        Args:
+            x: Input tensor of shape ``(B, S, hidden_size)``.
+            logical_layer_idx: Global logical layer index (0-based across
+                loops). Passed to mixers that need positional awareness.
+            input_ids: Original token IDs, required by Engram layers.
+
+        Returns:
+            Output tensor of shape ``(B, S, hidden_size)``.
+
+        Raises:
+            ValueError: If the layer is training-free and called in training
+                mode.
+        """
         residual = x
         x = self.norm1(x)
 
@@ -306,6 +527,14 @@ class HybridLayer(nn.Module):
         return x
 
     def _mixture_of_depths_capacity(self, seq_len: int) -> int:
+        """Compute the token capacity for Mixture-of-Depths routing.
+
+        Args:
+            seq_len: Sequence length of the current batch.
+
+        Returns:
+            Integer token capacity, at least 1.
+        """
         return max(1, int(math.ceil(seq_len * self.mixture_of_depths_capacity_ratio)))
 
     def forward(
@@ -314,6 +543,27 @@ class HybridLayer(nn.Module):
         logical_layer_idx: Optional[int] = None,
         input_ids: Optional[torch.Tensor] = None,
     ):
+        """Forward pass with optional Mixture-of-Depths token routing.
+
+        When MoD is disabled, delegates directly to :meth:`_forward_dense`.
+        When MoD is enabled, computes per-token router scores, selects the
+        top-capacity tokens, runs the dense path on those tokens only, and
+        scatters the updated tokens back into the original sequence. An
+        auxiliary load-balancing loss is computed and stored in
+        ``last_mixture_of_depths_aux_loss``.
+
+        Args:
+            x: Input tensor of shape ``(B, S, hidden_size)``.
+            logical_layer_idx: Global logical layer index (0-based across
+                loops).
+            input_ids: Original token IDs, required by Engram layers.
+
+        Returns:
+            Output tensor of shape ``(B, S, hidden_size)``.
+
+        Raises:
+            ValueError: If MoD is active and the sequence length is 0.
+        """
         if not self.use_mixture_of_depths:
             self.last_mixture_of_depths_aux_loss = None
             self.last_mixture_of_depths_selected_fraction = 1.0
@@ -333,7 +583,6 @@ class HybridLayer(nn.Module):
 
         router_logits = self.depth_router(x).squeeze(-1)
         router_probs = torch.sigmoid(router_logits)
-        # Regularize average router activation to match the configured token budget.
         self.last_mixture_of_depths_aux_loss = (
             (router_probs.mean(dim=1) - self.mixture_of_depths_capacity_ratio).pow(2).mean()
         )
@@ -356,11 +605,57 @@ class HybridLayer(nn.Module):
         return torch.scatter(x, dim=1, index=gather_index, src=updated_tokens)
 
 
-# ==================== MAIN MODEL ====================
 class TormentedBertFrankenstein(nn.Module):
-    """TORMENTED-BERT-Frankenstein: Hybrid Transformer Architecture"""
+    """TORMENTED-BERT-Frankenstein: Hybrid mixed-architecture Transformer encoder.
+
+    This is the flagship model. It stacks ``num_layers`` :class:`HybridLayer`
+    blocks, each configured by ``layer_pattern``, and repeats the entire
+    stack ``num_loops`` times (looped depth). The logical depth is
+    ``num_layers * num_loops``.
+
+    Key architectural features:
+
+    * **17+ attention mixer families** dispatched per-layer via
+      :class:`HybridLayer`.
+    * **Looped depth**: the physical layer stack is iterated ``num_loops``
+      times, sharing parameters across loops for parameter-efficient deep
+      computation.
+    * **Mixture-of-Experts (MoE) FFN**: per-token top-k expert routing with
+      weighted expert outputs.
+    * **BitNet b1.58**: ternary weight quantization via :class:`BitLinear`
+      when ``use_bitnet`` is True.
+    * **Factorized embeddings**: reduced-dimension embedding lookup +
+      projection via :class:`FactorizedEmbedding`.
+    * **Mixture-of-Depths**: per-layer token routing where only the
+      top-capacity tokens are updated; auxiliary load-balancing loss is
+      accumulated and exposed via ``last_auxiliary_losses``.
+    * **Normalization**: ``layer_norm``, ``dynamic_tanh`` (DyT), or
+      ``derf`` (Dynamic Erf).
+    * **Positional encoding**: RoPE or HoPE, applied inside attention
+      mixers.
+
+    Attributes:
+        config: The :class:`UltraConfig` used to build the model.
+        emb: Token embedding layer (:class:`FactorizedEmbedding` or
+            ``nn.Embedding``).
+        dropout: Embedding dropout layer.
+        layers: ModuleList of ``num_layers`` :class:`HybridLayer` blocks.
+        final_norm: Final normalization before the output head.
+        head: Output projection to vocabulary logits (Linear or BitLinear).
+        last_auxiliary_losses: Dict of auxiliary losses from the most recent
+            forward pass (e.g. ``"mixture_of_depths_router_loss"``).
+        last_mixture_of_depths_stats: Dict of MoD statistics from the most
+            recent forward pass (``"average_selected_fraction"``,
+            ``"raw_router_aux_loss"``).
+    """
 
     def __init__(self, config):
+        """Build the Frankenstein encoder from an UltraConfig.
+
+        Args:
+            config: :class:`UltraConfig` instance with all model
+                hyperparameters.
+        """
         super().__init__()
         self.config = config
         self.last_auxiliary_losses = {}
@@ -384,6 +679,19 @@ class TormentedBertFrankenstein(nn.Module):
         self.head = proj_cls(config.hidden_size, config.vocab_size)
 
     def forward(self, input_ids):
+        """Run the full looped-depth encoder forward pass.
+
+        Iterates the physical layer stack ``num_loops`` times, tracking a
+        global ``logical_layer_idx``. Accumulates Mixture-of-Depths auxiliary
+        losses across all layers and stores them in
+        ``last_auxiliary_losses``.
+
+        Args:
+            input_ids: Integer token indices of shape ``(B, S)``.
+
+        Returns:
+            Logits tensor of shape ``(B, S, vocab_size)``.
+        """
         x = self.emb(input_ids)
         x = self.dropout(x)
 
@@ -421,10 +729,38 @@ class TormentedBertFrankenstein(nn.Module):
 
 
 class TormentedBertMini(nn.Module):
-    """Mini variant preset for stable and efficient training on constrained GPUs."""
+    """Simplified encoder variant preset for stable training on constrained GPUs.
+
+    Wraps a :class:`TormentedBertFrankenstein` backbone with a compact preset
+    configuration: ``hidden_size=384``, ``num_layers=6``, ``num_loops=2``,
+    ``num_heads=6``, ``num_experts=4``, ``norm_type="derf"``,
+    ``use_factorized_embedding=True``, and a stable layer pattern of
+    ``["retnet", "titan_attn", "retnet", "mamba", "titan_attn", "ode"]``.
+
+    Factorized embeddings are forced on even if the provided config disables
+    them.
+
+    Attributes:
+        config: The :class:`UltraConfig` (built from preset or user-provided).
+        backbone: The underlying :class:`TormentedBertFrankenstein` model.
+        last_auxiliary_losses: Mirrored from the backbone after each forward
+            pass.
+        last_mixture_of_depths_stats: Mirrored from the backbone after each
+            forward pass.
+    """
 
     @staticmethod
     def build_mini_config(vocab_size: int = 50_000, use_bitnet: bool = True) -> UltraConfig:
+        """Build the default Mini preset configuration.
+
+        Args:
+            vocab_size: Vocabulary size. Default: 50000.
+            use_bitnet: Whether to use BitNet ternary quantization.
+                Default: True.
+
+        Returns:
+            A pre-configured :class:`UltraConfig` with compact dimensions.
+        """
         stable_layer_pattern = [
             "retnet",
             "titan_attn",
@@ -454,6 +790,12 @@ class TormentedBertMini(nn.Module):
         )
 
     def __init__(self, config: Optional[UltraConfig] = None):
+        """Initialize the Mini model.
+
+        Args:
+            config: Optional :class:`UltraConfig`. If None, the default Mini
+                preset is used. Factorized embeddings are forced on.
+        """
         super().__init__()
         self.config = config or self.build_mini_config()
         self.last_auxiliary_losses = {}
@@ -465,6 +807,14 @@ class TormentedBertMini(nn.Module):
         self.backbone = TormentedBertFrankenstein(self.config)
 
     def forward(self, input_ids: torch.Tensor) -> torch.Tensor:
+        """Forward pass through the Mini backbone.
+
+        Args:
+            input_ids: Integer token indices of shape ``(B, S)``.
+
+        Returns:
+            Logits tensor of shape ``(B, S, vocab_size)``.
+        """
         output = self.backbone(input_ids)
         self.last_auxiliary_losses = dict(getattr(self.backbone, "last_auxiliary_losses", {}))
         self.last_mixture_of_depths_stats = dict(
@@ -474,10 +824,24 @@ class TormentedBertMini(nn.Module):
 
 
 class FrankensteinDecoder(nn.Module):
-    """Autoregressive decoder variant of Frankenstein for causal LLM generation.
+    """Autoregressive causal decoder variant for LLM-style text generation.
 
-    Uses the same hybrid architecture as TormentedBertFrankenstein but with
-    ``mode='decoder'`` so every attention layer applies causal masking.
+    Wraps a :class:`TormentedBertFrankenstein` backbone with ``mode='decoder'``
+    so every attention layer applies causal (autoregressive) masking. Supports
+    the same hybrid architecture features as the encoder: 17+ mixer families,
+    MoE, BitNet, factorized embeddings, looped depth, Mixture-of-Depths, and
+    Engram memory.
+
+    The ``model_class=frankesteindecoder`` preset forces ``mode=decoder`` at
+    runtime, overriding any user-provided mode.
+
+    Attributes:
+        config: The :class:`UltraConfig` (built from preset or user-provided).
+        backbone: The underlying :class:`TormentedBertFrankenstein` model.
+        last_auxiliary_losses: Mirrored from the backbone after each forward
+            pass.
+        last_mixture_of_depths_stats: Mirrored from the backbone after each
+            forward pass.
     """
 
     @staticmethod
@@ -489,6 +853,21 @@ class FrankensteinDecoder(nn.Module):
         use_bitnet: bool = True,
         layer_pattern: Optional[List[str]] = None,
     ) -> UltraConfig:
+        """Build the default decoder preset configuration.
+
+        Args:
+            vocab_size: Vocabulary size. Default: 50000.
+            hidden_size: Hidden state dimensionality. Default: 2048.
+            num_layers: Number of physical HybridLayer blocks. Default: 12.
+            num_loops: Number of loop iterations. Default: 1.
+            use_bitnet: Whether to use BitNet ternary quantization.
+                Default: True.
+            layer_pattern: Optional custom layer pattern. If None, defaults
+                to ``["titan_attn", "retnet", "titan_attn", "mamba"] * 3``.
+
+        Returns:
+            A pre-configured :class:`UltraConfig` with ``mode='decoder'``.
+        """
         if layer_pattern is None:
             layer_pattern = [
                 "titan_attn",
@@ -516,6 +895,13 @@ class FrankensteinDecoder(nn.Module):
         )
 
     def __init__(self, config: Optional[UltraConfig] = None):
+        """Initialize the decoder model.
+
+        Args:
+            config: Optional :class:`UltraConfig`. If None, the default
+                decoder preset is used. ``mode`` is forced to ``"decoder"``
+                if not already set.
+        """
         super().__init__()
         self.config = config or self.build_decoder_config()
         self.last_auxiliary_losses = {}
@@ -527,6 +913,14 @@ class FrankensteinDecoder(nn.Module):
         self.backbone = TormentedBertFrankenstein(self.config)
 
     def forward(self, input_ids: torch.Tensor) -> torch.Tensor:
+        """Forward pass through the decoder backbone (causal masking).
+
+        Args:
+            input_ids: Integer token indices of shape ``(B, S)``.
+
+        Returns:
+            Logits tensor of shape ``(B, S, vocab_size)``.
+        """
         output = self.backbone(input_ids)
         self.last_auxiliary_losses = dict(getattr(self.backbone, "last_auxiliary_losses", {}))
         self.last_mixture_of_depths_stats = dict(
@@ -542,7 +936,26 @@ class FrankensteinDecoder(nn.Module):
         temperature: float = 1.0,
         top_k: int = 50,
     ) -> torch.Tensor:
-        """Simple greedy / top-k sampling loop for autoregressive generation."""
+        """Autoregressive token generation with top-k sampling.
+
+        Runs the decoder forward pass repeatedly, sampling one token at a
+        time from the top-k filtered softmax distribution. Runs under
+        ``torch.inference_mode()`` for efficiency.
+
+        Args:
+            input_ids: Prompt token indices of shape ``(B, S_prompt)``.
+            max_new_tokens: Maximum number of tokens to generate.
+                Default: 128.
+            temperature: Softmax temperature for sampling. Lower values
+                make output more deterministic. Default: 1.0.
+            top_k: Number of highest-probability tokens to keep for
+                sampling. Set to 0 to disable top-k filtering.
+                Default: 50.
+
+        Returns:
+            Tensor of shape ``(B, S_prompt + max_new_tokens)`` containing
+            the prompt followed by generated tokens.
+        """
         for _ in range(max_new_tokens):
             logits = self.forward(input_ids)
             next_logits = logits[:, -1, :] / max(temperature, 1e-8)

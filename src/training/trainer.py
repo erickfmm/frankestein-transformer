@@ -1,3 +1,11 @@
+"""Training loop with stability controls for TORMENTED-BERT-Frankenstein.
+
+Provides :class:`TitanTrainer`, a production-grade training loop with
+gradient clipping, NaN detection and retry, rolling/best checkpointing,
+GPU thermal guard integration, CSV telemetry logging, GaLore low-rank
+gradient projection, and automatic mixed precision support.
+"""
+
 import os
 import csv
 import torch
@@ -30,7 +38,56 @@ except ImportError:
 # ==================== TRAINING CONFIGURATION ====================
 @dataclass
 class TrainingConfig:
-    """Configuration for training behavior and checkpointing"""
+    """Configuration for training behavior, checkpointing, and stability controls.
+
+    Attributes:
+        csv_log_path: Path for CSV training metrics log.
+        csv_rotate_on_schema_change: If ``True``, rotate the CSV file when
+            the column schema changes instead of raising an error.
+        gpu_metrics_backend: GPU telemetry backend (``"nvml"`` or ``"none"``).
+        nvml_device_index: NVML device index for multi-GPU systems.
+        enable_block_grad_norms: Whether to collect per-block gradient norms.
+        telemetry_log_interval: Steps between heavy telemetry collection.
+        gpu_temp_guard_enabled: Whether GPU thermal guard is enabled.
+        switch_on_thermal: Whether GPU→CPU thermal switching is enabled.
+        gpu_temp_pause_threshold_c: Temperature in Celsius above which
+            training is paused.
+        gpu_temp_resume_threshold_c: Temperature in Celsius below which
+            training resumes.
+        gpu_temp_critical_threshold_c: Optional critical temperature for
+            emergency GPU→CPU offload.
+        gpu_temp_poll_interval_seconds: Seconds between temperature polls
+            while paused.
+        checkpoint_every_n_steps: Save a rolling checkpoint every N steps.
+        max_rolling_checkpoints: Maximum number of rolling checkpoints to keep.
+        num_best_checkpoints: Number of best-loss checkpoints to retain.
+        nan_check_interval: Check for NaN loss every N steps.
+        log_gradient_stats: Whether to log gradient statistics.
+        gradient_log_interval: Steps between gradient stat logging.
+        gradient_accumulation_steps: Number of steps to accumulate gradients
+            before an optimizer update.
+        optimizer_class: Optimizer class name (e.g. ``"adamw"``).
+        optimizer_parameters: Dictionary of optimizer-specific parameters.
+        scheduler_total_steps: Total steps for the learning rate scheduler.
+        scheduler_warmup_ratio: Fraction of total steps used for warmup.
+        scheduler_type: Scheduler type (``"cosine"``, ``"constant"``, or
+            ``"linear_warmup_then_constant"``).
+        max_nan_retries: Maximum retries per batch when NaN is detected.
+        grad_clip_max_norm: Maximum gradient norm for clipping.
+        inf_post_clip_threshold: Gradient norm above which the step is
+            considered to have exploding gradients.
+        min_grad_norm_for_signal: Minimum gradient norm below which
+            gradients are considered zero.
+        inf_epoch_patience: Consecutive inf-epochs before early stop.
+        zero_grad_plateau_patience: Consecutive zero-gradient plateau
+            epochs before early stop.
+        use_galore: Whether to enable GaLore low-rank gradient projection.
+        galore_rank: Rank for GaLore SVD projection.
+        galore_update_interval: Steps between GaLore projection updates.
+        galore_scale: Scaling factor for GaLore projected gradients.
+        galore_max_dim: Maximum dimension for GaLore projection.
+        use_amp: Whether to use automatic mixed precision (FP16/BF16).
+    """
     # CSV Logging
     csv_log_path: str = "training_metrics.csv"
     csv_rotate_on_schema_change: bool = True
@@ -90,11 +147,42 @@ class TrainingConfig:
 
 # ==================== TITAN TRAINER ====================
 class TitanTrainer:
-    """Advanced trainer for TITAN-BERT-ULTRA with specialized optimizations"""
-    
+    """Advanced trainer for TORMENTED-BERT-Frankenstein with stability controls.
+
+    Implements a production-grade training loop with gradient accumulation,
+    automatic mixed precision (AMP), gradient clipping, NaN detection with
+    automatic retry and learning rate scaling, rolling and best-loss
+    checkpointing, GPU thermal guard integration, GaLore low-rank gradient
+    projection, and CSV telemetry logging.
+
+    Attributes:
+        model: The PyTorch model being trained.
+        config: Model configuration (:class:`UltraConfig` or HF config).
+        training_config: :class:`TrainingConfig` with stability parameters.
+        device: Resolved PyTorch device string.
+        optimizer: Configured optimizer with per-component parameter groups.
+        scaler: AMP gradient scaler.
+        scheduler: Learning rate scheduler with warmup.
+        storage_manager: :class:`StorageManager` for disk usage tracking.
+        global_step: Current global training step counter.
+        best_loss: Best (lowest) loss observed so far.
+        gradient_accumulation_steps: Number of steps between optimizer updates.
+        gpu_temp_guard: :class:`GPUTemperatureGuard` for thermal safety.
+    """
+
     def __init__(self, model: torch.nn.Module, config: Optional[Any],
                  training_config: TrainingConfig = None,
                  device: str = None): #torch.device = None):
+        """Initialize the trainer.
+
+        Args:
+            model: PyTorch model to train.
+            config: Model configuration object (e.g. :class:`UltraConfig`).
+            training_config: :class:`TrainingConfig` with stability and
+                checkpointing parameters. Uses defaults if ``None``.
+            device: Target device string. Defaults to CUDA if available,
+                otherwise CPU.
+        """
         self.model = model
         self.config = config
         self.training_config = training_config or TrainingConfig()
@@ -1147,7 +1235,26 @@ class TitanTrainer:
         )
     
     def compute_mlm_loss(self, input_ids, attention_mask, labels):
-        """Compute MLM loss with proper masking and shape safety checks"""
+        """Compute masked language modeling loss with shape safety checks.
+
+        Handles both HF-style labels (``-100`` on unmasked tokens) and
+        raw-sequence labels (infers masked positions by comparing input
+        and label token IDs). Includes a fallback that forces at least one
+        valid supervised token when no MLM targets exist.
+
+        Args:
+            input_ids: Token ID tensor of shape ``(B, S)``.
+            attention_mask: Attention mask tensor of shape ``(B, S)``.
+            labels: Label tensor of shape ``(B, S)``.
+
+        Returns:
+            Tuple of ``(loss, accuracy)`` where ``loss`` is a scalar tensor
+            and ``accuracy`` is a scalar tensor in ``[0, 1]``.
+
+        Raises:
+            RuntimeError: If non-finite logits are detected, or if tensor
+                shapes are mismatched.
+        """
         # Forward pass
         logits = self._forward_mlm_logits(input_ids, attention_mask)
         auxiliary_losses = getattr(self.model, "last_auxiliary_losses", None)
@@ -1691,7 +1798,19 @@ class TitanTrainer:
             logging.info(f"📊 CSV log closed: {self.training_config.csv_log_path}")
     
     def save_checkpoint(self, epoch: int, suffix: str = "", path: str = "checkpoints") -> str:
-        """Save comprehensive checkpoint"""
+        """Save a comprehensive training checkpoint.
+
+        Includes model state, optimizer state, scheduler state, AMP scaler
+        state, config, global step, and best loss.
+
+        Args:
+            epoch: Current epoch number.
+            suffix: Optional filename suffix (e.g. ``"_epoch_end"``).
+            path: Directory to save the checkpoint in.
+
+        Returns:
+            Absolute path to the saved checkpoint file.
+        """
         os.makedirs(path, exist_ok=True)
         
         checkpoint = {
@@ -1720,7 +1839,17 @@ class TitanTrainer:
         return checkpoint_path
     
     def load_checkpoint(self, checkpoint_path: str):
-        """Load checkpoint and resume training"""
+        """Load a checkpoint and resume training state.
+
+        Restores model weights, optimizer state, scheduler state, AMP
+        scaler state, global step, and best loss.
+
+        Args:
+            checkpoint_path: Path to the checkpoint file.
+
+        Returns:
+            The epoch number from the loaded checkpoint.
+        """
         logging.info(f"📂 Loading checkpoint: {checkpoint_path}")
         
         checkpoint = torch.load(checkpoint_path, map_location=self.device)
@@ -1738,7 +1867,15 @@ class TitanTrainer:
         return checkpoint['epoch']
 
     def save_pretrained_artifacts(self, output_dir: str, tokenizer: Any = None):
-        """Save HuggingFace-compatible artifacts when the model/tokenizer support it."""
+        """Save HuggingFace-compatible model and tokenizer artifacts.
+
+        Args:
+            output_dir: Directory to save artifacts in.
+            tokenizer: Optional tokenizer with ``save_pretrained`` support.
+
+        Raises:
+            RuntimeError: If the model does not support ``save_pretrained``.
+        """
         if not hasattr(self.model, "save_pretrained"):
             raise RuntimeError("Current model does not support save_pretrained")
 

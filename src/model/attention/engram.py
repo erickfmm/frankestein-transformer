@@ -31,6 +31,17 @@ from .common import BitLinear
 # ---------------------------------------------------------------------------
 
 def _is_prime(n: int) -> bool:
+    """Test whether an integer is prime using trial division up to sqrt(n).
+
+    Handles small cases (n < 2, n < 4) directly, then checks divisibility by
+    2 and 3 before iterating over candidates of the form 6k ± 1.
+
+    Args:
+        n: Integer to test for primality.
+
+    Returns:
+        ``True`` if ``n`` is prime, ``False`` otherwise.
+    """
     if n < 2:
         return False
     if n < 4:

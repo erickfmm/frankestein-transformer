@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-"""
-SBERT Inference for TORMENTED-BERT-Frankenstein
-Compute sentence embeddings and similarity scores using fine-tuned SBERT model.
+"""SBERT inference engine for TORMENTED-BERT-Frankenstein.
+
+Provides :class:`SBERTInference` for computing sentence embeddings,
+similarity scores, semantic search, clustering, and embedding
+serialization using fine-tuned Sentence-BERT models.
 """
 
 import os
@@ -30,13 +32,22 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class SimilarityResult:
-    """Result of similarity computation"""
+    """Result of a pairwise sentence similarity computation.
+
+    Attributes:
+        sentence1: First sentence text.
+        sentence2: Second sentence text.
+        similarity: Cosine similarity score in ``[0, 1]`` (normalized).
+        distance: Cosine distance (``1 - similarity``).
+    """
+
     sentence1: str
     sentence2: str
     similarity: float
     distance: float
-    
+
     def to_dict(self):
+        """Serialize the result to a plain dictionary."""
         return {
             'sentence1': self.sentence1,
             'sentence2': self.sentence2,
@@ -46,21 +57,33 @@ class SimilarityResult:
 
 
 class SBERTInference:
-    """Inference engine for SBERT models"""
-    
+    """Inference engine for fine-tuned SBERT models.
+
+    Loads a :class:`SentenceTransformer` model and provides methods for
+    encoding sentences to embeddings, computing pairwise similarity,
+    semantic search over a corpus, clustering, and embedding serialization.
+
+    Attributes:
+        model_path: Path to the fine-tuned SBERT model directory.
+        batch_size: Default batch size for encoding.
+        device: Resolved PyTorch device string.
+        model: Loaded :class:`SentenceTransformer` instance.
+        max_seq_length: Maximum sequence length from the loaded model.
+    """
+
     def __init__(
         self,
         model_path: str,
         device: Optional[str] = None,
         batch_size: int = 32
     ):
-        """
-        Initialize SBERT inference engine.
-        
+        """Initialize the SBERT inference engine.
+
         Args:
-            model_path: Path to fine-tuned SBERT model
-            device: Device to use ('cuda', 'cpu', or None for auto)
-            batch_size: Batch size for encoding
+            model_path: Path to a fine-tuned SBERT model directory.
+            device: Device string (``"cuda"``, ``"cpu"``, or ``None`` for
+                auto-resolution).
+            batch_size: Default batch size for encoding operations.
         """
         self.model_path = model_path
         self.batch_size = batch_size

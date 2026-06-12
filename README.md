@@ -3,58 +3,112 @@
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch 2.0+](https://img.shields.io/badge/PyTorch-2.0+-ee4c2c.svg)](https://pytorch.org/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-green.svg)](https://opensource.org/licenses/Apache-2.0)
+[![CI](https://img.shields.io/badge/CI-passing-brightgreen.svg)](https://github.com/erickfmm/frankestein-transformer/actions)
 
-Config-driven training library and CLI for end-to-end NLP workflows with encoder and decoder architectures:
+Config-driven transformer experimentation toolkit with 17+ mixer architectures and 23 optimizer families.
 
-- Encoder and decoder training with strict YAML schema validation
-- Fine-tuning workflows for both architectures
-- Deployment artifact generation and quantization
-- Batch/interactive inference
-- SBERT training and inference workflows
+## Quick Start
 
-## What This Project Is
+| Method | Command |
+|--------|---------|
+| **uv** (recommended) | `git clone https://github.com/erickfmm/frankestein-transformer.git && cd frankestein-transformer && uv venv && source .venv/bin/activate && uv pip install -e ".[train]"` |
+| **pip** | `python -m venv .venv && source .venv/bin/activate && pip install -e ".[train]"` |
+| **conda** | `conda create -n frankestein python=3.9 && conda activate frankestein && pip install -e ".[train]"` |
 
-Frankestein Transformer is an installable Python package centered on a single CLI:
+Verify: `frankestein-transformer --help`
 
-```bash
-frankestein-transformer
-```
+## Feature Matrix
 
-The project is organized around:
+| Feature | Scale |
+|---------|-------|
+| Sequence mixer architectures | 19 across 4 categories (Dense, Recurrent, Sparse, Gated) |
+| Optimizer families | 23 across 6 categories |
+| Model classes | `frankenstein`, `mini`, `frankesteindecoder` |
+| Training modes | Encoder (MLM) / Decoder (autoregressive) |
+| Normalization types | `layer_norm`, `dynamic_tanh`, `derf` |
+| CLI subcommands | 8 |
+| Web configuration UI | Streamlit schema-driven YAML builder |
+| Quantized deployment | BitNet + checkpoint export pipeline |
+| SBERT workflows | Training + inference (similarity, search, cluster, encode) |
 
-- `configs/schema.yaml`: authoritative training configuration schema
-- `src/cli.py`: CLI entrypoint and subcommands
-- `src/deploy/*`: deployment, quantization, inference runtime
-- `src/sbert/*`: sentence-embedding fine-tuning and inference tools
-- Unified support for encoder and decoder architectures with shared infrastructure
+## Architecture Decision Table
 
-Recent capability highlights include:
+| Model Class | Mode | Use Case |
+|-------------|------|----------|
+| `frankenstein` | Encoder | Full-featured MLM pre-training with mixed attention, MoE, and all 19 mixer types |
+| `mini` | Encoder | Lightweight encoder for constrained resources; reduced hidden size and layers |
+| `frankesteindecoder` | Decoder | Autoregressive causal decoder for LLM-style generation; forces `mode: decoder` |
 
-- `engram_attn`: conditional memory lookups with configurable n-gram hashing controls
-- Mixture-of-Depths routing: adaptive per-layer token compute with configurable router capacity
-- APOLLO optimizer family: `apollo`, `apollo_mini`, and `q_apollo` integrated into schema and factory routing
-- Expanded quality harness: comprehensive unit tests, CI test workflow, and YAML example validation coverage
+See [configs/README.md](configs/README.md) for preset details and [docs/specs/](docs/specs/) for architecture deep-dives.
+
+## CLI Command Reference
+
+| Subcommand | Purpose | Example |
+|------------|---------|---------|
+| `train` | Run schema-validated training | `frankestein-transformer train --config-name mini --device auto` |
+| `deploy` | Export checkpoint to deployment artifacts | `frankestein-transformer deploy --checkpoint ckpt.pt --output deployed/ --format quantized` |
+| `quantize` | Shortcut for quantized deployment | `frankestein-transformer quantize --checkpoint ckpt.pt --output deployed_q/ --validate` |
+| `infer` | Batch/interactive/benchmark inference | `frankestein-transformer infer --model deployed/ --text "hello" --device auto` |
+| `sbert-train` | Train sentence embedding model | `frankestein-transformer sbert-train --output_dir ./sbert_out --batch_size 16 --epochs 4` |
+| `sbert-infer` | SBERT similarity/search/cluster/encode | `frankestein-transformer sbert-infer --model_path ./sbert_out --mode similarity --sentence1 "a" --sentence2 "b"` |
+| `transformers-export` | Export to HuggingFace Transformers format | `frankestein-transformer transformers-export --config-name mini --output ./hf_export/` |
+| `web-server` | Launch Streamlit config builder UI | `frankestein-transformer web-server` |
+
+All model-executing commands accept `--device auto|cpu|cuda|mps`.
+
+## Mixer Categories
+
+| Category | Code Names | Description |
+|----------|------------|-------------|
+| **Dense** | `standard_attn`, `sigmoid_attn`, `gated_softmax_attn`, `titan_attn` | Full quadratic attention variants with positional encoding support |
+| **Recurrent** | `retnet`, `retnet_attn`, `mamba`, `ode` | Retention networks, state-space models, and continuous-depth ODE layers |
+| **Sparse** | `sparse_transformer_attn`, `longformer_attn`, `bigbird_attn`, `sparsek_attn`, `nsa_attn`, `sparge_attn` ⚠️, `fasa_attn` ⚠️ | Factorized, sliding-window, and token-selection patterns |
+| **Gated** | `gla_attn`, `deltanet_attn`, `gated_deltanet_attn`, `hgrn2_attn`, `fox_attn`, `engram_attn` | Linear attention with multiplicative gates, delta rules, and n-gram memory |
+
+⚠️ `sparge_attn` and `fasa_attn` are **eval-only** — training raises a runtime error.
+
+Configure via `layer_pattern` in YAML. See [configs/schema.yaml](src/schema.yaml) for the full mixer reference table.
+
+## Optimizer Categories
+
+| Category | Optimizers | Count |
+|----------|------------|-------|
+| **Classical** | `sgd_momentum`, `adamw`, `radam`, `adan`, `adopt`, `ademamix`, `lamb` | 7 |
+| **Variance Reduction** | `mars_adamw`, `cautious_adamw` | 2 |
+| **Memory-Efficient** | `adafactor`, `galore_adamw`, `lion`, `apollo`, `apollo_mini`, `q_apollo` | 6 |
+| **Schedule-Free** | `schedulefree_adamw`, `prodigy` | 2 |
+| **Second-Order** | `sophia`, `shampoo`, `soap` | 3 |
+| **Geometry-Oriented** | `muon`, `turbo_muon`, `anon` | 3 |
+
+Parameters use prefixed keys: `<optimizer_class>-<group>_<param>` (e.g. `adamw-lr_embeddings`, `muon-ns_steps`). See [configs/README.md](configs/README.md) for the full parameter reference.
+
+## Documentation Map
+
+| Resource | Content |
+|----------|---------|
+| [configs/README.md](configs/README.md) | Schema walkthrough, preset details, optimizer parameter reference |
+| [configs/schema.yaml](src/schema.yaml) | Authoritative training config schema (source of truth) |
+| [docs/README.md](docs/README.md) | CLI reference and workflow guide |
+| [docs/paper.pdf](docs/paper.pdf) | Technical report (English) |
+| [docs/paper-es.pdf](docs/paper-es.pdf) | Technical report (Spanish) |
+| [docs/specs/](docs/specs/) | Architecture and feature specifications |
+| [docs/pdoc/](docs/pdoc/) | API documentation |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | Development roadmap |
+| [docs/transformers_compatibility.md](docs/transformers_compatibility.md) | HuggingFace export compatibility guide |
 
 ## Installation
 
-### With `uv` (recommended)
+### uv (recommended)
 
 ```bash
 git clone https://github.com/erickfmm/frankestein-transformer.git
 cd frankestein-transformer
-
 uv venv
 source .venv/bin/activate
-uv pip install -e "."
-```
-
-Optional training extras:
-
-```bash
 uv pip install -e ".[train]"
 ```
 
-### With `pip`
+### pip
 
 ```bash
 python -m venv .venv
@@ -62,245 +116,134 @@ source .venv/bin/activate
 pip install -e ".[train]"
 ```
 
-Verify:
+### conda
+
+```bash
+conda create -n frankestein python=3.9
+conda activate frankestein
+pip install -e ".[train]"
+```
+
+Verify installation:
 
 ```bash
 frankestein-transformer --help
 ```
 
-## CLI Overview
+## Quick Training Example
 
-```bash
-frankestein-transformer train ...
-frankestein-transformer deploy ...
-frankestein-transformer quantize ...
-frankestein-transformer infer ...
-frankestein-transformer sbert-train ...
-frankestein-transformer sbert-infer ...
-frankestein-transformer web-server ...
+Minimal YAML config (`my_config.yaml`):
+
+```yaml
+model_class: mini
+model:
+  vocab_size: 30522
+  hidden_size: 256
+  num_layers: 4
+  num_loops: 1
+  num_heads: 8
+  retention_heads: 8
+  num_experts: 1
+  top_k_experts: 1
+  dropout: 0.1
+  layer_pattern: [standard_attn, standard_attn, standard_attn, standard_attn]
+  ode_solver: rk4
+  ode_steps: 4
+  use_bitnet: false
+  norm_type: layer_norm
+  use_factorized_embedding: false
+  factorized_embedding_dim: 128
+  use_embedding_conv: false
+  embedding_conv_kernel: 3
+  use_hope: false
+  use_moe: false
+  ffn_hidden_size: 1024
+  ffn_activation: gelu
+training:
+  task: mlm
+  batch_size: 8
+  dataloader_workers: 2
+  max_length: 128
+  mlm_probability: 0.15
+  max_samples: 100000
+  dataset_batch_size: 10000
+  num_workers: 4
+  cache_dir: "./temp_data/cache"
+  use_amp: false
+  gradient_accumulation_steps: 1
+  optimizer:
+    optimizer_class: adamw
+    parameters:
+      adamw-lr_embeddings: 1e-4
+      adamw-lr_norms: 1e-4
+      adamw-lr_ode: 1e-4
+      adamw-lr_retnet: 1e-4
+      adamw-lr_mamba: 1e-4
+      adamw-lr_attention: 1e-4
+      adamw-lr_other: 1e-4
+      adamw-wd_embeddings: 0.01
+      adamw-wd_norms: 0.01
+      adamw-wd_ode: 0.01
+      adamw-wd_retnet: 0.01
+      adamw-wd_mamba: 0.01
+      adamw-wd_attention: 0.01
+      adamw-wd_other: 0.01
+      adamw-betas_embeddings: [0.9, 0.95]
+      adamw-betas_norms: [0.9, 0.95]
+      adamw-betas_ode: [0.9, 0.95]
+      adamw-betas_retnet: [0.9, 0.95]
+      adamw-betas_mamba: [0.9, 0.95]
+      adamw-betas_attention: [0.9, 0.95]
+      adamw-betas_other: [0.9, 0.95]
+      adamw-eps_embeddings: 1e-8
+      adamw-eps_norms: 1e-8
+      adamw-eps_ode: 1e-8
+      adamw-eps_retnet: 1e-8
+      adamw-eps_mamba: 1e-8
+      adamw-eps_attention: 1e-8
+      adamw-eps_other: 1e-8
+  scheduler_total_steps: 1000
+  scheduler_warmup_ratio: 0.1
+  scheduler_type: cosine
+  grad_clip_max_norm: 5.0
+  inf_post_clip_threshold: 100.0
+  max_nan_retries: 3
+  checkpoint_every_n_steps: 500
+  max_rolling_checkpoints: 3
+  num_best_checkpoints: 2
+  nan_check_interval: 10
+  log_gradient_stats: true
+  gradient_log_interval: 10
+  csv_log_path: "training_metrics.csv"
+  csv_rotate_on_schema_change: true
+  gpu_metrics_backend: nvml
+  nvml_device_index: 0
+  enable_block_grad_norms: true
+  telemetry_log_interval: 1
+  gpu_temp_guard_enabled: false
+  gpu_temp_pause_threshold_c: 90.0
+  gpu_temp_resume_threshold_c: 80.0
+  gpu_temp_critical_threshold_c: null
+  gpu_temp_poll_interval_seconds: 30.0
+  use_galore: false
+  galore_rank: 64
+  galore_update_interval: 1
+  galore_scale: 1.0
+  galore_max_dim: 4096
 ```
 
-All model-executing commands support:
+Run:
 
 ```bash
---device auto|cpu|cuda|mps
+frankestein-transformer train --config my_config.yaml --device auto
 ```
 
-## Training (Schema-Driven)
-
-Training is fully controlled by YAML files validated against:
-
-`configs/schema.yaml`
-
-### Run Training
+List available named presets:
 
 ```bash
-# list available named configs
 frankestein-transformer train --list-configs
-
-# run a named preset
-frankestein-transformer train --config-name mini --device auto
-
-# run the autoregressive decoder preset
-frankestein-transformer train --config-name frankesteindecoder --device auto
-
-# run a custom config file
-frankestein-transformer train --config configs/standard.yaml --device auto
 ```
-
-### Schema Feature Surface
-
-Top-level sections:
-
-- `model_class`: `frankenstein`, `mini`, or `frankesteindecoder`
-- `model`: model hyperparameters and feature toggles
-- `training`: data loading, optimizer, scheduler, checkpointing, telemetry, stability controls
-
-Model options include:
-
-- Core sizing: `vocab_size`, `hidden_size`, `num_layers`, `num_loops`, `num_heads`, `retention_heads`
-- Routing/FFN: `num_experts`, `top_k_experts`, `use_moe`, `ffn_hidden_size`, `ffn_activation`
-- Adaptive depth: `use_mixture_of_depths`, `mixture_of_depths_capacity_ratio`, `mixture_of_depths_router_aux_loss_weight`
-- Mixer selection: `layer_pattern` now supports legacy + sparse + gated + memory families.
-  - Legacy: `retnet | retnet_attn | mamba | ode | titan_attn | standard_attn | sigmoid_attn`
-  - Sparse: `sparse_transformer_attn | longformer_attn | bigbird_attn | sparsek_attn | nsa_attn | sparge_attn | fasa_attn`
-  - Gated: `gla_attn | deltanet_attn | gated_deltanet_attn | hgrn2_attn | fox_attn | gated_softmax_attn`
-  - Memory: `engram_attn` — Conditional Memory via Scalable Lookup (arXiv:2601.07372)
-- ODE controls: `ode_solver` (`rk4|euler`), `ode_steps`
-- Quantization/normalization: `use_bitnet`, `norm_type` (`layer_norm|dynamic_tanh|derf`)
-- Embedding options: `use_factorized_embedding`, `factorized_embedding_dim`, `use_embedding_conv`, `embedding_conv_kernel`
-- Positional controls: `use_hope`, `hope_base`, `hope_damping`
-- Execution mode: `mode` (`encoder|decoder`), with `frankesteindecoder` forcing causal decoder behavior
-- Engram controls: `engram_max_ngram_size`, `engram_n_heads_per_ngram`, `engram_embed_dim_per_head`, `engram_kernel_size`, `engram_seed`
-
-Mixture-of-Depths support adds a per-layer token router that only updates the top-capacity subset of tokens and lets the rest skip the block unchanged, following the adaptive-depth idea from the paper.
-
-Training-free attention policy:
-
-- `fasa_attn` and `sparge_attn` are inference/eval-only blocks.
-- Using either one while `model.train()` is active raises an explicit runtime error.
-
-Training options include:
-
-- Data pipeline: `batch_size`, `dataloader_workers`, `max_length`, `mlm_probability`, `max_samples`, `dataset_batch_size`, `num_workers`, `cache_dir`
-- Local dataset toggles: `local_parquet_dir`, `prefer_local_cache`, `stream_local_parquet`
-- Precision/accumulation: `use_amp`, `gradient_accumulation_steps`
-- Optimizer block: `optimizer.optimizer_class` + prefixed parameter map
-- Scheduler: `scheduler_total_steps`, `scheduler_warmup_ratio`, `scheduler_type`
-- Stability/recovery: `grad_clip_max_norm`, `inf_post_clip_threshold`, `max_nan_retries`, `nan_check_interval`
-- Checkpoint policy: `checkpoint_every_n_steps`, `max_rolling_checkpoints`, `num_best_checkpoints`
-- Logging/telemetry: `log_gradient_stats`, `gradient_log_interval`, `csv_log_path`, `csv_rotate_on_schema_change`, `gpu_metrics_backend`, `nvml_device_index`, `enable_block_grad_norms`, `telemetry_log_interval`
-- Thermal guard: `gpu_temp_guard_enabled`, `gpu_temp_pause_threshold_c`, `gpu_temp_resume_threshold_c`, `gpu_temp_critical_threshold_c`, `gpu_temp_poll_interval_seconds`
-- GaLore controls: `use_galore`, `galore_rank`, `galore_update_interval`, `galore_scale`, `galore_max_dim`
-
-Supported optimizer classes:
-
-- `sgd_momentum`, `adamw`, `adafactor`, `galore_adamw`, `prodigy`, `lion`, `sophia`, `muon`, `turbo_muon`, `radam`, `adan`, `adopt`, `ademamix`, `mars_adamw`, `cautious_adamw`, `lamb`, `schedulefree_adamw`, `shampoo`, `soap`, `anon`, `apollo`, `apollo_mini`, `q_apollo`
-
-### Decoder Architecture Presets (Autoregressive)
-
-See `configs/examples/` for decoder-ready presets inspired by popular LLM families:
-
-- `decoder_gpt_like.yaml` (stacked causal transformer style)
-- `decoder_llama_like.yaml` (SiLU + RoPE-oriented causal stack)
-- `decoder_retnet_mamba_like.yaml` (RetNet/Mamba hybrid causal decoder)
-
-## Deployment and Inference
-
-### Deploy checkpoint to artifact directory
-
-```bash
-frankestein-transformer deploy \
-  --checkpoint path/to/checkpoint.pt \
-  --output deployed_model \
-  --format quantized \
-  --validate \
-  --device auto
-```
-
-### Quantization shortcut
-
-```bash
-frankestein-transformer quantize \
-  --checkpoint path/to/checkpoint.pt \
-  --output deployed_model_quantized \
-  --validate \
-  --device auto
-```
-
-### Inference modes
-
-```bash
-# single text
-frankestein-transformer infer --model deployed_model --text "Texto de ejemplo" --device auto
-
-# file input -> output
-frankestein-transformer infer --model deployed_model --input texts.txt --output preds.pt --batch-size 8 --device auto
-
-# benchmark
-frankestein-transformer infer --model deployed_model --benchmark --device auto
-```
-
-Deployment artifacts include:
-
-- `config.json`
-- `model_quantized.pt` or `model.pt`
-- `deployment_info.json`
-
-## SBERT Workflows
-
-### Train SBERT
-
-```bash
-frankestein-transformer sbert-train \
-  --output_dir ./output/sbert_model \
-  --batch_size 16 \
-  --epochs 4 \
-  --pooling_mode mean \
-  --device auto
-```
-
-### SBERT Inference Modes
-
-```bash
-# pairwise similarity
-frankestein-transformer sbert-infer \
-  --model_path ./output/sbert_model \
-  --mode similarity \
-  --sentence1 "El gato está en la casa" \
-  --sentence2 "Un felino está en el hogar" \
-  --device auto
-
-# semantic search
-frankestein-transformer sbert-infer \
-  --model_path ./output/sbert_model \
-  --mode search \
-  --query "aprendizaje automático" \
-  --corpus_file corpus.txt \
-  --top_k 5
-
-# clustering
-frankestein-transformer sbert-infer \
-  --model_path ./output/sbert_model \
-  --mode cluster \
-  --sentences_file sentences.txt \
-  --n_clusters 5
-
-# encode to file
-frankestein-transformer sbert-infer \
-  --model_path ./output/sbert_model \
-  --mode encode \
-  --input_file sentences.txt \
-  --output_file embeddings.npz
-```
-
-### Web Server (Configuration Builder)
-
-```bash
-# Launch Streamlit web interface for building configurations
-frankestein-transformer web-server
-
-# Custom server configuration
-frankestein-transformer web-server \
-  --server-port 8501 \
-  --server-address localhost
-
-# Headless mode (no browser)
-frankestein-transformer web-server --server-headless
-
-# Development mode with debug logging
-frankestein-transformer web-server --development-mode
-```
-
-The web server provides an interactive UI for building YAML configurations with:
-
-- Schema-driven form fields with titles and descriptions
-- Real-time parameter explanations and tooltips
-- Live YAML preview and download
-- CLI command generation for training, deployment, and inference
-- Support for all workflow commands (train, deploy, quantize, infer, sbert-train, sbert-infer)
-
-Use the web server as an alternative to manual YAML editing, especially for:
-- Users new to the project
-- Exploring available schema options with inline documentation
-- Building complex configurations with guided parameter tuning
-
-`--mode` options:
-
-- `similarity`
-- `search`
-- `cluster`
-- `encode`
-
-## Documentation Map
-
-- `README.md`: overview and quick usage
-- `docs/README.md`: detailed schema and CLI reference
-- `docs/paper.tex`: technical report focused on toolkit architecture and workflow
-- `configs/README.md`: schema walkthrough and preset details
-- `src/deploy/README.md`: deployment runtime details
-- `src/sbert/README.md`: SBERT-specific training/inference details
 
 ## License
 
-Apache License 2.0.
+Apache License 2.0 — see [LICENSE](LICENSE) for full text.

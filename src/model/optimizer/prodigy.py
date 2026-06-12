@@ -1,3 +1,16 @@
+"""Prodigy optimizer with distance-adaptive step calibration.
+
+Prodigy (Mishchenko & Defazio 2023, arXiv:2306.06101) is a learning-rate-free
+variant of AdamW that automatically calibrates the effective step size based
+on the distance travelled from the initial parameters.  It maintains a
+running estimate ``d`` of the parameter displacement and scales the update
+proportionally, removing the need for learning-rate tuning.
+
+Reference:
+    Mishchenko, K., & Defazio, A. (2023). Prodigy: An Expeditiously Adaptive
+    Parameter-Free Learner. arXiv:2306.06101.
+"""
+
 from __future__ import annotations
 
 import math
@@ -7,6 +20,39 @@ from torch.optim import Optimizer
 
 
 class Prodigy(Optimizer):
+    """Prodigy optimizer with distance-adaptive step calibration.
+
+    Extends AdamW with an automatic step-size calibration mechanism.  A
+    running estimate ``d`` tracks the cumulative dot product between the
+    AdamW update direction and the parameter displacement from the initial
+    values, scaling the effective learning rate to maintain stable progress
+    without manual tuning.
+
+    Reference:
+        Mishchenko, K., & Defazio, A. (2023). Prodigy: An Expeditiously
+        Adaptive Parameter-Free Learner. arXiv:2306.06101.
+
+    Args:
+        params: Iterable of parameters to optimize or dicts defining
+            parameter groups.
+        lr: Base learning rate (default: 1.0).  The effective step size is
+            ``lr * d / bias_correction1``.
+        betas: Coefficients for first and second moment running averages
+            (default: ``(0.9, 0.999)``).
+        d_coef: Coefficient controlling how aggressively ``d`` grows when
+            the update direction aligns with parameter displacement
+            (default: 0.8).
+        weight_decay: Decoupled weight decay coefficient (default: 0.01).
+        eps: Term added for numerical stability (default: 1e-8).
+
+    Attributes:
+        defaults (dict): Default hyper-parameter values for each parameter
+            group.
+        param_groups (list): Parameter groups tracked by the optimizer.
+        state (dict): Per-parameter optimizer state (step counter, first and
+            second moment buffers, initial parameter snapshot).
+    """
+
     def __init__(
         self,
         params,
@@ -16,6 +62,17 @@ class Prodigy(Optimizer):
         weight_decay=0.01,
         eps=1e-8,
     ):
+        """Initializes the Prodigy optimizer.
+
+        Args:
+            params: Iterable of parameters to optimize or dicts defining
+                parameter groups.
+            lr: Base learning rate (default: 1.0).
+            betas: Momentum decay coefficients (default: ``(0.9, 0.999)``).
+            d_coef: Distance growth coefficient (default: 0.8).
+            weight_decay: Decoupled weight decay coefficient (default: 0.01).
+            eps: Numerical stability term (default: 1e-8).
+        """
         defaults = dict(
             lr=lr,
             betas=betas,
@@ -27,6 +84,15 @@ class Prodigy(Optimizer):
 
     @torch.no_grad()
     def step(self, closure=None):
+        """Performs a single optimization step.
+
+        Args:
+            closure: A closure that re-evaluates the model and returns the
+                loss.  Optional for most use cases.
+
+        Returns:
+            The loss value if ``closure`` is provided, otherwise ``None``.
+        """
         loss = None
         if closure is not None:
             with torch.enable_grad():

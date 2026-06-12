@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
-"""
-TORMENTED-BERT-Frankenstein Training Pipeline
+"""Training pipeline entry point for TORMENTED-BERT-Frankenstein.
+
+Orchestrates the full training workflow: YAML config loading, model
+construction (custom Frankenstein or HuggingFace base model), tokenizer
+setup, streaming MLM dataset preparation, and the training loop with
+GPU thermal guard integration. Supports both MLM and SBERT tasks.
 """
 
 import argparse
@@ -46,7 +50,21 @@ except ImportError:
 def _load_base_model_and_tokenizer(
     loaded: LoadedTrainingConfig,
 ) -> Tuple[torch.nn.Module, Any]:
-    """Load a base masked-LM model and tokenizer from HF/local paths."""
+    """Load a HuggingFace masked-LM model and tokenizer for base-model training.
+
+    Args:
+        loaded: Validated :class:`LoadedTrainingConfig` with ``base_model`` set.
+
+    Returns:
+        Tuple of ``(model, tokenizer)`` where ``model`` is an
+        ``AutoModelForMaskedLM`` instance and ``tokenizer`` is an
+        ``AutoTokenizer`` instance.
+
+    Raises:
+        RuntimeError: If ``transformers`` is not installed.
+        ValueError: If ``tokenizer.name_or_path`` is missing, or the
+            tokenizer lacks a pad token or mask token.
+    """
     try:
         from transformers import AutoModelForMaskedLM, AutoTokenizer
     except ImportError as exc:
@@ -99,7 +117,21 @@ def _load_base_model_and_tokenizer(
 
 
 def _load_legacy_tormented_model(loaded: LoadedTrainingConfig) -> Tuple[torch.nn.Module, SpanishSPMTokenizer, UltraConfig]:
-    """Load legacy Tormented model + SPM tokenizer path."""
+    """Load a custom TormentedBert model with SentencePiece tokenizer.
+
+    Trains or loads an SPM tokenizer, then constructs the model based on
+    ``model_class`` (``"mini"``, ``"frankesteindecoder"``, or default
+    ``"frankenstein"``).
+
+    Args:
+        loaded: Validated :class:`LoadedTrainingConfig` with ``model_config``.
+
+    Returns:
+        Tuple of ``(model, tokenizer, config)``.
+
+    Raises:
+        ValueError: If ``model_config`` is ``None``.
+    """
     config = loaded.model_config
     if config is None:
         raise ValueError("model config is required when base_model is not provided")
@@ -173,6 +205,20 @@ def _build_dataloader(
     resolved_device: str,
     cli_batch_size: Optional[int],
 ) -> Tuple[DataLoader, StreamingMLMDataset, Dict[str, Any], int]:
+    """Build the streaming MLM dataset and DataLoader.
+
+    Args:
+        tokenizer: Tokenizer instance (SPM or HuggingFace).
+        training_runtime: Runtime configuration dictionary from YAML.
+        resolved_device: Resolved PyTorch device string.
+        cli_batch_size: Optional CLI batch size override.
+
+    Returns:
+        Tuple of ``(dataloader, dataset, stats, batch_size)``.
+
+    Raises:
+        ValueError: If ``cli_batch_size`` is <= 0.
+    """
     logging.info("\n" + "=" * 60)
     logging.info("Step 3: Preparing MLM dataset with resilient caching")
     logging.info("=" * 60)
@@ -245,6 +291,18 @@ def _build_dataloader(
 
 
 def _resolve_vocab_size(model: torch.nn.Module, fallback: int = 50_000) -> int:
+    """Resolve the vocabulary size from a model.
+
+    Checks ``model.config.vocab_size`` first, then ``get_input_embeddings()``,
+    falling back to the provided default.
+
+    Args:
+        model: PyTorch model.
+        fallback: Default vocab size if neither source is available.
+
+    Returns:
+        Resolved vocabulary size as an integer.
+    """
     if hasattr(model, "config") and getattr(model.config, "vocab_size", None):
         return int(model.config.vocab_size)
     if hasattr(model, "get_input_embeddings"):
@@ -255,6 +313,15 @@ def _resolve_vocab_size(model: torch.nn.Module, fallback: int = 50_000) -> int:
 
 
 def _validate_gpu_temp_guard_config(training_config: TrainingConfig):
+    """Validate GPU thermal guard threshold constraints.
+
+    Args:
+        training_config: :class:`TrainingConfig` to validate.
+
+    Raises:
+        ValueError: If pause/resume thresholds are <= 0, resume >= pause,
+            poll interval <= 0, or critical threshold <= 0 when provided.
+    """
     pause_threshold = float(training_config.gpu_temp_pause_threshold_c)
     resume_threshold = float(training_config.gpu_temp_resume_threshold_c)
     poll_interval = float(training_config.gpu_temp_poll_interval_seconds)
@@ -276,6 +343,14 @@ def _apply_gpu_temp_guard_overrides(
     args: argparse.Namespace,
     resolved_device: str,
 ):
+    """Apply CLI overrides and device-based adjustments to GPU thermal guard config.
+
+    Args:
+        training_config: :class:`TrainingConfig` to modify in-place.
+        args: Parsed CLI arguments with optional thermal guard overrides.
+        resolved_device: Resolved PyTorch device string. Disables thermal
+            guard and switching for non-CUDA devices.
+    """
     if args.gpu_temp_guard is not None:
         training_config.gpu_temp_guard_enabled = bool(args.gpu_temp_guard)
     if args.gpu_temp_pause_threshold_c is not None:
@@ -335,6 +410,23 @@ def _run_sbert_task(
     resolved_device: str,
     training_config: TrainingConfig,
 ) -> int:
+    """Dispatch SBERT fine-tuning from the training pipeline.
+
+    Translates the YAML config's ``training.sbert`` block into CLI
+    arguments for :func:`sbert.train_sbert.main`.
+
+    Args:
+        loaded: Validated :class:`LoadedTrainingConfig` with ``task="sbert"``.
+        resolved_device: Resolved PyTorch device string.
+        training_config: :class:`TrainingConfig` for thermal guard settings.
+
+    Returns:
+        Exit code (0 for success, non-zero for failure).
+
+    Raises:
+        ValueError: If ``base_model`` is not set or ``training.sbert``
+            is not a valid object.
+    """
     if not loaded.base_model:
         raise ValueError("training.task=sbert requires top-level base_model")
 

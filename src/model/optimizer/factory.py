@@ -1,3 +1,11 @@
+"""Optimizer factory: registry, parameter routing, and construction.
+
+Maps optimizer class names (as they appear in YAML training configs) to
+concrete ``torch.optim.Optimizer`` subclasses. Handles extraction of
+prefixed hyperparameters, per-group routing, and validation of allowed
+keys before dispatching to the optimizer constructor.
+"""
+
 from __future__ import annotations
 
 from typing import Any, Dict, List
@@ -63,6 +71,12 @@ OPTIMIZER_REGISTRY = {
     "apollo_mini": ApolloMini,
     "q_apollo": QApollo,
 }
+"""Mapping from YAML optimizer class names to concrete Optimizer subclasses.
+
+Each key is the string value accepted by the ``optimizer_class`` field in
+the training configuration schema. The corresponding value is the class
+used to instantiate the optimizer via :func:`build_optimizer`.
+"""
 
 _COMMON_PER_GROUP_KEYS = {
     f"lr_{group}" for group in GROUP_NAMES
@@ -106,6 +120,26 @@ def _build_param_groups_for_optimizer(
     base_param_groups: List[Dict[str, Any]],
     scoped_params: Dict[str, Any],
 ) -> List[Dict[str, Any]]:
+    """Convert raw model parameter groups into optimizer-ready param groups.
+
+    For each named group, resolves per-group ``lr``, ``weight_decay``,
+    ``betas``, and ``eps`` from the scoped configuration, falling back
+    to the values already present on the group (or sensible defaults).
+
+    Args:
+        optimizer_name: The optimizer class name (e.g. ``"adamw"``).
+            Used to decide whether betas/eps are applicable.
+        base_param_groups: Raw parameter groups from the model, possibly
+            lacking ``"name"`` keys.
+        scoped_params: Optimizer-scoped hyperparameters extracted via
+            :func:`extract_prefixed_parameters`.
+
+    Returns:
+        A list of parameter group dicts suitable for passing directly to
+        an ``Optimizer`` constructor. Every group includes ``params``,
+        ``lr``, ``weight_decay``, and ``name``; adaptive optimizers also
+        include ``betas`` and ``eps``.
+    """
     result: List[Dict[str, Any]] = []
     for group in with_named_groups(base_param_groups):
         group_name = str(group["name"])
@@ -132,6 +166,31 @@ def build_optimizer(
     param_groups: List[Dict[str, Any]],
     parameters: Dict[str, Any],
 ) -> Optimizer:
+    """Construct an optimizer instance from a configuration-driven spec.
+
+    This is the single entry point used by the training pipeline. It
+    validates the optimizer name, extracts and validates scoped
+    hyperparameters, builds per-group parameter dictionaries, and
+    dispatches to the appropriate constructor with any optimizer-specific
+    top-level arguments.
+
+    Args:
+        optimizer_class: The optimizer identifier string from the YAML
+            config (e.g. ``"adamw"``, ``"sgd_momentum"``).
+        param_groups: Raw parameter groups produced by the model's
+            ``configure_optimizers`` method.
+        parameters: The full flat configuration dictionary (may contain
+            keys for multiple optimizers and global settings).
+
+    Returns:
+        A configured ``torch.optim.Optimizer`` instance ready for use
+        in the training loop.
+
+    Raises:
+        ValueError: If `optimizer_class` is not in
+            :data:`OPTIMIZER_REGISTRY`, or if unrecognized scoped
+            parameters are present.
+    """
     optimizer_name = str(optimizer_class or "").strip().lower()
     if optimizer_name not in OPTIMIZER_REGISTRY:
         raise ValueError(

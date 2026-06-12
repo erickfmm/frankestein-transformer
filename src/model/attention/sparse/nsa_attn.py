@@ -1,3 +1,20 @@
+"""Native Sparse Attention (Yuan et al., 2025; arXiv:2502.11089).
+
+Implements a hardware-aligned sparse attention mechanism with three
+complementary branches: compressed token blocks, selected fine-grained tokens,
+and a local sliding window. Learned gating weights dynamically blend the
+outputs of all three branches, enabling the model to adaptively trade off
+between coarse long-range context and fine-grained local detail. The design
+is aligned with modern GPU hardware characteristics for efficient training
+and inference.
+
+Reference:
+    Yuan, J., Gao, H., Shi, D., Li, X., Liu, B., Chen, Z., Li, Z., Zhao, H.,
+    & Li, Z. (2025).
+    "Native Sparse Attention: Hardware-Aligned and Natively Trainable Sparse Attention."
+    arXiv:2502.11089.
+"""
+
 from typing import Optional
 
 import math
@@ -10,13 +27,78 @@ from ..common import BitLinear
 
 
 class NSAAttention(nn.Module):
-    """Native Sparse Attention (Yuan et al., 2025; arXiv:2502.11089).
+    """Three-branch native sparse attention with learned gating.
 
-    Uses three sparse branches (compress, select, and local window) and blends them with
-    learned gates to approximate dense attention with trainable sparse structure.
+    Attention is computed through three parallel branches:
+
+    1. **Compress branch**: Keys and values are aggregated into coarse blocks
+       via strided mean-pooling, providing a compressed long-range context.
+    2. **Select branch**: The most important blocks (identified from compress
+       attention scores) are expanded to fine-grained token-level selection,
+       giving precise access to relevant distant tokens.
+    3. **Window branch**: A local sliding window of recent tokens captures
+       fine-grained short-range patterns.
+
+    A learned gating network (MLP + sigmoid) outputs three scalar weights per
+    head per position, dynamically blending the three branch outputs. The
+    architecture is designed to be hardware-friendly, with block-aligned
+    operations that map efficiently to GPU tensor cores.
+
+    Attributes:
+        hidden_size (int): Dimensionality of the input and output embeddings.
+        num_heads (int): Number of attention heads.
+        head_dim (int): Dimensionality of each attention head.
+        scale (float): Scaling factor for dot-product scores (1 / sqrt(head_dim)).
+        block_size (int): Block size for the compress branch.
+        stride (int): Stride between consecutive compress blocks.
+        select_block_size (int): Block size for fine-grained token selection.
+        n_select (int): Number of top blocks to select for fine-grained attention.
+        window_size (int): Size of the local sliding window.
+        q_proj (nn.Module): Query projection (BitLinear or nn.Linear).
+        k_proj (nn.Module): Key projection (BitLinear or nn.Linear).
+        v_proj (nn.Module): Value projection (BitLinear or nn.Linear).
+        out_proj (nn.Module): Output projection (BitLinear or nn.Linear).
+        compress_k (nn.Linear): Linear layer to compress key blocks.
+        compress_v (nn.Linear): Linear layer to compress value blocks.
+        gate (nn.Sequential): MLP + sigmoid gating network producing 3 weights
+            per head per position.
+        dropout (nn.Dropout): Dropout applied to the blended output.
+        mode (str): ``"encoder"`` or ``"decoder"``. Decoder mode applies causal
+            masking to the compress branch.
+
+    Reference:
+        Yuan, J., Gao, H., Shi, D., Li, X., Liu, B., Chen, Z., Li, Z., Zhao, H.,
+        & Li, Z. (2025).
+        "Native Sparse Attention: Hardware-Aligned and Natively Trainable Sparse Attention."
+        arXiv:2502.11089.
     """
 
     def __init__(self, config):
+        """Initialize NSAAttention.
+
+        Args:
+            config: Configuration object with the following expected attributes:
+                hidden_size (int): Model hidden dimension.
+                num_heads (int): Number of attention heads. Must divide
+                    ``hidden_size`` evenly.
+                dropout (float): Dropout probability for the blended output.
+                use_bitnet (bool): If True, use BitLinear projections.
+                nsa_block_size (int, optional): Block size for compress branch.
+                    Defaults to 32.
+                nsa_stride (int, optional): Stride between compress blocks.
+                    Defaults to 16.
+                nsa_select_block_size (int, optional): Block size for select
+                    branch. Defaults to 64.
+                nsa_n_select (int, optional): Number of top blocks to select.
+                    Defaults to 16.
+                nsa_window_size (int, optional): Local window size.
+                    Defaults to 512.
+                mode (str, optional): ``"encoder"`` or ``"decoder"``.
+                    Defaults to ``"encoder"``.
+
+        Raises:
+            ValueError: If ``hidden_size`` is not divisible by ``num_heads``.
+        """
         super().__init__()
         self.hidden_size = config.hidden_size
         self.num_heads = config.num_heads
@@ -45,6 +127,22 @@ class NSAAttention(nn.Module):
         self.mode = getattr(config, "mode", "encoder")
 
     def _compress(self, k: torch.Tensor, v: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """Compress keys and values into coarse-grained blocks.
+
+        Partitions the key and value sequences into blocks of size
+        ``block_size`` with stride ``stride``, then projects each flattened
+        block down to ``head_dim`` using learned linear layers. If the
+        sequence is shorter than ``block_size``, it is padded and compressed
+        into a single block.
+
+        Args:
+            k (torch.Tensor): Key tensor of shape ``(batch, heads, seq_len, head_dim)``.
+            v (torch.Tensor): Value tensor of shape ``(batch, heads, seq_len, head_dim)``.
+
+        Returns:
+            tuple[torch.Tensor, torch.Tensor]: Compressed keys and values,
+                each of shape ``(batch, heads, n_blocks, head_dim)``.
+        """
         bsz, heads, seq_len, dim = k.shape
 
         if seq_len <= self.block_size:
@@ -76,6 +174,32 @@ class NSAAttention(nn.Module):
         return comp_k, comp_v
 
     def forward(self, x: torch.Tensor, logical_layer_idx: Optional[int] = None) -> torch.Tensor:
+        """Compute three-branch native sparse attention.
+
+        Executes all three branches in parallel:
+
+        1. **Compress**: Compresses keys/values into blocks, computes attention
+           over compressed representations.
+        2. **Select**: Uses compress attention scores to identify top blocks,
+           then gathers fine-grained tokens from those blocks for precise
+           attention.
+        3. **Window**: Computes attention over a local sliding window of the
+           most recent tokens.
+
+        The three outputs are blended via learned per-head per-position gating
+        weights from ``self.gate``.
+
+        In decoder mode, the compress branch is causally masked.
+
+        Args:
+            x (torch.Tensor): Input tensor of shape ``(batch, seq_len, hidden_size)``.
+            logical_layer_idx (Optional[int]): Logical layer index for
+                potential layer-specific behavior. Not used by this
+                implementation.
+
+        Returns:
+            torch.Tensor: Output tensor of shape ``(batch, seq_len, hidden_size)``.
+        """
         bsz, seq_len, hidden = x.shape
 
         q = self.q_proj(x).view(bsz, seq_len, self.num_heads, self.head_dim).transpose(1, 2)

@@ -1,3 +1,17 @@
+"""GaLore AdamW optimizer with low-rank gradient projection.
+
+GaLore (Zhao et al. 2024, arXiv:2403.03507) reduces memory consumption during
+training by projecting 2D gradients into a low-rank subspace via periodic SVD.
+AdamW-style momentum and adaptive learning rates are applied in the compressed
+space, and the resulting update is projected back to the original parameter
+space.  This achieves O(nr) memory for the optimizer state instead of O(nm).
+
+Reference:
+    Zhao, J., Zhang, Z., Chen, B., Wang, Z., Anandkumar, A., & Tian, Y.
+    (2024). GaLore: Memory-Efficient LLM Training by Gradient Low-Rank
+    Projection. arXiv:2403.03507.
+"""
+
 from __future__ import annotations
 
 import math
@@ -7,6 +21,38 @@ from torch.optim import Optimizer
 
 
 class GaLoreAdamW(Optimizer):
+    """GaLore AdamW optimizer with low-rank gradient projection.
+
+    Projects 2D gradients into a low-rank subspace via periodic truncated SVD,
+    applies AdamW updates in the compressed space, and projects the result
+    back to the original parameter dimensions.  Non-matrix parameters are
+    updated with standard AdamW.
+
+    Reference:
+        Zhao, J., Zhang, Z., Chen, B., Wang, Z., Anandkumar, A., & Tian, Y.
+        (2024). GaLore: Memory-Efficient LLM Training by Gradient Low-Rank
+        Projection. arXiv:2403.03507.
+
+    Args:
+        params: Iterable of parameters to optimize or dicts defining
+            parameter groups.
+        lr: Learning rate (default: 1e-3).
+        rank: Rank of the low-rank projection subspace (default: 128).
+        update_proj_gap: Number of steps between SVD-based projector
+            recomputations (default: 200).
+        betas: Coefficients for first and second moment running averages
+            (default: ``(0.9, 0.999)``).
+        eps: Term added for numerical stability (default: 1e-8).
+        weight_decay: Weight decay coefficient (default: 1e-2).
+
+    Attributes:
+        defaults (dict): Default hyper-parameter values for each parameter
+            group.
+        param_groups (list): Parameter groups tracked by the optimizer.
+        state (dict): Per-parameter optimizer state (step counter, projector
+            matrix, low-rank moment buffers).
+    """
+
     def __init__(
         self,
         params,
@@ -17,6 +63,19 @@ class GaLoreAdamW(Optimizer):
         eps=1e-8,
         weight_decay=1e-2,
     ):
+        """Initializes the GaLore AdamW optimizer.
+
+        Args:
+            params: Iterable of parameters to optimize or dicts defining
+                parameter groups.
+            lr: Learning rate (default: 1e-3).
+            rank: Low-rank projection rank (default: 128).
+            update_proj_gap: Steps between projector recomputations
+                (default: 200).
+            betas: Momentum decay coefficients (default: ``(0.9, 0.999)``).
+            eps: Numerical stability term (default: 1e-8).
+            weight_decay: Weight decay coefficient (default: 1e-2).
+        """
         defaults = dict(
             lr=lr,
             rank=rank,
@@ -29,6 +88,15 @@ class GaLoreAdamW(Optimizer):
 
     @torch.no_grad()
     def step(self, closure=None):
+        """Performs a single optimization step.
+
+        Args:
+            closure: A closure that re-evaluates the model and returns the
+                loss.  Optional for most use cases.
+
+        Returns:
+            The loss value if ``closure`` is provided, otherwise ``None``.
+        """
         loss = None
         if closure is not None:
             with torch.enable_grad():

@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""
-SBERT Fine-tuning for TORMENTED-BERT-Frankenstein
-Fine-tunes the v2 model on Spanish sentence similarity using STS dataset.
-Dataset: erickfmm/agentlans__multilingual-sentences__paired_10_sts
+"""SBERT fine-tuning for TORMENTED-BERT-Frankenstein.
+
+Fine-tunes a TormentedBert model (or any HuggingFace base model) on
+Spanish sentence similarity using cosine similarity loss and Siamese
+training. Supports paired-similarity, triplets, and QA dataset formats
+with balanced resampling and score standardization.
 """
 
 import os
@@ -109,8 +111,23 @@ def _format_score_for_log(score: Any) -> str:
 
 
 class TormentedBertSentenceTransformer:
-    """Wrapper to adapt TormentedBert for Sentence-BERT training"""
-    
+    """Wrapper to adapt TormentedBert for Sentence-BERT training.
+
+    Builds a :class:`SentenceTransformer` model by wrapping a
+    :class:`TormentedBertFrankenstein` (or any HuggingFace base model)
+    with a pooling layer and L2 normalization. Supports loading from
+    pretrained checkpoints or initializing from scratch.
+
+    Attributes:
+        max_seq_length: Maximum sequence length for tokenization.
+        pooling_mode: Pooling strategy (``"mean"``, ``"cls"``, ``"max"``).
+        trust_remote_code: Whether to allow remote code for HF models.
+        device: Resolved PyTorch device string.
+        base_model: The underlying TormentedBert model (or ``None`` for HF).
+        config: :class:`UltraConfig` for the model.
+        model: The constructed :class:`SentenceTransformer` instance.
+    """
+
     def __init__(
         self,
         model_config: Optional[UltraConfig] = None,
@@ -121,15 +138,19 @@ class TormentedBertSentenceTransformer:
         trust_remote_code: bool = False,
         device: str = "auto"
     ):
-        """
-        Initialize SBERT model with TormentedBert base.
-        
+        """Initialize the SBERT model wrapper.
+
         Args:
-            model_config: UltraConfig for the model (if training from scratch)
-            pretrained_path: Path to pretrained checkpoint
-            base_model_name_or_path: Any HF/local model path compatible with sentence-transformers
-            max_seq_length: Maximum sequence length
-            pooling_mode: Pooling strategy ("mean", "cls", "max")
+            model_config: :class:`UltraConfig` for training from scratch.
+            pretrained_path: Path to a pretrained TormentedBert checkpoint.
+            base_model_name_or_path: HuggingFace model ID or path for
+                base-model SBERT fine-tuning.
+            max_seq_length: Maximum sequence length.
+            pooling_mode: Pooling strategy (``"mean"``, ``"cls"``, or
+                ``"max"``).
+            trust_remote_code: Whether to allow remote code execution for
+                HuggingFace models/tokenizers.
+            device: Device string for model placement.
         """
         self.max_seq_length = max_seq_length
         self.pooling_mode = pooling_mode
@@ -283,8 +304,34 @@ class TormentedBertSentenceTransformer:
 
 
 class SBERTTrainer:
-    """Trainer for SBERT fine-tuning on STS task"""
-    
+    """Trainer for SBERT fine-tuning with cosine similarity loss.
+
+    Manages dataset loading, balanced resampling, score standardization,
+    training loop execution via ``sentence-transformers``, GPU thermal
+    guard integration, CSV telemetry logging, and checkpoint management.
+
+    Attributes:
+        model: The :class:`SentenceTransformer` model.
+        output_dir: Directory for checkpoints and final model.
+        batch_size: Training batch size.
+        gradient_accumulation_steps: Accumulation steps before optimizer update.
+        max_grad_norm: Gradient clipping max norm (0 disables).
+        epochs: Number of training epochs.
+        warmup_steps: Learning rate warmup steps.
+        evaluation_steps: Steps between evaluations.
+        checkpoint_save_steps: Step interval for rolling checkpoints.
+        resume_from_checkpoint: Whether to resume from latest checkpoint.
+        learning_rate: Base learning rate.
+        use_amp: Whether to use automatic mixed precision.
+        device: Resolved PyTorch device string.
+        gpu_temp_guard: :class:`GPUTemperatureGuard` for thermal safety.
+        global_step: Current global training step counter.
+        dataset_type: Active dataset format type.
+        train_examples: List of :class:`InputExample` for training.
+        eval_examples: List of :class:`InputExample` for evaluation.
+        evaluator: Optional :class:`EmbeddingSimilarityEvaluator`.
+    """
+
     def __init__(
         self,
         model: SentenceTransformer,
@@ -316,22 +363,44 @@ class SBERTTrainer:
         optimizer_parameters: Optional[Dict[str, Any]] = None,
         wandb_project: Optional[str] = None,
     ):
-        """
-        Initialize SBERT Trainer.
-        
+        """Initialize the SBERT trainer.
+
         Args:
-            model: SentenceTransformer model
-            output_dir: Directory to save checkpoints
-            batch_size: Training batch size
-            gradient_accumulation_steps: Number of accumulation steps before optimizer update
-            max_grad_norm: Gradient clipping max norm (0 disables clipping)
-            epochs: Number of training epochs
-            warmup_steps: Warmup steps for learning rate
-            evaluation_steps: Steps between evaluations
-            checkpoint_save_steps: Step interval for rolling checkpoints
-            resume_from_checkpoint: Resume from latest checkpoint in output_dir/checkpoints
-            learning_rate: Learning rate
-            use_amp: Use automatic mixed precision
+            model: :class:`SentenceTransformer` model to fine-tune.
+            output_dir: Directory to save checkpoints and final model.
+            batch_size: Training batch size.
+            gradient_accumulation_steps: Number of accumulation steps
+                before an optimizer update.
+            max_grad_norm: Gradient clipping max norm (0 disables clipping).
+            epochs: Number of training epochs.
+            warmup_steps: Warmup steps for learning rate scheduler.
+            evaluation_steps: Steps between validation evaluations.
+            checkpoint_save_steps: Step interval for rolling checkpoint
+                saves (<= 0 disables).
+            resume_from_checkpoint: If ``True``, resume from the latest
+                checkpoint in ``output_dir/checkpoints``.
+            learning_rate: Base learning rate.
+            use_amp: Whether to use automatic mixed precision.
+            device: Device string for training.
+            gpu_temp_guard_enabled: Whether GPU thermal guard is active.
+            switch_on_thermal: Whether GPU→CPU thermal switching is enabled.
+            gpu_temp_pause_threshold_c: Pause threshold in Celsius.
+            gpu_temp_resume_threshold_c: Resume threshold in Celsius.
+            gpu_temp_critical_threshold_c: Optional critical threshold.
+            gpu_temp_poll_interval_seconds: Poll interval while paused.
+            nvml_device_index: NVML device index for multi-GPU.
+            csv_log_path: Path for CSV telemetry log.
+            csv_rotate_on_schema_change: Whether to rotate CSV on schema
+                mismatch.
+            gpu_metrics_backend: GPU telemetry backend (``"nvml"`` or
+                ``"none"``).
+            enable_block_grad_norms: Whether to collect per-block gradient
+                norms.
+            telemetry_log_interval: Steps between telemetry log writes.
+            optimizer_class: Optional custom optimizer class name from
+                the registry.
+            optimizer_parameters: Optional custom optimizer parameters dict.
+            wandb_project: Optional Weights & Biases project name.
         """
         self.model = model
         self.output_dir = output_dir

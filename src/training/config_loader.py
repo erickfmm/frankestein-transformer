@@ -1,3 +1,11 @@
+"""Training configuration loader with schema validation.
+
+Loads YAML training configuration files, validates required fields,
+and produces structured :class:`LoadedTrainingConfig` objects containing
+model configuration, training parameters, tokenizer settings, and runtime
+overrides.
+"""
+
 import os
 from dataclasses import dataclass
 from dataclasses import fields
@@ -19,6 +27,23 @@ def _field_names(cls) -> set:
 
 @dataclass
 class LoadedTrainingConfig:
+    """Structured result of loading and validating a training YAML config.
+
+    Attributes:
+        task: Training task identifier (``"mlm"`` or ``"sbert"``).
+        model_class: Model class name (``"frankenstein"``, ``"mini"``,
+            ``"frankesteindecoder"``, or ``"base_model"``).
+        model_config: :class:`UltraConfig` for custom models, or ``None``
+            when ``base_model`` is used.
+        base_model: HuggingFace model identifier/path when using a
+            pre-trained base model, or ``None``.
+        tokenizer_config: Tokenizer configuration dictionary.
+        training_config: :class:`TrainingConfig` with optimizer, scheduler,
+            and stability parameters.
+        training_runtime: Dictionary of runtime-only keys from the YAML
+            that are not part of :class:`TrainingConfig` fields.
+    """
+
     task: str
     model_class: Optional[str]
     model_config: Optional[UltraConfig]
@@ -29,6 +54,24 @@ class LoadedTrainingConfig:
 
 
 def load_training_config(path: str) -> LoadedTrainingConfig:
+    """Load and validate a training configuration from a YAML file.
+
+    Parses the YAML, validates required sections (``model``, ``training``,
+    ``tokenizer``), resolves the training task, and constructs
+    :class:`UltraConfig` and :class:`TrainingConfig` objects.
+
+    Args:
+        path: Filesystem path to the YAML configuration file.
+
+    Returns:
+        A fully validated :class:`LoadedTrainingConfig`.
+
+    Raises:
+        ValueError: If required fields are missing, invalid, or
+            inconsistent (e.g. missing ``training.task``, invalid
+            ``model_class``, missing ``tokenizer.name_or_path`` for
+            base-model MLM training).
+    """
     with open(path, "r", encoding="utf-8") as handle:
         data = yaml.safe_load(handle) or {}
 
@@ -123,6 +166,16 @@ def load_training_config(path: str) -> LoadedTrainingConfig:
 
 
 def list_config_paths(config_dir: str) -> Dict[str, str]:
+    """List available YAML configuration files in a directory.
+
+    Args:
+        config_dir: Path to the directory containing ``.yaml``/``.yml`` files.
+
+    Returns:
+        Dictionary mapping config names (filename without extension) to
+        their absolute file paths. Returns an empty dict if the directory
+        does not exist.
+    """
     configs = {}
     if not os.path.isdir(config_dir):
         return configs

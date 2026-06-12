@@ -1,3 +1,11 @@
+"""CLI entrypoint for frankestein-transformer.
+
+Provides the ``frankestein-transformer`` command with subcommands for
+training, deployment, quantization, inference, SBERT training/inference,
+HuggingFace Transformers export, and a Streamlit web server for
+configuration building.
+"""
+
 from __future__ import annotations
 
 import argparse
@@ -388,6 +396,13 @@ def _run_web_server(args: argparse.Namespace) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """Build the top-level argument parser with all subcommands.
+
+    Returns:
+        An :class:`argparse.ArgumentParser` with subparsers for ``train``,
+        ``deploy``, ``quantize``, ``infer``, ``sbert-train``,
+        ``sbert-infer``, ``transformers-export``, and ``web-server``.
+    """
     parser = argparse.ArgumentParser(
         prog="frankestein-transformer",
         description="Configurable training library and CLI for Transformer Encoder Frankenstein",
@@ -522,6 +537,15 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv=None) -> int:
+    """Parse CLI arguments and dispatch to the selected subcommand.
+
+    Args:
+        argv: Optional list of command-line arguments (defaults to
+            ``sys.argv[1:]``).
+
+    Returns:
+        Exit code (0 for success, non-zero for failure).
+    """
     parser = build_parser()
     args = parser.parse_args(argv)
     return args.func(args)

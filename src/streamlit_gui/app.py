@@ -1,4 +1,10 @@
-"""Streamlit app for dynamic YAML configuration building."""
+"""Streamlit web interface for schema-driven YAML configuration building.
+
+Provides a multi-tab web application that dynamically renders form fields
+from the training configuration JSON Schema, generates YAML output, and
+offers CLI command construction with background execution via nohup.
+Supports English and Spanish UI localization.
+"""
 
 import json
 import os

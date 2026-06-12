@@ -1,3 +1,23 @@
+"""Gated DeltaNet Attention.
+
+Implements the Gated DeltaNet attention mechanism from Yang et al. (2024),
+arXiv:2412.06464 (ICLR 2025). Gated DeltaNet combines a decay gate α_t
+with a write gate β_t to jointly control memory erasure and targeted
+updates in a recurrent linear-attention state. The state update follows:
+
+    S_t = α_t S_{t-1} (I - β_t k_t k_t^T) + β_t v_t k_t^T
+
+where α_t ∈ (0, 1) is a per-head decay factor and β_t ∈ (0, 1) is a
+per-head write strength, both learned from the input. This formulation
+has been integrated into Qwen3-Next, demonstrating strong performance
+at scale.
+
+Reference:
+    Yang, S., Zhang, Y., Shen, Y., & Kim, Y. (2024).
+    Gated Delta Networks: Improving Mamba2 and DeltaNet with
+    Gating. arXiv:2412.06464. ICLR 2025.
+"""
+
 from typing import Optional
 
 import torch
@@ -8,13 +28,64 @@ from ..common import BitLinear
 
 
 class GatedDeltaNetAttention(nn.Module):
-    """Gated DeltaNet (Yang et al., 2024; arXiv:2412.06464).
+    """Gated DeltaNet attention with decay and write gating.
 
-    Combines global decay gating with delta-rule writes to jointly control memory erasure
-    and targeted updates in a recurrent linear-attention state.
+    Maintains a per-head matrix-valued recurrent state S_t ∈ R^{d×d}.
+    At each timestep, a decay gate α_t scales the previous state before
+    the delta-rule update, and a write gate β_t controls the strength of
+    both the removal term and the new key-value association. Queries and
+    keys are L2-normalized; values are activated with silu. A silu-gated
+    output projection provides additional channel-wise modulation.
+
+    Args:
+        config: Model configuration object with the following relevant
+            attributes:
+            hidden_size (int): Dimensionality of input embeddings.
+            num_heads (int): Number of attention heads. Must divide
+                hidden_size evenly.
+            dropout (float): Dropout probability applied after the
+                output gate.
+            use_bitnet (bool): If True, uses BitLinear for Q/K/V/G/O
+                projections instead of nn.Linear.
+            mode (str, optional): ``"encoder"`` or ``"decoder"``.
+                Defaults to ``"encoder"``.
+
+    Attributes:
+        hidden_size (int): Input embedding dimensionality.
+        num_heads (int): Number of attention heads.
+        head_dim (int): Dimensionality per head (hidden_size // num_heads).
+        total_dim (int): Total Q/K/V dimensionality (head_dim * num_heads).
+        q_proj (nn.Module): Query projection.
+        k_proj (nn.Module): Key projection.
+        v_proj (nn.Module): Value projection (silu-activated).
+        alpha_proj (nn.Linear): Per-head decay gate projection.
+        beta_proj (nn.Linear): Per-head write gate projection.
+        g_proj (nn.Module): Output gate projection (silu-gated).
+        out_proj (nn.Module): Output projection.
+        norm (nn.LayerNorm): Layer normalization applied to the
+            recurrent readout before the output gate.
+        dropout (nn.Dropout): Dropout layer.
+        mode (str): ``"encoder"`` or ``"decoder"``.
+
+    Raises:
+        ValueError: If hidden_size is not divisible by num_heads.
+
+    Reference:
+        Yang, S., Zhang, Y., Shen, Y., & Kim, Y. (2024).
+        Gated Delta Networks: Improving Mamba2 and DeltaNet with
+        Gating. arXiv:2412.06464. ICLR 2025.
     """
 
     def __init__(self, config):
+        """Initialize GatedDeltaNetAttention.
+
+        Args:
+            config: Model configuration object. See class docstring for
+                required attributes.
+
+        Raises:
+            ValueError: If hidden_size is not divisible by num_heads.
+        """
         super().__init__()
         self.hidden_size = config.hidden_size
         self.num_heads = config.num_heads
@@ -37,6 +108,22 @@ class GatedDeltaNetAttention(nn.Module):
         self.mode = getattr(config, "mode", "encoder")
 
     def forward(self, x: torch.Tensor, logical_layer_idx: Optional[int] = None) -> torch.Tensor:
+        """Compute Gated DeltaNet attention over the input sequence.
+
+        Processes the sequence token-by-token with a gated delta-rule
+        recurrent matrix state. At each step t, the previous state is
+        scaled by the decay gate α_t, then the delta-rule update removes
+        the projection onto k_t (weighted by β_t) and adds the new
+        association β_t · v_t k_t^T.
+
+        Args:
+            x: Input tensor of shape ``(batch_size, seq_len, hidden_size)``.
+            logical_layer_idx: Unused; accepted for interface
+                compatibility with other attention mixers.
+
+        Returns:
+            Output tensor of shape ``(batch_size, seq_len, hidden_size)``.
+        """
         bsz, seq_len, _ = x.shape
 
         q = F.normalize(self.q_proj(x).view(bsz, seq_len, self.num_heads, self.head_dim), dim=-1)

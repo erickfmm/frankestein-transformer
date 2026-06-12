@@ -46,6 +46,14 @@ Based on commit history patterns, here is where to find and modify code for each
 - **CUDA is not needed for tests** — CI uses CPU torch; GPU code paths are skipped with `TORCH_AVAILABLE` guards.
 - **`configs/examples/`** YAML files are validated by `tests/test_yaml_examples.py` — adding a new optimizer family or mixer requires an example YAML or the test breaks.
 
+## Documentation
+
+- **Docstring style**: Google-style (Args, Returns, Raises, Attributes sections). pdoc renders them at `docs/pdoc/`.
+- **Generate API docs**: `pdoc src/ -o docs/pdoc/ --docformat google` (requires `torch` + deps installed in the pdoc venv).
+- **Specs**: `docs/specs/*.md` — architecture, attention-mixers, optimizers, schema-reference, cli-reference, deployment, sbert-workflows, training-safety.
+- **Academic references**: `docs/paper.tex`, `docs/bibliography/*.md` contain full mathematical formulations and citations for all mixers/optimizers.
+- When adding a new mixer/optimizer, also update the relevant `docs/specs/*.md` file.
+
 ## Code Style
 
 - All Python modules use `from __future__ import annotations`.
