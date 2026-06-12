@@ -1,0 +1,1196 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>System Architecture Specification &mdash; Frankestein Transformer 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Sequence Mixer Families Specification" href="attention-mixers.html" />
+    <link rel="prev" title="Specifications" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Frankestein Transformer
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Frankestein Transformer Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../readme.html">Frankestein Transformer</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../readme.html#quick-start">Quick Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../readme.html#feature-matrix">Feature Matrix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../readme.html#architecture-decision-table">Architecture Decision Table</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../readme.html#cli-command-reference">CLI Command Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../readme.html#mixer-categories">Mixer Categories</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../readme.html#optimizer-categories">Optimizer Categories</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../readme.html#documentation-map">Documentation Map</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../readme.html#installation">Installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../readme.html#uv-recommended">uv (recommended)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../readme.html#pip">pip</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../readme.html#conda">conda</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../readme.html#quick-training-example">Quick Training Example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../readme.html#license">License</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../configs-readme.html">Training Configurations (YAML)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../configs-readme.html#files">Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../configs-readme.html#general-structure">General Structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../configs-readme.html#optimizer-chooser">Optimizer Chooser</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../configs-readme.html#optimizer-parameters-reference">Optimizer Parameters Reference</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../configs-readme.html#available-fields-detailed">Available Fields (Detailed)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../configs-readme.html#model-class">model_class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../configs-readme.html#base-model">base_model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../configs-readme.html#tokenizer">tokenizer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../configs-readme.html#model-ultraconfig">model (UltraConfig)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../configs-readme.html#decoder-examples-famous-architecture-inspired">Decoder Examples (Famous Architecture-Inspired)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../configs-readme.html#training-trainingconfig-runtime">training (TrainingConfig + runtime)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../configs-readme.html#sbert-dataset-types">SBERT Dataset Types</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../configs-readme.html#example-paired-similarity">Example: Paired Similarity</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../configs-readme.html#example-triplets-q-pos-negs">Example: Triplets (<code class="docutils literal notranslate"><span class="pre">Q</span></code>, <code class="docutils literal notranslate"><span class="pre">POS</span></code>, <code class="docutils literal notranslate"><span class="pre">NEGs</span></code>)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../configs-readme.html#example-qa-question-answer">Example: QA (<code class="docutils literal notranslate"><span class="pre">Question</span></code>, <code class="docutils literal notranslate"><span class="pre">Answer</span></code>)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../configs-readme.html#migration-note">Migration Note</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../configs-readme.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../api/index.html">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../api/cli.html">CLI Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/model/index.html">Model Package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/model/tormented_bert_frankestein.html">Tormented BERT Frankestein</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/model/attention/index.html">Attention Package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/attention/common.html">Common Attention Utilities</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/attention/standard.html">Standard Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/attention/sigmoid.html">Sigmoid Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/attention/retnet.html">RetNet Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/attention/ode.html">ODE Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/attention/titan.html">Titan Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/attention/engram.html">Engram Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/attention/hope.html">HoPE Positional Encoding</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/attention/rope.html">RoPE Positional Encoding</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/attention/gated/index.html">Gated Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/attention/sparse/index.html">Sparse Attention</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../api/model/optimizer/index.html">Optimizer Package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/base.html">Optimizer Base</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/factory.html">Optimizer Factory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/sgd_momentum.html">SGD Momentum</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/adamw.html">AdamW</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/adafactor.html">Adafactor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/galore_adamw.html">GaLore AdamW</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/prodigy.html">Prodigy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/lion.html">Lion</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/sophia.html">Sophia</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/muon.html">Muon</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/turbo_muon.html">Turbo-Muon</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/radam.html">RAdam</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/adan.html">Adan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/adopt.html">ADOPT</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/ademamix.html">AdEMAMix</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/mars_adamw.html">MARS AdamW</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/cautious_adamw.html">Cautious AdamW</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/lamb.html">LAMB</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/schedulefree_adamw.html">Schedule-Free AdamW</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/shampoo.html">Shampoo</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/soap.html">SOAP</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/anon.html">Anon</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/apollo.html">Apollo</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/apollo_mini.html">Apollo-Mini</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/q_apollo.html">Q-Apollo</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../api/training/index.html">Training Package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/training/config_loader.html">Config Loader</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/training/main.html">Training Main</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/training/streaming_mlm_dataset.html">Streaming MLM Dataset</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/training/trainer.html">Trainer</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../api/sbert/index.html">SBERT Package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/sbert/train_sbert.html">SBERT Training</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/sbert/inference_sbert.html">SBERT Inference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/sbert/example_usage.html">SBERT Example Usage</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../api/deploy/index.html">Deploy Package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/deploy/deploy.html">Deploy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/deploy/inference.html">Deploy Inference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/deploy/quantization.html">Quantization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/deploy/transformers_export.html">Transformers Export</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/deploy/example.html">Deploy Example</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../api/tokenizer/index.html">Tokenizer Package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/tokenizer/spm_spa_redpajama35.html">SPM Spa RedPajama35 Tokenizer</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../api/streamlit_gui.html">Streamlit GUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/utils/index.html">Utils Package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/utils/device.html">Device Utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/utils/gpu_temp_guard.html">GPU Temperature Guard</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/utils/storage_manager.html">Storage Manager</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Specifications</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">System Architecture Specification</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#system-design-overview">System Design Overview</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#system-architecture-diagram">System Architecture Diagram</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#model-classes">Model Classes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#training-modes">Training Modes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#looped-depth-formula">Looped Depth Formula</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#layer-pattern-dispatcher">Layer Pattern Dispatcher</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mixture-of-depths-mod-routing">Mixture-of-Depths (MoD) Routing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#engram-conditional-memory">Engram Conditional Memory</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#bitnet-path">BitNet Path</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#factorized-embeddings">Factorized Embeddings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#embedding-convolution">Embedding Convolution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#normalization-variants">Normalization Variants</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#positional-encodings">Positional Encodings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#moe-ffn-routing">MoE FFN Routing</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="attention-mixers.html">Sequence Mixer Families Specification</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="attention-mixers.html#taxonomy-overview">Taxonomy Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="attention-mixers.html#training-free-policy">Training-Free Policy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="attention-mixers.html#dense-attention-baselines-2">Dense Attention Baselines (2)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="attention-mixers.html#standard-attn-standard-softmax-attention"><code class="docutils literal notranslate"><span class="pre">standard_attn</span></code> — Standard Softmax Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="attention-mixers.html#sigmoid-attn-sigmoid-self-attention"><code class="docutils literal notranslate"><span class="pre">sigmoid_attn</span></code> — Sigmoid Self-Attention</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="attention-mixers.html#recurrent-and-retentive-architectures-5">Recurrent and Retentive Architectures (5)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="attention-mixers.html#retnet-retnet-attn-retentive-network"><code class="docutils literal notranslate"><span class="pre">retnet</span></code> / <code class="docutils literal notranslate"><span class="pre">retnet_attn</span></code> — Retentive Network</a></li>
+<li class="toctree-l4"><a class="reference internal" href="attention-mixers.html#mamba-selective-state-space-model"><code class="docutils literal notranslate"><span class="pre">mamba</span></code> — Selective State Space Model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="attention-mixers.html#ode-ode-style-continuous-depth-block"><code class="docutils literal notranslate"><span class="pre">ode</span></code> — ODE-style Continuous Depth Block</a></li>
+<li class="toctree-l4"><a class="reference internal" href="attention-mixers.html#titan-attn-titans-memory-augmented-attention"><code class="docutils literal notranslate"><span class="pre">titan_attn</span></code> — Titans Memory-Augmented Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="attention-mixers.html#engram-attn-engram-conditional-memory"><code class="docutils literal notranslate"><span class="pre">engram_attn</span></code> — Engram Conditional Memory</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="attention-mixers.html#sparse-attention-patterns-7">Sparse Attention Patterns (7)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="attention-mixers.html#sparse-attention-design-strategies">Sparse Attention Design Strategies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="attention-mixers.html#sparse-transformer-attn-sparse-transformer"><code class="docutils literal notranslate"><span class="pre">sparse_transformer_attn</span></code> — Sparse Transformer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="attention-mixers.html#longformer-attn-longformer"><code class="docutils literal notranslate"><span class="pre">longformer_attn</span></code> — Longformer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="attention-mixers.html#bigbird-attn-bigbird"><code class="docutils literal notranslate"><span class="pre">bigbird_attn</span></code> — BigBird</a></li>
+<li class="toctree-l4"><a class="reference internal" href="attention-mixers.html#sparsek-attn-sparsek-attention"><code class="docutils literal notranslate"><span class="pre">sparsek_attn</span></code> — SparseK Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="attention-mixers.html#nsa-attn-native-sparse-attention-nsa"><code class="docutils literal notranslate"><span class="pre">nsa_attn</span></code> — Native Sparse Attention (NSA)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="attention-mixers.html#sparge-attn-spargeattn-training-free"><code class="docutils literal notranslate"><span class="pre">sparge_attn</span></code> — SpargeAttn ⚠️ TRAINING-FREE</a></li>
+<li class="toctree-l4"><a class="reference internal" href="attention-mixers.html#fasa-attn-fasa-frequency-aware-sparse-attention-training-free"><code class="docutils literal notranslate"><span class="pre">fasa_attn</span></code> — FASA (Frequency-Aware Sparse Attention) ⚠️ TRAINING-FREE</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="attention-mixers.html#gated-attention-mechanisms-6">Gated Attention Mechanisms (6)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="attention-mixers.html#generic-gating-template">Generic Gating Template</a></li>
+<li class="toctree-l4"><a class="reference internal" href="attention-mixers.html#gla-attn-gated-linear-attention"><code class="docutils literal notranslate"><span class="pre">gla_attn</span></code> — Gated Linear Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="attention-mixers.html#deltanet-attn-deltanet"><code class="docutils literal notranslate"><span class="pre">deltanet_attn</span></code> — DeltaNet</a></li>
+<li class="toctree-l4"><a class="reference internal" href="attention-mixers.html#gated-deltanet-attn-gated-deltanet"><code class="docutils literal notranslate"><span class="pre">gated_deltanet_attn</span></code> — Gated DeltaNet</a></li>
+<li class="toctree-l4"><a class="reference internal" href="attention-mixers.html#hgrn2-attn-hgrn2"><code class="docutils literal notranslate"><span class="pre">hgrn2_attn</span></code> — HGRN2</a></li>
+<li class="toctree-l4"><a class="reference internal" href="attention-mixers.html#fox-attn-forgetting-transformer-fox"><code class="docutils literal notranslate"><span class="pre">fox_attn</span></code> — Forgetting Transformer (FoX)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="attention-mixers.html#gated-softmax-attn-gated-softmax-attention"><code class="docutils literal notranslate"><span class="pre">gated_softmax_attn</span></code> — Gated Softmax Attention</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="attention-mixers.html#comprehensive-comparison-table">Comprehensive Comparison Table</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="cli-reference.html">CLI Command Reference</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="cli-reference.html#entrypoint">Entrypoint</a></li>
+<li class="toctree-l3"><a class="reference internal" href="cli-reference.html#subcommand-overview">Subcommand Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="cli-reference.html#device-choices">Device Choices</a></li>
+<li class="toctree-l3"><a class="reference internal" href="cli-reference.html#train-main-training"><code class="docutils literal notranslate"><span class="pre">train</span></code> — Main Training</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="cli-reference.html#examples">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="cli-reference.html#deploy-deployment-artifact-creation"><code class="docutils literal notranslate"><span class="pre">deploy</span></code> — Deployment Artifact Creation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="cli-reference.html#id1">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="cli-reference.html#quantize-quantized-export"><code class="docutils literal notranslate"><span class="pre">quantize</span></code> — Quantized Export</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="cli-reference.html#id2">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="cli-reference.html#infer-model-inference"><code class="docutils literal notranslate"><span class="pre">infer</span></code> — Model Inference</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="cli-reference.html#id3">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="cli-reference.html#sbert-train-sbert-training"><code class="docutils literal notranslate"><span class="pre">sbert-train</span></code> — SBERT Training</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="cli-reference.html#id4">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="cli-reference.html#sbert-infer-sbert-inference"><code class="docutils literal notranslate"><span class="pre">sbert-infer</span></code> — SBERT Inference</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="cli-reference.html#id5">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="cli-reference.html#web-server-streamlit-configuration-builder"><code class="docutils literal notranslate"><span class="pre">web-server</span></code> — Streamlit Configuration Builder</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="cli-reference.html#id6">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="cli-reference.html#transformers-export-huggingface-export"><code class="docutils literal notranslate"><span class="pre">transformers-export</span></code> — HuggingFace Export</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="cli-reference.html#id7">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="cli-reference.html#gpu-thermal-guard-flags">GPU Thermal Guard Flags</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="deployment.html">Deployment and Quantization Specification</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="deployment.html#deploy-pipeline">Deploy Pipeline</a></li>
+<li class="toctree-l3"><a class="reference internal" href="deployment.html#quantization-methods">Quantization Methods</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="deployment.html#ternary-weight-packing">Ternary Weight Packing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="deployment.html#int8-activation-quantization">INT8 Activation Quantization</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="deployment.html#size-estimates">Size Estimates</a></li>
+<li class="toctree-l3"><a class="reference internal" href="deployment.html#deployment-artifact-contents">Deployment Artifact Contents</a></li>
+<li class="toctree-l3"><a class="reference internal" href="deployment.html#inference-modes">Inference Modes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="deployment.html#inference-options">Inference Options</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="deployment.html#quantization-cli">Quantization CLI</a></li>
+<li class="toctree-l3"><a class="reference internal" href="deployment.html#validation">Validation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="deployment.html#huggingface-transformers-export">HuggingFace Transformers Export</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="optimizers.html">Optimizer Families Specification</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="optimizers.html#optimizer-routing-framework">Optimizer Routing Framework</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="optimizers.html#optimizer-selection-decision-tree">Optimizer Selection Decision Tree</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="optimizers.html#prefixed-key-contract">Prefixed Key Contract</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="optimizers.html#shared-per-group-suffix-families">Shared Per-Group Suffix Families</a></li>
+<li class="toctree-l4"><a class="reference internal" href="optimizers.html#optimizer-specific-global-suffixes">Optimizer-Specific Global Suffixes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="optimizers.html#complete-optimizer-inventory">Complete Optimizer Inventory</a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimizers.html#optimizer-family-groupings">Optimizer Family Groupings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimizers.html#key-optimizer-equations">Key Optimizer Equations</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="optimizers.html#adamw-baseline">AdamW (Baseline)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="optimizers.html#apollo-family">APOLLO Family</a></li>
+<li class="toctree-l4"><a class="reference internal" href="optimizers.html#anon-adaptivity-tunable-with-idu">Anon (Adaptivity-Tunable with IDU)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sbert-workflows.html">SBERT Training and Inference Specification</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sbert-workflows.html#overview">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sbert-workflows.html#siamese-training">Siamese Training</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="sbert-workflows.html#cosine-similarity-loss">Cosine Similarity Loss</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="sbert-workflows.html#pooling-modes">Pooling Modes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sbert-workflows.html#dataset-types">Dataset Types</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sbert-workflows.html#sbert-configuration-block">SBERT Configuration Block</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sbert-workflows.html#inference-modes">Inference Modes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="sbert-workflows.html#similarity-pairwise-scoring"><code class="docutils literal notranslate"><span class="pre">similarity</span></code> — Pairwise Scoring</a></li>
+<li class="toctree-l4"><a class="reference internal" href="sbert-workflows.html#search-top-k-retrieval"><code class="docutils literal notranslate"><span class="pre">search</span></code> — Top-k Retrieval</a></li>
+<li class="toctree-l4"><a class="reference internal" href="sbert-workflows.html#cluster-embedding-clustering"><code class="docutils literal notranslate"><span class="pre">cluster</span></code> — Embedding Clustering</a></li>
+<li class="toctree-l4"><a class="reference internal" href="sbert-workflows.html#encode-embedding-export"><code class="docutils literal notranslate"><span class="pre">encode</span></code> — Embedding Export</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="sbert-workflows.html#sbert-inference-mode-router-pseudocode">SBERT Inference Mode Router (Pseudocode)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sbert-workflows.html#cli-examples">CLI Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="schema-reference.html">Schema Field Reference</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="schema-reference.html#strict-validation-policy">Strict Validation Policy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="schema-reference.html#top-level-sections">Top-Level Sections</a></li>
+<li class="toctree-l3"><a class="reference internal" href="schema-reference.html#model-fields">Model Fields</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="schema-reference.html#layer-pattern-valid-values">Layer Pattern Valid Values</a></li>
+<li class="toctree-l4"><a class="reference internal" href="schema-reference.html#normalization-valid-values">Normalization Valid Values</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="schema-reference.html#training-fields">Training Fields</a></li>
+<li class="toctree-l3"><a class="reference internal" href="schema-reference.html#optimizer-fields">Optimizer Fields</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="schema-reference.html#valid-optimizer-class-values">Valid <code class="docutils literal notranslate"><span class="pre">optimizer_class</span></code> Values</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="schema-reference.html#scheduler-types">Scheduler Types</a></li>
+<li class="toctree-l3"><a class="reference internal" href="schema-reference.html#gpu-metrics-backends">GPU Metrics Backends</a></li>
+<li class="toctree-l3"><a class="reference internal" href="schema-reference.html#sbert-dataset-types">SBERT Dataset Types</a></li>
+<li class="toctree-l3"><a class="reference internal" href="schema-reference.html#critical-gotchas">Critical Gotchas</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="training-safety.html">Training Safety and Stability Specification</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="training-safety.html#gradient-accumulation">Gradient Accumulation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="training-safety.html#global-norm-clipping">Global Norm Clipping</a></li>
+<li class="toctree-l3"><a class="reference internal" href="training-safety.html#post-clip-explosion-guard">Post-Clip Explosion Guard</a></li>
+<li class="toctree-l3"><a class="reference internal" href="training-safety.html#nan-inf-retry-logic">NaN/Inf Retry Logic</a></li>
+<li class="toctree-l3"><a class="reference internal" href="training-safety.html#checkpointing-policy">Checkpointing Policy</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="training-safety.html#rolling-checkpoints">Rolling Checkpoints</a></li>
+<li class="toctree-l4"><a class="reference internal" href="training-safety.html#best-checkpoints">Best Checkpoints</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="training-safety.html#telemetry">Telemetry</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="training-safety.html#csv-logging">CSV Logging</a></li>
+<li class="toctree-l4"><a class="reference internal" href="training-safety.html#gpu-metrics">GPU Metrics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="training-safety.html#block-gradient-norms">Block Gradient Norms</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="training-safety.html#gpu-thermal-guard">GPU Thermal Guard</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="training-safety.html#thermal-state-machine">Thermal State Machine</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="training-safety.html#galore-controls">GaLore Controls</a></li>
+<li class="toctree-l3"><a class="reference internal" href="training-safety.html#scheduler-types">Scheduler Types</a></li>
+<li class="toctree-l3"><a class="reference internal" href="training-safety.html#training-step-algorithm-full">Training Step Algorithm (Full)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="training-safety.html#stability-best-practices">Stability Best Practices</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../bibliography/index.html">Bibliography</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../bibliography/TRANSFORMER_TYPES.html">Advanced Sequence Modeling Architectures: A Comprehensive Theoretical and Empirical Analysis of Transformer Blocks and Emerging Paradigms</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../bibliography/TRANSFORMER_TYPES.html#standard-attention-the-foundation-of-global-contextualization">1. Standard Attention: The Foundation of Global Contextualization</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/TRANSFORMER_TYPES.html#mathematical-formulation-and-token-routing-mechanism">1.1 Mathematical Formulation and Token Routing Mechanism</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/TRANSFORMER_TYPES.html#computational-complexity-and-the-kv-cache-bottleneck">1.2 Computational Complexity and the KV Cache Bottleneck</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/TRANSFORMER_TYPES.html#architectural-profile-standard-attention">1.3 Architectural Profile: Standard Attention</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../bibliography/TRANSFORMER_TYPES.html#sigmoid-attention-hardware-aware-algorithmic-locality">2. Sigmoid Attention: Hardware-Aware Algorithmic Locality</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/TRANSFORMER_TYPES.html#mathematical-foundation-and-mixture-of-experts-perspective">2.1 Mathematical Foundation and Mixture-of-Experts Perspective</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/TRANSFORMER_TYPES.html#stabilization-and-the-hybrid-norm-requirement">2.2 Stabilization and the Hybrid-Norm Requirement</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/TRANSFORMER_TYPES.html#computational-complexity-and-hardware-optimization">2.3 Computational Complexity and Hardware Optimization</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/TRANSFORMER_TYPES.html#architectural-profile-sigmoid-attention">2.4 Architectural Profile: Sigmoid Attention</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../bibliography/TRANSFORMER_TYPES.html#retnet-the-duality-of-recurrence-and-attention">3. RetNet: The Duality of Recurrence and Attention</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/TRANSFORMER_TYPES.html#mathematical-foundation-and-the-multi-scale-retention-mechanism">3.1 Mathematical Foundation and the Multi-Scale Retention Mechanism</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/TRANSFORMER_TYPES.html#computational-complexity-and-performance-scaling">3.2 Computational Complexity and Performance Scaling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/TRANSFORMER_TYPES.html#architectural-profile-retnet">3.3 Architectural Profile: RetNet</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../bibliography/TRANSFORMER_TYPES.html#mamba-selective-state-space-modeling">4. Mamba: Selective State Space Modeling</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/TRANSFORMER_TYPES.html#mathematical-foundation-and-the-selection-mechanism">4.1 Mathematical Foundation and the Selection Mechanism</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/TRANSFORMER_TYPES.html#computational-complexity-and-the-hardware-aware-scan">4.2 Computational Complexity and the Hardware-Aware Scan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/TRANSFORMER_TYPES.html#architectural-profile-mamba">4.3 Architectural Profile: Mamba</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../bibliography/TRANSFORMER_TYPES.html#ode-transformer-sequence-generation-via-dynamical-systems">5. ODE Transformer: Sequence Generation via Dynamical Systems</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/TRANSFORMER_TYPES.html#mathematical-foundation-and-runge-kutta-refinement">5.1 Mathematical Foundation and Runge-Kutta Refinement</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/TRANSFORMER_TYPES.html#computational-complexity-and-the-accuracy-trade-off">5.2 Computational Complexity and the Accuracy Trade-off</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/TRANSFORMER_TYPES.html#architectural-profile-ode-transformer">5.3 Architectural Profile: ODE Transformer</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../bibliography/TRANSFORMER_TYPES.html#titans-test-time-neural-memorization">6. Titans: Test-Time Neural Memorization</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/TRANSFORMER_TYPES.html#mathematical-foundation-and-the-surprise-metric">6.1 Mathematical Foundation and the Surprise Metric</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/TRANSFORMER_TYPES.html#computational-complexity-and-infinite-context">6.2 Computational Complexity and Infinite Context</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/TRANSFORMER_TYPES.html#architectural-profile-titans">6.3 Architectural Profile: Titans</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../bibliography/TRANSFORMER_TYPES.html#synthesis-and-systemic-insights-the-future-of-sequence-architectures">7. Synthesis and Systemic Insights: The Future of Sequence Architectures</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/TRANSFORMER_TYPES.html#the-expressivity-versus-compression-duality">7.1 The Expressivity versus Compression Duality</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/TRANSFORMER_TYPES.html#the-dictatorship-of-hardware-substrates">7.2 The Dictatorship of Hardware Substrates</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/TRANSFORMER_TYPES.html#continuous-dynamics-and-geometrical-trajectories">7.3 Continuous Dynamics and Geometrical Trajectories</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/TRANSFORMER_TYPES.html#the-convergence-towards-test-time-adaptation-and-hybridization">7.4 The Convergence Towards Test-Time Adaptation and Hybridization</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../bibliography/SPARSE_TRANSFORMER_TYPES.html">Review of Sparse Attention Blocks in Transformers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../bibliography/SPARSE_TRANSFORMER_TYPES.html#executive-summary">Executive Summary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../bibliography/SPARSE_TRANSFORMER_TYPES.html#sparse-transformer-child-et-al-2019">Sparse Transformer (Child et al., 2019)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/SPARSE_TRANSFORMER_TYPES.html#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/SPARSE_TRANSFORMER_TYPES.html#mathematical-formulation">Mathematical Formulation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/SPARSE_TRANSFORMER_TYPES.html#pros-and-cons">Pros and Cons</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/SPARSE_TRANSFORMER_TYPES.html#pytorch-implementation">PyTorch Implementation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../bibliography/SPARSE_TRANSFORMER_TYPES.html#longformer-beltagy-et-al-2020">Longformer (Beltagy et al., 2020)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/SPARSE_TRANSFORMER_TYPES.html#id10">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/SPARSE_TRANSFORMER_TYPES.html#id15">Mathematical Formulation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/SPARSE_TRANSFORMER_TYPES.html#id18">Pros and Cons</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/SPARSE_TRANSFORMER_TYPES.html#id22">PyTorch Implementation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../bibliography/SPARSE_TRANSFORMER_TYPES.html#bigbird-zaheer-et-al-2020">BigBird (Zaheer et al., 2020)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/SPARSE_TRANSFORMER_TYPES.html#id23">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/SPARSE_TRANSFORMER_TYPES.html#id29">Mathematical Formulation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/SPARSE_TRANSFORMER_TYPES.html#id31">Pros and Cons</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/SPARSE_TRANSFORMER_TYPES.html#id35">PyTorch Implementation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../bibliography/SPARSE_TRANSFORMER_TYPES.html#fasa-frequency-aware-sparse-attention-wang-et-al-2026">FASA — Frequency-Aware Sparse Attention (Wang et al., 2026)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/SPARSE_TRANSFORMER_TYPES.html#id36">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/SPARSE_TRANSFORMER_TYPES.html#id41">Mathematical Formulation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/SPARSE_TRANSFORMER_TYPES.html#id43">Pros and Cons</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/SPARSE_TRANSFORMER_TYPES.html#id49">PyTorch Implementation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../bibliography/SPARSE_TRANSFORMER_TYPES.html#nsa-native-sparse-attention-yuan-et-al-2025">NSA — Native Sparse Attention (Yuan et al., 2025)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/SPARSE_TRANSFORMER_TYPES.html#id50">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/SPARSE_TRANSFORMER_TYPES.html#id56">Mathematical Formulation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/SPARSE_TRANSFORMER_TYPES.html#id57">Pros and Cons</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/SPARSE_TRANSFORMER_TYPES.html#id62">PyTorch Implementation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../bibliography/SPARSE_TRANSFORMER_TYPES.html#sparsek-attention-lou-et-al-2024">SparseK Attention (Lou et al., 2024)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/SPARSE_TRANSFORMER_TYPES.html#id63">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/SPARSE_TRANSFORMER_TYPES.html#id67">Mathematical Formulation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/SPARSE_TRANSFORMER_TYPES.html#id70">Pros and Cons</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/SPARSE_TRANSFORMER_TYPES.html#id75">PyTorch Implementation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../bibliography/SPARSE_TRANSFORMER_TYPES.html#spargeattn-zhang-et-al-2025">SpargeAttn (Zhang et al., 2025)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/SPARSE_TRANSFORMER_TYPES.html#id76">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/SPARSE_TRANSFORMER_TYPES.html#id80">Mathematical Formulation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/SPARSE_TRANSFORMER_TYPES.html#id81">Pros and Cons</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/SPARSE_TRANSFORMER_TYPES.html#id87">PyTorch Implementation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../bibliography/SPARSE_TRANSFORMER_TYPES.html#summary-comparison-table">Summary Comparison Table</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../bibliography/SPARSE_TRANSFORMER_TYPES.html#references">References</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../bibliography/GATED_TRANSFORMER_TYPES.html">Gated Attention Blocks in Transformers: A Literature Review</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../bibliography/GATED_TRANSFORMER_TYPES.html#executive-summary">Executive Summary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../bibliography/GATED_TRANSFORMER_TYPES.html#gated-linear-attention-gla">1. Gated Linear Attention (GLA)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/GATED_TRANSFORMER_TYPES.html#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/GATED_TRANSFORMER_TYPES.html#mathematical-formulation">Mathematical Formulation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/GATED_TRANSFORMER_TYPES.html#pros-and-cons">Pros and Cons</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/GATED_TRANSFORMER_TYPES.html#pytorch-implementation">PyTorch Implementation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../bibliography/GATED_TRANSFORMER_TYPES.html#deltanet">2. DeltaNet</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/GATED_TRANSFORMER_TYPES.html#id1">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/GATED_TRANSFORMER_TYPES.html#id2">Mathematical Formulation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/GATED_TRANSFORMER_TYPES.html#id3">Pros and Cons</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../bibliography/GATED_TRANSFORMER_TYPES.html#gated-deltanet">3. Gated DeltaNet</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/GATED_TRANSFORMER_TYPES.html#id4">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/GATED_TRANSFORMER_TYPES.html#id5">Mathematical Formulation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/GATED_TRANSFORMER_TYPES.html#id6">Pros and Cons</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../bibliography/GATED_TRANSFORMER_TYPES.html#retnet-retentive-network">4. RetNet (Retentive Network)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/GATED_TRANSFORMER_TYPES.html#id7">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/GATED_TRANSFORMER_TYPES.html#id8">Mathematical Formulation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/GATED_TRANSFORMER_TYPES.html#id9">Pros and Cons</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../bibliography/GATED_TRANSFORMER_TYPES.html#hgrn2-hierarchically-gated-recurrent-network-2">5. HGRN2 (Hierarchically Gated Recurrent Network 2)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/GATED_TRANSFORMER_TYPES.html#id10">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/GATED_TRANSFORMER_TYPES.html#id11">Mathematical Formulation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/GATED_TRANSFORMER_TYPES.html#id12">Pros and Cons</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../bibliography/GATED_TRANSFORMER_TYPES.html#forgetting-transformer-fox">6. Forgetting Transformer (FoX)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/GATED_TRANSFORMER_TYPES.html#id13">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/GATED_TRANSFORMER_TYPES.html#id14">Mathematical Formulation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/GATED_TRANSFORMER_TYPES.html#id15">Pros and Cons</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../bibliography/GATED_TRANSFORMER_TYPES.html#gated-attention-sigmoid-after-sdpa">7. Gated Attention (Sigmoid after SDPA)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/GATED_TRANSFORMER_TYPES.html#id16">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/GATED_TRANSFORMER_TYPES.html#id17">Mathematical Formulation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/GATED_TRANSFORMER_TYPES.html#id18">Pros and Cons</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../bibliography/GATED_TRANSFORMER_TYPES.html#summary-comparison-table">Summary Comparison Table</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/GATED_TRANSFORMER_TYPES.html#additional-comparison-dimensions">Additional Comparison Dimensions</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../bibliography/GATED_TRANSFORMER_TYPES.html#pytorch-reference-implementations">PyTorch Reference Implementations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../bibliography/GATED_TRANSFORMER_TYPES.html#taxonomy-and-evolution">Taxonomy and Evolution</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../bibliography/OPTIMIZERS.html">Advanced Optimization Algorithms in Transformer Architectures: A Comprehensive Analysis</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../bibliography/OPTIMIZERS.html#the-evolution-of-optimization-in-neural-networks">The Evolution of Optimization in Neural Networks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../bibliography/OPTIMIZERS.html#standard-baseline-and-adaptive-optimizers">1. Standard Baseline and Adaptive Optimizers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/OPTIMIZERS.html#sgd-with-momentum">SGD with Momentum</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/OPTIMIZERS.html#adam-and-adamw">Adam and AdamW</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/OPTIMIZERS.html#radam-rectified-adam">RAdam (Rectified Adam)</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../bibliography/OPTIMIZERS.html#advanced-momentum-and-variance-reduction-2024-2025">2. Advanced Momentum and Variance Reduction (2024-2025)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/OPTIMIZERS.html#adan-adaptive-nesterov-momentum">Adan (Adaptive Nesterov Momentum)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/OPTIMIZERS.html#adopt-modified-adam-with-optimal-convergence">ADOPT (Modified Adam with Optimal Convergence)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/OPTIMIZERS.html#ademamix-mixture-of-two-emas">AdEMAMix (Mixture of Two EMAs)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/OPTIMIZERS.html#mars-make-variance-reduction-shine">MARS (Make Variance Reduction Shine)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/OPTIMIZERS.html#cautious-optimizers-c-adamw-c-lion">Cautious Optimizers (C-AdamW, C-Lion)</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../bibliography/OPTIMIZERS.html#large-batch-memory-efficient-and-parameter-free-optimizers">3. Large-Batch, Memory-Efficient, and Parameter-Free Optimizers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/OPTIMIZERS.html#lamb">LAMB</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/OPTIMIZERS.html#schedule-free-adamw">Schedule-Free (AdamW)</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../bibliography/OPTIMIZERS.html#second-order-geometric-and-orthogonality-optimizers">4. Second-Order, Geometric, and Orthogonality Optimizers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/OPTIMIZERS.html#shampoo">Shampoo</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/OPTIMIZERS.html#soap-shampoo-with-adam-in-preconditioners-eigenbasis">SOAP (Shampoo with Adam in Preconditioner’s Eigenbasis)</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../bibliography/OPTIMIZERS.html#memory-efficient-and-low-rank-optimizers">3. Memory-Efficient and Low-Rank Optimizers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/OPTIMIZERS.html#adafactor">Adafactor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/OPTIMIZERS.html#galore-gradient-low-rank-projection">GaLore (Gradient Low-Rank Projection)</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../bibliography/OPTIMIZERS.html#parameter-free-and-distance-adaptive-methods">4. Parameter-Free and Distance-Adaptive Methods</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/OPTIMIZERS.html#prodigy">Prodigy</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../bibliography/OPTIMIZERS.html#sign-and-second-order-dynamics">5. Sign and Second-Order Dynamics</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/OPTIMIZERS.html#lion-evolved-sign-momentum">Lion (EvoLved Sign Momentum)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/OPTIMIZERS.html#sophia">Sophia</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../bibliography/OPTIMIZERS.html#orthogonality-based-optimizers">6. Orthogonality-Based Optimizers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/OPTIMIZERS.html#muon">Muon</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bibliography/OPTIMIZERS.html#turbo-muon">Turbo-Muon</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../bibliography/attention_types.html">Attention Types Bibliography</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../bibliography/optimizers.html">Optimizers Bibliography</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../bibliography/other.html">Other Bibliography</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../paper-en.html">Technical Report (English)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../paper-en.html#abstract">Abstract</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../paper-es.html">Informe Tecnico (Espanol)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../paper-es.html#resumen">Resumen</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Quick Links:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference external" href="https://github.com/erickfmm/frankestein-transformer">GitHub Repository</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli-reference.html">CLI Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="cli-reference.html#entrypoint">Entrypoint</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cli-reference.html#subcommand-overview">Subcommand Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cli-reference.html#device-choices">Device Choices</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cli-reference.html#train-main-training"><code class="docutils literal notranslate"><span class="pre">train</span></code> — Main Training</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="cli-reference.html#examples">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="cli-reference.html#deploy-deployment-artifact-creation"><code class="docutils literal notranslate"><span class="pre">deploy</span></code> — Deployment Artifact Creation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="cli-reference.html#id1">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="cli-reference.html#quantize-quantized-export"><code class="docutils literal notranslate"><span class="pre">quantize</span></code> — Quantized Export</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="cli-reference.html#id2">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="cli-reference.html#infer-model-inference"><code class="docutils literal notranslate"><span class="pre">infer</span></code> — Model Inference</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="cli-reference.html#id3">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="cli-reference.html#sbert-train-sbert-training"><code class="docutils literal notranslate"><span class="pre">sbert-train</span></code> — SBERT Training</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="cli-reference.html#id4">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="cli-reference.html#sbert-infer-sbert-inference"><code class="docutils literal notranslate"><span class="pre">sbert-infer</span></code> — SBERT Inference</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="cli-reference.html#id5">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="cli-reference.html#web-server-streamlit-configuration-builder"><code class="docutils literal notranslate"><span class="pre">web-server</span></code> — Streamlit Configuration Builder</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="cli-reference.html#id6">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="cli-reference.html#transformers-export-huggingface-export"><code class="docutils literal notranslate"><span class="pre">transformers-export</span></code> — HuggingFace Export</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="cli-reference.html#id7">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="cli-reference.html#gpu-thermal-guard-flags">GPU Thermal Guard Flags</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="schema-reference.html">Schema Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="schema-reference.html#strict-validation-policy">Strict Validation Policy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="schema-reference.html#top-level-sections">Top-Level Sections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="schema-reference.html#model-fields">Model Fields</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="schema-reference.html#layer-pattern-valid-values">Layer Pattern Valid Values</a></li>
+<li class="toctree-l3"><a class="reference internal" href="schema-reference.html#normalization-valid-values">Normalization Valid Values</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="schema-reference.html#training-fields">Training Fields</a></li>
+<li class="toctree-l2"><a class="reference internal" href="schema-reference.html#optimizer-fields">Optimizer Fields</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="schema-reference.html#valid-optimizer-class-values">Valid <code class="docutils literal notranslate"><span class="pre">optimizer_class</span></code> Values</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="schema-reference.html#scheduler-types">Scheduler Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="schema-reference.html#gpu-metrics-backends">GPU Metrics Backends</a></li>
+<li class="toctree-l2"><a class="reference internal" href="schema-reference.html#sbert-dataset-types">SBERT Dataset Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="schema-reference.html#critical-gotchas">Critical Gotchas</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Architecture</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#system-design-overview">System Design Overview</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#system-architecture-diagram">System Architecture Diagram</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#model-classes">Model Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#training-modes">Training Modes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#looped-depth-formula">Looped Depth Formula</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#layer-pattern-dispatcher">Layer Pattern Dispatcher</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#mixture-of-depths-mod-routing">Mixture-of-Depths (MoD) Routing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#engram-conditional-memory">Engram Conditional Memory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#bitnet-path">BitNet Path</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#factorized-embeddings">Factorized Embeddings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#embedding-convolution">Embedding Convolution</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#normalization-variants">Normalization Variants</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#positional-encodings">Positional Encodings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#moe-ffn-routing">MoE FFN Routing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="attention-mixers.html">Attention Mixers</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="attention-mixers.html#taxonomy-overview">Taxonomy Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="attention-mixers.html#training-free-policy">Training-Free Policy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="attention-mixers.html#dense-attention-baselines-2">Dense Attention Baselines (2)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="attention-mixers.html#standard-attn-standard-softmax-attention"><code class="docutils literal notranslate"><span class="pre">standard_attn</span></code> — Standard Softmax Attention</a></li>
+<li class="toctree-l3"><a class="reference internal" href="attention-mixers.html#sigmoid-attn-sigmoid-self-attention"><code class="docutils literal notranslate"><span class="pre">sigmoid_attn</span></code> — Sigmoid Self-Attention</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="attention-mixers.html#recurrent-and-retentive-architectures-5">Recurrent and Retentive Architectures (5)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="attention-mixers.html#retnet-retnet-attn-retentive-network"><code class="docutils literal notranslate"><span class="pre">retnet</span></code> / <code class="docutils literal notranslate"><span class="pre">retnet_attn</span></code> — Retentive Network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="attention-mixers.html#mamba-selective-state-space-model"><code class="docutils literal notranslate"><span class="pre">mamba</span></code> — Selective State Space Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="attention-mixers.html#ode-ode-style-continuous-depth-block"><code class="docutils literal notranslate"><span class="pre">ode</span></code> — ODE-style Continuous Depth Block</a></li>
+<li class="toctree-l3"><a class="reference internal" href="attention-mixers.html#titan-attn-titans-memory-augmented-attention"><code class="docutils literal notranslate"><span class="pre">titan_attn</span></code> — Titans Memory-Augmented Attention</a></li>
+<li class="toctree-l3"><a class="reference internal" href="attention-mixers.html#engram-attn-engram-conditional-memory"><code class="docutils literal notranslate"><span class="pre">engram_attn</span></code> — Engram Conditional Memory</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="attention-mixers.html#sparse-attention-patterns-7">Sparse Attention Patterns (7)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="attention-mixers.html#sparse-attention-design-strategies">Sparse Attention Design Strategies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="attention-mixers.html#sparse-transformer-attn-sparse-transformer"><code class="docutils literal notranslate"><span class="pre">sparse_transformer_attn</span></code> — Sparse Transformer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="attention-mixers.html#longformer-attn-longformer"><code class="docutils literal notranslate"><span class="pre">longformer_attn</span></code> — Longformer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="attention-mixers.html#bigbird-attn-bigbird"><code class="docutils literal notranslate"><span class="pre">bigbird_attn</span></code> — BigBird</a></li>
+<li class="toctree-l3"><a class="reference internal" href="attention-mixers.html#sparsek-attn-sparsek-attention"><code class="docutils literal notranslate"><span class="pre">sparsek_attn</span></code> — SparseK Attention</a></li>
+<li class="toctree-l3"><a class="reference internal" href="attention-mixers.html#nsa-attn-native-sparse-attention-nsa"><code class="docutils literal notranslate"><span class="pre">nsa_attn</span></code> — Native Sparse Attention (NSA)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="attention-mixers.html#sparge-attn-spargeattn-training-free"><code class="docutils literal notranslate"><span class="pre">sparge_attn</span></code> — SpargeAttn ⚠️ TRAINING-FREE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="attention-mixers.html#fasa-attn-fasa-frequency-aware-sparse-attention-training-free"><code class="docutils literal notranslate"><span class="pre">fasa_attn</span></code> — FASA (Frequency-Aware Sparse Attention) ⚠️ TRAINING-FREE</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="attention-mixers.html#gated-attention-mechanisms-6">Gated Attention Mechanisms (6)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="attention-mixers.html#generic-gating-template">Generic Gating Template</a></li>
+<li class="toctree-l3"><a class="reference internal" href="attention-mixers.html#gla-attn-gated-linear-attention"><code class="docutils literal notranslate"><span class="pre">gla_attn</span></code> — Gated Linear Attention</a></li>
+<li class="toctree-l3"><a class="reference internal" href="attention-mixers.html#deltanet-attn-deltanet"><code class="docutils literal notranslate"><span class="pre">deltanet_attn</span></code> — DeltaNet</a></li>
+<li class="toctree-l3"><a class="reference internal" href="attention-mixers.html#gated-deltanet-attn-gated-deltanet"><code class="docutils literal notranslate"><span class="pre">gated_deltanet_attn</span></code> — Gated DeltaNet</a></li>
+<li class="toctree-l3"><a class="reference internal" href="attention-mixers.html#hgrn2-attn-hgrn2"><code class="docutils literal notranslate"><span class="pre">hgrn2_attn</span></code> — HGRN2</a></li>
+<li class="toctree-l3"><a class="reference internal" href="attention-mixers.html#fox-attn-forgetting-transformer-fox"><code class="docutils literal notranslate"><span class="pre">fox_attn</span></code> — Forgetting Transformer (FoX)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="attention-mixers.html#gated-softmax-attn-gated-softmax-attention"><code class="docutils literal notranslate"><span class="pre">gated_softmax_attn</span></code> — Gated Softmax Attention</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="attention-mixers.html#comprehensive-comparison-table">Comprehensive Comparison Table</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="optimizers.html">Optimizers</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="optimizers.html#optimizer-routing-framework">Optimizer Routing Framework</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="optimizers.html#optimizer-selection-decision-tree">Optimizer Selection Decision Tree</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="optimizers.html#prefixed-key-contract">Prefixed Key Contract</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="optimizers.html#shared-per-group-suffix-families">Shared Per-Group Suffix Families</a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimizers.html#optimizer-specific-global-suffixes">Optimizer-Specific Global Suffixes</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="optimizers.html#complete-optimizer-inventory">Complete Optimizer Inventory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optimizers.html#optimizer-family-groupings">Optimizer Family Groupings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optimizers.html#key-optimizer-equations">Key Optimizer Equations</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="optimizers.html#adamw-baseline">AdamW (Baseline)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimizers.html#apollo-family">APOLLO Family</a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimizers.html#anon-adaptivity-tunable-with-idu">Anon (Adaptivity-Tunable with IDU)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="deployment.html">Deployment</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="deployment.html#deploy-pipeline">Deploy Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deployment.html#quantization-methods">Quantization Methods</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="deployment.html#ternary-weight-packing">Ternary Weight Packing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="deployment.html#int8-activation-quantization">INT8 Activation Quantization</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="deployment.html#size-estimates">Size Estimates</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deployment.html#deployment-artifact-contents">Deployment Artifact Contents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deployment.html#inference-modes">Inference Modes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="deployment.html#inference-options">Inference Options</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="deployment.html#quantization-cli">Quantization CLI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deployment.html#validation">Validation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deployment.html#huggingface-transformers-export">HuggingFace Transformers Export</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sbert-workflows.html">SBERT Workflows</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sbert-workflows.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sbert-workflows.html#siamese-training">Siamese Training</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sbert-workflows.html#cosine-similarity-loss">Cosine Similarity Loss</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sbert-workflows.html#pooling-modes">Pooling Modes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sbert-workflows.html#dataset-types">Dataset Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sbert-workflows.html#sbert-configuration-block">SBERT Configuration Block</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sbert-workflows.html#inference-modes">Inference Modes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sbert-workflows.html#similarity-pairwise-scoring"><code class="docutils literal notranslate"><span class="pre">similarity</span></code> — Pairwise Scoring</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sbert-workflows.html#search-top-k-retrieval"><code class="docutils literal notranslate"><span class="pre">search</span></code> — Top-k Retrieval</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sbert-workflows.html#cluster-embedding-clustering"><code class="docutils literal notranslate"><span class="pre">cluster</span></code> — Embedding Clustering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sbert-workflows.html#encode-embedding-export"><code class="docutils literal notranslate"><span class="pre">encode</span></code> — Embedding Export</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sbert-workflows.html#sbert-inference-mode-router-pseudocode">SBERT Inference Mode Router (Pseudocode)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sbert-workflows.html#cli-examples">CLI Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="training-safety.html">Training Safety</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="training-safety.html#gradient-accumulation">Gradient Accumulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="training-safety.html#global-norm-clipping">Global Norm Clipping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="training-safety.html#post-clip-explosion-guard">Post-Clip Explosion Guard</a></li>
+<li class="toctree-l2"><a class="reference internal" href="training-safety.html#nan-inf-retry-logic">NaN/Inf Retry Logic</a></li>
+<li class="toctree-l2"><a class="reference internal" href="training-safety.html#checkpointing-policy">Checkpointing Policy</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="training-safety.html#rolling-checkpoints">Rolling Checkpoints</a></li>
+<li class="toctree-l3"><a class="reference internal" href="training-safety.html#best-checkpoints">Best Checkpoints</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="training-safety.html#telemetry">Telemetry</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="training-safety.html#csv-logging">CSV Logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="training-safety.html#gpu-metrics">GPU Metrics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="training-safety.html#block-gradient-norms">Block Gradient Norms</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="training-safety.html#gpu-thermal-guard">GPU Thermal Guard</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="training-safety.html#thermal-state-machine">Thermal State Machine</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="training-safety.html#galore-controls">GaLore Controls</a></li>
+<li class="toctree-l2"><a class="reference internal" href="training-safety.html#scheduler-types">Scheduler Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="training-safety.html#training-step-algorithm-full">Training Step Algorithm (Full)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="training-safety.html#stability-best-practices">Stability Best Practices</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Frankestein Transformer</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Specifications</a></li>
+      <li class="breadcrumb-item active">System Architecture Specification</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/specs/architecture.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="system-architecture-specification">
+<h1>System Architecture Specification<a class="headerlink" href="#system-architecture-specification" title="Link to this heading"></a></h1>
+<blockquote>
+<div><p>Cross-references: <a class="reference external" href="attention-mixers.md">Attention Mixers</a> · <a class="reference external" href="schema-reference.md">Schema Reference</a> · <a class="reference external" href="training-safety.md">Training Safety</a> · <a class="reference external" href="deployment.md">Deployment</a></p>
+</div></blockquote>
+<section id="system-design-overview">
+<h2>System Design Overview<a class="headerlink" href="#system-design-overview" title="Link to this heading"></a></h2>
+<p>Frankestein Transformer is a <strong>schema-first</strong>, configuration-driven experimentation toolkit. The authoritative contract is <code class="docutils literal notranslate"><span class="pre">src/schema.yaml</span></code>, which enforces three top-level objects: <code class="docutils literal notranslate"><span class="pre">model_class</span></code>, <code class="docutils literal notranslate"><span class="pre">model</span></code>, and <code class="docutils literal notranslate"><span class="pre">training</span></code>. All nested objects set <code class="docutils literal notranslate"><span class="pre">additionalProperties:</span> <span class="pre">false</span></code> — unknown keys fail fast instead of being silently ignored.</p>
+<section id="system-architecture-diagram">
+<h3>System Architecture Diagram<a class="headerlink" href="#system-architecture-diagram" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>YAML Config → Validation (schema + rules) → Web (Streamlit) / CLI (train/deploy/infer)
+                                              ↓
+                    Model (17 mixers)  Training (AMP + scheduler)  Optimizer (23 families)
+                         ↓                    ↓                          ↓
+                    Model Build          Train Loop                  Opt Step
+                    (pattern+loops)     (checks+logs)            (group routing)
+                         ↓                    ↓                          ↓
+                    Deploy (quantization)          SBERT (search/cluster)
+</pre></div>
+</div>
+<p>Configuration flows through validation, partitions into model/training/optimizer, executes runtime, and produces deployment/SBERT artifacts.</p>
+</section>
+</section>
+<section id="model-classes">
+<h2>Model Classes<a class="headerlink" href="#model-classes" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Class</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">frankenstein</span></code></p></td>
+<td><p>Mixed-architecture encoder</p></td>
+<td><p>Full-featured encoder with all 19 mixer types, MoE, advanced normalization. Optimized for bidirectional MLM.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">mini</span></code></p></td>
+<td><p>Simplified encoder</p></td>
+<td><p>Reduced parameter overhead for rapid prototyping and small-scale experimentation.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">frankesteindecoder</span></code></p></td>
+<td><p>Autoregressive causal decoder</p></td>
+<td><p>LLM-style next-token generation. <strong>Runtime forces <code class="docutils literal notranslate"><span class="pre">mode='decoder'</span></code></strong>. Enables causal attention masking.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="training-modes">
+<h2>Training Modes<a class="headerlink" href="#training-modes" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Mode</p></th>
+<th class="head"><p>Attention Masking</p></th>
+<th class="head"><p>Task</p></th>
+<th class="head"><p>Model Class Compatibility</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">encoder</span></code></p></td>
+<td><p>Bidirectional (all tokens attend to all)</p></td>
+<td><p>MLM (masked language modeling)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">frankenstein</span></code>, <code class="docutils literal notranslate"><span class="pre">mini</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">decoder</span></code></p></td>
+<td><p>Causal (token attends only to previous)</p></td>
+<td><p>AR (autoregressive next-token)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">frankesteindecoder</span></code> (forced), <code class="docutils literal notranslate"><span class="pre">frankenstein</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<p>When <code class="docutils literal notranslate"><span class="pre">model_class='frankesteindecoder'</span></code>, the system automatically forces <code class="docutils literal notranslate"><span class="pre">mode='decoder'</span></code> at runtime.</p>
+</section>
+<section id="looped-depth-formula">
+<h2>Looped Depth Formula<a class="headerlink" href="#looped-depth-formula" title="Link to this heading"></a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>L_logical = num_layers × num_loops
+</pre></div>
+</div>
+<p>Physical layers are defined by <code class="docutils literal notranslate"><span class="pre">num_layers</span></code>. Each physical layer is executed <code class="docutils literal notranslate"><span class="pre">num_loops</span></code> times per forward pass, creating logical depth without increasing parameter count. Weights are shared across loop iterations by position.</p>
+</section>
+<section id="layer-pattern-dispatcher">
+<h2>Layer Pattern Dispatcher<a class="headerlink" href="#layer-pattern-dispatcher" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">model.layer_pattern</span></code> array defines the ordered sequence of layer types. Pattern length must equal <code class="docutils literal notranslate"><span class="pre">num_layers</span></code>. The dispatcher routes each position to the corresponding mixer implementation:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Category</p></th>
+<th class="head"><p>Code Names</p></th>
+<th class="head"><p>Count</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Dense</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">standard_attn</span></code>, <code class="docutils literal notranslate"><span class="pre">sigmoid_attn</span></code></p></td>
+<td><p>2</p></td>
+</tr>
+<tr class="row-odd"><td><p>Recurrent</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">retnet</span></code>, <code class="docutils literal notranslate"><span class="pre">retnet_attn</span></code>, <code class="docutils literal notranslate"><span class="pre">mamba</span></code>, <code class="docutils literal notranslate"><span class="pre">ode</span></code>, <code class="docutils literal notranslate"><span class="pre">titan_attn</span></code></p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-even"><td><p>Sparse</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">sparse_transformer_attn</span></code>, <code class="docutils literal notranslate"><span class="pre">longformer_attn</span></code>, <code class="docutils literal notranslate"><span class="pre">bigbird_attn</span></code>, <code class="docutils literal notranslate"><span class="pre">sparsek_attn</span></code>, <code class="docutils literal notranslate"><span class="pre">nsa_attn</span></code>, <code class="docutils literal notranslate"><span class="pre">sparge_attn</span></code>, <code class="docutils literal notranslate"><span class="pre">fasa_attn</span></code></p></td>
+<td><p>7</p></td>
+</tr>
+<tr class="row-odd"><td><p>Gated</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">gla_attn</span></code>, <code class="docutils literal notranslate"><span class="pre">deltanet_attn</span></code>, <code class="docutils literal notranslate"><span class="pre">gated_deltanet_attn</span></code>, <code class="docutils literal notranslate"><span class="pre">hgrn2_attn</span></code>, <code class="docutils literal notranslate"><span class="pre">fox_attn</span></code>, <code class="docutils literal notranslate"><span class="pre">gated_softmax_attn</span></code></p></td>
+<td><p>6</p></td>
+</tr>
+<tr class="row-even"><td><p>Memory</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">engram_attn</span></code></p></td>
+<td><p>1</p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Training-free policy</strong>: <code class="docutils literal notranslate"><span class="pre">fasa_attn</span></code> and <code class="docutils literal notranslate"><span class="pre">sparge_attn</span></code> are eval/inference-only. Using them during training raises a runtime error.</p>
+</section>
+<section id="mixture-of-depths-mod-routing">
+<h2>Mixture-of-Depths (MoD) Routing<a class="headerlink" href="#mixture-of-depths-mod-routing" title="Link to this heading"></a></h2>
+<p>When <code class="docutils literal notranslate"><span class="pre">use_mixture_of_depths=true</span></code>, each transformer block scores tokens with a lightweight router. Only the top <code class="docutils literal notranslate"><span class="pre">capacity_ratio</span></code> subset is updated; skipped tokens pass through unchanged. This allocates more depth to salient tokens, reducing per-layer compute.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Range</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">use_mixture_of_depths</span></code></p></td>
+<td><p>bool</p></td>
+<td><p>—</p></td>
+<td><p>Enable MoD token routing</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">mixture_of_depths_capacity_ratio</span></code></p></td>
+<td><p>float</p></td>
+<td><p>(0, 1]</p></td>
+<td><p>Fraction of tokens updated per layer</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">mixture_of_depths_router_aux_loss_weight</span></code></p></td>
+<td><p>float</p></td>
+<td><p>≥ 0</p></td>
+<td><p>Auxiliary loss weight for router regularization</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="engram-conditional-memory">
+<h2>Engram Conditional Memory<a class="headerlink" href="#engram-conditional-memory" title="Link to this heading"></a></h2>
+<p>Engram (<code class="docutils literal notranslate"><span class="pre">engram_attn</span></code>) implements conditional memory via scalable N-gram lookup (arXiv:2601.07372). It builds hash-based lookup tables for N-gram contexts from size 2 up to <code class="docutils literal notranslate"><span class="pre">engram_max_ngram_size</span></code>, with independent hash heads per N-gram order.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">engram_max_ngram_size</span></code></p></td>
+<td><p>int</p></td>
+<td><p>3</p></td>
+<td><p>Highest N-gram order</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">engram_n_heads_per_ngram</span></code></p></td>
+<td><p>int</p></td>
+<td><p>4</p></td>
+<td><p>Hash heads per N-gram order</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">engram_embed_dim_per_head</span></code></p></td>
+<td><p>int</p></td>
+<td><p>32</p></td>
+<td><p>Embedding dim per hash head</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">engram_kernel_size</span></code></p></td>
+<td><p>int</p></td>
+<td><p>4</p></td>
+<td><p>Causal depthwise conv kernel width</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">engram_seed</span></code></p></td>
+<td><p>int</p></td>
+<td><p>42</p></td>
+<td><p>Hash seed for reproducibility</p></td>
+</tr>
+</tbody>
+</table>
+<p>Total Engram hidden size = <code class="docutils literal notranslate"><span class="pre">(max_ngram_size</span> <span class="pre">-</span> <span class="pre">1)</span> <span class="pre">×</span> <span class="pre">n_heads_per_ngram</span> <span class="pre">×</span> <span class="pre">embed_dim_per_head</span></code>.</p>
+</section>
+<section id="bitnet-path">
+<h2>BitNet Path<a class="headerlink" href="#bitnet-path" title="Link to this heading"></a></h2>
+<p>When <code class="docutils literal notranslate"><span class="pre">use_bitnet=true</span></code>, BitLinear layers replace standard <code class="docutils literal notranslate"><span class="pre">nn.Linear</span></code> with ternary weight quantization (−1, 0, +1). This enables significant compression (~32× vs FP32) but is experimental and may affect model quality. Best suited for inference deployment.</p>
+</section>
+<section id="factorized-embeddings">
+<h2>Factorized Embeddings<a class="headerlink" href="#factorized-embeddings" title="Link to this heading"></a></h2>
+<p>When <code class="docutils literal notranslate"><span class="pre">use_factorized_embedding=true</span></code>, the embedding matrix is factorized into two smaller matrices, reducing parameters from <code class="docutils literal notranslate"><span class="pre">O(V</span> <span class="pre">×</span> <span class="pre">H)</span></code> to <code class="docutils literal notranslate"><span class="pre">O(V</span> <span class="pre">×</span> <span class="pre">R</span> <span class="pre">+</span> <span class="pre">R</span> <span class="pre">×</span> <span class="pre">H)</span></code> where <code class="docutils literal notranslate"><span class="pre">R</span> <span class="pre">=</span> <span class="pre">factorized_embedding_dim</span></code>.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Range</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">use_factorized_embedding</span></code></p></td>
+<td><p>bool</p></td>
+<td><p>—</p></td>
+<td><p>Enable factorization</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">factorized_embedding_dim</span></code></p></td>
+<td><p>int</p></td>
+<td><p>≥ 1</p></td>
+<td><p>Intermediate dimension (typical: 64–256)</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="embedding-convolution">
+<h2>Embedding Convolution<a class="headerlink" href="#embedding-convolution" title="Link to this heading"></a></h2>
+<p>When <code class="docutils literal notranslate"><span class="pre">use_embedding_conv=true</span></code>, a 1D convolution is applied over token embeddings before the transformer stack to capture local n-gram patterns.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Range</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">use_embedding_conv</span></code></p></td>
+<td><p>bool</p></td>
+<td><p>—</p></td>
+<td><p>Enable Conv1d over embeddings</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">embedding_conv_kernel</span></code></p></td>
+<td><p>int</p></td>
+<td><p>≥ 1</p></td>
+<td><p>Kernel size (typical: 3)</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="normalization-variants">
+<h2>Normalization Variants<a class="headerlink" href="#normalization-variants" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Code Name</p></th>
+<th class="head"><p>Formula</p></th>
+<th class="head"><p>Stats Needed</p></th>
+<th class="head"><p>Notes</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">layer_norm</span></code></p></td>
+<td><p>Standard LayerNorm (subtract mean, divide by std)</p></td>
+<td><p>Mean + std</p></td>
+<td><p>Stable, widely used baseline</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">dynamic_tanh</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">tanh(α·x)</span></code> with learned α</p></td>
+<td><p>None</p></td>
+<td><p>Normalization-free bounded transform (DyT)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">derf</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">erf(α·x</span> <span class="pre">+</span> <span class="pre">s)</span></code> with learned α, s</p></td>
+<td><p>None</p></td>
+<td><p>Normalization-free; improves over DyT</p></td>
+</tr>
+</tbody>
+</table>
+<p><strong><code class="docutils literal notranslate"><span class="pre">rms_norm</span></code> is NOT a valid schema value.</strong></p>
+</section>
+<section id="positional-encodings">
+<h2>Positional Encodings<a class="headerlink" href="#positional-encodings" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Encoding</p></th>
+<th class="head"><p>Code Name</p></th>
+<th class="head"><p>Mechanism</p></th>
+<th class="head"><p>Key Parameters</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Rotary Position Embedding</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">rope</span></code></p></td>
+<td><p>Rotates Q/K vectors by position-dependent angles</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">rope_base</span></code> (default 10000), <code class="docutils literal notranslate"><span class="pre">rope_scaling</span></code> (default 1.0)</p></td>
+</tr>
+<tr class="row-odd"><td><p>Hyperbolic Rotary PE</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">hope</span></code></p></td>
+<td><p>Lorentz rotations with monotonic attention decay</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">hope_base</span></code> (default 10000), <code class="docutils literal notranslate"><span class="pre">hope_damping</span></code> (default 0.01)</p></td>
+</tr>
+</tbody>
+</table>
+<p>Positional encoding is configured via <code class="docutils literal notranslate"><span class="pre">model.positional_encoding</span></code> and applies to <code class="docutils literal notranslate"><span class="pre">titan_attn</span></code> layers. The legacy <code class="docutils literal notranslate"><span class="pre">use_hope</span></code> flag is deprecated.</p>
+</section>
+<section id="moe-ffn-routing">
+<h2>MoE FFN Routing<a class="headerlink" href="#moe-ffn-routing" title="Link to this heading"></a></h2>
+<p>When <code class="docutils literal notranslate"><span class="pre">use_moe=true</span></code>, standard FFN layers are replaced with Mixture of Experts routing. A learned router selects <code class="docutils literal notranslate"><span class="pre">top_k_experts</span></code> from <code class="docutils literal notranslate"><span class="pre">num_experts</span></code> specialized FFN sub-networks per token.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Range</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">use_moe</span></code></p></td>
+<td><p>bool</p></td>
+<td><p>—</p></td>
+<td><p>Enable MoE in FFN layers</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">num_experts</span></code></p></td>
+<td><p>int</p></td>
+<td><p>≥ 1</p></td>
+<td><p>Total expert count (typical: 4–8)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">top_k_experts</span></code></p></td>
+<td><p>int</p></td>
+<td><p>≥ 1</p></td>
+<td><p>Experts activated per token (typical: 1–2)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ffn_hidden_size</span></code></p></td>
+<td><p>int</p></td>
+<td><p>≥ 1</p></td>
+<td><p>Hidden size per expert FFN</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ffn_activation</span></code></p></td>
+<td><p>enum</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">silu</span></code>, <code class="docutils literal notranslate"><span class="pre">gelu</span></code></p></td>
+<td><p>FFN non-linearity</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Specifications" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="attention-mixers.html" class="btn btn-neutral float-right" title="Sequence Mixer Families Specification" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Erick F. Merino M..</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

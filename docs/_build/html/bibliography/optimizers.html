@@ -1,0 +1,1148 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Optimizers Bibliography &mdash; Frankestein Transformer 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Other Bibliography" href="other.html" />
+    <link rel="prev" title="Attention Types Bibliography" href="attention_types.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Frankestein Transformer
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Frankestein Transformer Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../readme.html">Frankestein Transformer</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../readme.html#quick-start">Quick Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../readme.html#feature-matrix">Feature Matrix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../readme.html#architecture-decision-table">Architecture Decision Table</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../readme.html#cli-command-reference">CLI Command Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../readme.html#mixer-categories">Mixer Categories</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../readme.html#optimizer-categories">Optimizer Categories</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../readme.html#documentation-map">Documentation Map</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../readme.html#installation">Installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../readme.html#uv-recommended">uv (recommended)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../readme.html#pip">pip</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../readme.html#conda">conda</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../readme.html#quick-training-example">Quick Training Example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../readme.html#license">License</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../configs-readme.html">Training Configurations (YAML)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../configs-readme.html#files">Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../configs-readme.html#general-structure">General Structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../configs-readme.html#optimizer-chooser">Optimizer Chooser</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../configs-readme.html#optimizer-parameters-reference">Optimizer Parameters Reference</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../configs-readme.html#available-fields-detailed">Available Fields (Detailed)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../configs-readme.html#model-class">model_class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../configs-readme.html#base-model">base_model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../configs-readme.html#tokenizer">tokenizer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../configs-readme.html#model-ultraconfig">model (UltraConfig)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../configs-readme.html#decoder-examples-famous-architecture-inspired">Decoder Examples (Famous Architecture-Inspired)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../configs-readme.html#training-trainingconfig-runtime">training (TrainingConfig + runtime)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../configs-readme.html#sbert-dataset-types">SBERT Dataset Types</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../configs-readme.html#example-paired-similarity">Example: Paired Similarity</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../configs-readme.html#example-triplets-q-pos-negs">Example: Triplets (<code class="docutils literal notranslate"><span class="pre">Q</span></code>, <code class="docutils literal notranslate"><span class="pre">POS</span></code>, <code class="docutils literal notranslate"><span class="pre">NEGs</span></code>)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../configs-readme.html#example-qa-question-answer">Example: QA (<code class="docutils literal notranslate"><span class="pre">Question</span></code>, <code class="docutils literal notranslate"><span class="pre">Answer</span></code>)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../configs-readme.html#migration-note">Migration Note</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../configs-readme.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../api/index.html">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../api/cli.html">CLI Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/model/index.html">Model Package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/model/tormented_bert_frankestein.html">Tormented BERT Frankestein</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/model/attention/index.html">Attention Package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/attention/common.html">Common Attention Utilities</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/attention/standard.html">Standard Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/attention/sigmoid.html">Sigmoid Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/attention/retnet.html">RetNet Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/attention/ode.html">ODE Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/attention/titan.html">Titan Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/attention/engram.html">Engram Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/attention/hope.html">HoPE Positional Encoding</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/attention/rope.html">RoPE Positional Encoding</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/attention/gated/index.html">Gated Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/attention/sparse/index.html">Sparse Attention</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../api/model/optimizer/index.html">Optimizer Package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/base.html">Optimizer Base</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/factory.html">Optimizer Factory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/sgd_momentum.html">SGD Momentum</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/adamw.html">AdamW</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/adafactor.html">Adafactor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/galore_adamw.html">GaLore AdamW</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/prodigy.html">Prodigy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/lion.html">Lion</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/sophia.html">Sophia</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/muon.html">Muon</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/turbo_muon.html">Turbo-Muon</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/radam.html">RAdam</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/adan.html">Adan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/adopt.html">ADOPT</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/ademamix.html">AdEMAMix</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/mars_adamw.html">MARS AdamW</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/cautious_adamw.html">Cautious AdamW</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/lamb.html">LAMB</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/schedulefree_adamw.html">Schedule-Free AdamW</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/shampoo.html">Shampoo</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/soap.html">SOAP</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/anon.html">Anon</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/apollo.html">Apollo</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/apollo_mini.html">Apollo-Mini</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/model/optimizer/q_apollo.html">Q-Apollo</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../api/training/index.html">Training Package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/training/config_loader.html">Config Loader</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/training/main.html">Training Main</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/training/streaming_mlm_dataset.html">Streaming MLM Dataset</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/training/trainer.html">Trainer</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../api/sbert/index.html">SBERT Package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/sbert/train_sbert.html">SBERT Training</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/sbert/inference_sbert.html">SBERT Inference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/sbert/example_usage.html">SBERT Example Usage</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../api/deploy/index.html">Deploy Package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/deploy/deploy.html">Deploy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/deploy/inference.html">Deploy Inference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/deploy/quantization.html">Quantization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/deploy/transformers_export.html">Transformers Export</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/deploy/example.html">Deploy Example</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../api/tokenizer/index.html">Tokenizer Package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/tokenizer/spm_spa_redpajama35.html">SPM Spa RedPajama35 Tokenizer</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../api/streamlit_gui.html">Streamlit GUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/utils/index.html">Utils Package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/utils/device.html">Device Utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/utils/gpu_temp_guard.html">GPU Temperature Guard</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/utils/storage_manager.html">Storage Manager</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../specs/index.html">Specifications</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../specs/architecture.html">System Architecture Specification</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../specs/architecture.html#system-design-overview">System Design Overview</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../specs/architecture.html#system-architecture-diagram">System Architecture Diagram</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/architecture.html#model-classes">Model Classes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/architecture.html#training-modes">Training Modes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/architecture.html#looped-depth-formula">Looped Depth Formula</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/architecture.html#layer-pattern-dispatcher">Layer Pattern Dispatcher</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/architecture.html#mixture-of-depths-mod-routing">Mixture-of-Depths (MoD) Routing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/architecture.html#engram-conditional-memory">Engram Conditional Memory</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/architecture.html#bitnet-path">BitNet Path</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/architecture.html#factorized-embeddings">Factorized Embeddings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/architecture.html#embedding-convolution">Embedding Convolution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/architecture.html#normalization-variants">Normalization Variants</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/architecture.html#positional-encodings">Positional Encodings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/architecture.html#moe-ffn-routing">MoE FFN Routing</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/attention-mixers.html">Sequence Mixer Families Specification</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../specs/attention-mixers.html#taxonomy-overview">Taxonomy Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/attention-mixers.html#training-free-policy">Training-Free Policy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/attention-mixers.html#dense-attention-baselines-2">Dense Attention Baselines (2)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../specs/attention-mixers.html#standard-attn-standard-softmax-attention"><code class="docutils literal notranslate"><span class="pre">standard_attn</span></code> — Standard Softmax Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../specs/attention-mixers.html#sigmoid-attn-sigmoid-self-attention"><code class="docutils literal notranslate"><span class="pre">sigmoid_attn</span></code> — Sigmoid Self-Attention</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/attention-mixers.html#recurrent-and-retentive-architectures-5">Recurrent and Retentive Architectures (5)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../specs/attention-mixers.html#retnet-retnet-attn-retentive-network"><code class="docutils literal notranslate"><span class="pre">retnet</span></code> / <code class="docutils literal notranslate"><span class="pre">retnet_attn</span></code> — Retentive Network</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../specs/attention-mixers.html#mamba-selective-state-space-model"><code class="docutils literal notranslate"><span class="pre">mamba</span></code> — Selective State Space Model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../specs/attention-mixers.html#ode-ode-style-continuous-depth-block"><code class="docutils literal notranslate"><span class="pre">ode</span></code> — ODE-style Continuous Depth Block</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../specs/attention-mixers.html#titan-attn-titans-memory-augmented-attention"><code class="docutils literal notranslate"><span class="pre">titan_attn</span></code> — Titans Memory-Augmented Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../specs/attention-mixers.html#engram-attn-engram-conditional-memory"><code class="docutils literal notranslate"><span class="pre">engram_attn</span></code> — Engram Conditional Memory</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/attention-mixers.html#sparse-attention-patterns-7">Sparse Attention Patterns (7)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../specs/attention-mixers.html#sparse-attention-design-strategies">Sparse Attention Design Strategies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../specs/attention-mixers.html#sparse-transformer-attn-sparse-transformer"><code class="docutils literal notranslate"><span class="pre">sparse_transformer_attn</span></code> — Sparse Transformer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../specs/attention-mixers.html#longformer-attn-longformer"><code class="docutils literal notranslate"><span class="pre">longformer_attn</span></code> — Longformer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../specs/attention-mixers.html#bigbird-attn-bigbird"><code class="docutils literal notranslate"><span class="pre">bigbird_attn</span></code> — BigBird</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../specs/attention-mixers.html#sparsek-attn-sparsek-attention"><code class="docutils literal notranslate"><span class="pre">sparsek_attn</span></code> — SparseK Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../specs/attention-mixers.html#nsa-attn-native-sparse-attention-nsa"><code class="docutils literal notranslate"><span class="pre">nsa_attn</span></code> — Native Sparse Attention (NSA)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../specs/attention-mixers.html#sparge-attn-spargeattn-training-free"><code class="docutils literal notranslate"><span class="pre">sparge_attn</span></code> — SpargeAttn ⚠️ TRAINING-FREE</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../specs/attention-mixers.html#fasa-attn-fasa-frequency-aware-sparse-attention-training-free"><code class="docutils literal notranslate"><span class="pre">fasa_attn</span></code> — FASA (Frequency-Aware Sparse Attention) ⚠️ TRAINING-FREE</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/attention-mixers.html#gated-attention-mechanisms-6">Gated Attention Mechanisms (6)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../specs/attention-mixers.html#generic-gating-template">Generic Gating Template</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../specs/attention-mixers.html#gla-attn-gated-linear-attention"><code class="docutils literal notranslate"><span class="pre">gla_attn</span></code> — Gated Linear Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../specs/attention-mixers.html#deltanet-attn-deltanet"><code class="docutils literal notranslate"><span class="pre">deltanet_attn</span></code> — DeltaNet</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../specs/attention-mixers.html#gated-deltanet-attn-gated-deltanet"><code class="docutils literal notranslate"><span class="pre">gated_deltanet_attn</span></code> — Gated DeltaNet</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../specs/attention-mixers.html#hgrn2-attn-hgrn2"><code class="docutils literal notranslate"><span class="pre">hgrn2_attn</span></code> — HGRN2</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../specs/attention-mixers.html#fox-attn-forgetting-transformer-fox"><code class="docutils literal notranslate"><span class="pre">fox_attn</span></code> — Forgetting Transformer (FoX)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../specs/attention-mixers.html#gated-softmax-attn-gated-softmax-attention"><code class="docutils literal notranslate"><span class="pre">gated_softmax_attn</span></code> — Gated Softmax Attention</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/attention-mixers.html#comprehensive-comparison-table">Comprehensive Comparison Table</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/cli-reference.html">CLI Command Reference</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../specs/cli-reference.html#entrypoint">Entrypoint</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/cli-reference.html#subcommand-overview">Subcommand Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/cli-reference.html#device-choices">Device Choices</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/cli-reference.html#train-main-training"><code class="docutils literal notranslate"><span class="pre">train</span></code> — Main Training</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../specs/cli-reference.html#examples">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/cli-reference.html#deploy-deployment-artifact-creation"><code class="docutils literal notranslate"><span class="pre">deploy</span></code> — Deployment Artifact Creation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../specs/cli-reference.html#id1">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/cli-reference.html#quantize-quantized-export"><code class="docutils literal notranslate"><span class="pre">quantize</span></code> — Quantized Export</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../specs/cli-reference.html#id2">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/cli-reference.html#infer-model-inference"><code class="docutils literal notranslate"><span class="pre">infer</span></code> — Model Inference</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../specs/cli-reference.html#id3">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/cli-reference.html#sbert-train-sbert-training"><code class="docutils literal notranslate"><span class="pre">sbert-train</span></code> — SBERT Training</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../specs/cli-reference.html#id4">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/cli-reference.html#sbert-infer-sbert-inference"><code class="docutils literal notranslate"><span class="pre">sbert-infer</span></code> — SBERT Inference</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../specs/cli-reference.html#id5">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/cli-reference.html#web-server-streamlit-configuration-builder"><code class="docutils literal notranslate"><span class="pre">web-server</span></code> — Streamlit Configuration Builder</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../specs/cli-reference.html#id6">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/cli-reference.html#transformers-export-huggingface-export"><code class="docutils literal notranslate"><span class="pre">transformers-export</span></code> — HuggingFace Export</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../specs/cli-reference.html#id7">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/cli-reference.html#gpu-thermal-guard-flags">GPU Thermal Guard Flags</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/deployment.html">Deployment and Quantization Specification</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../specs/deployment.html#deploy-pipeline">Deploy Pipeline</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/deployment.html#quantization-methods">Quantization Methods</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../specs/deployment.html#ternary-weight-packing">Ternary Weight Packing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../specs/deployment.html#int8-activation-quantization">INT8 Activation Quantization</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/deployment.html#size-estimates">Size Estimates</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/deployment.html#deployment-artifact-contents">Deployment Artifact Contents</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/deployment.html#inference-modes">Inference Modes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../specs/deployment.html#inference-options">Inference Options</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/deployment.html#quantization-cli">Quantization CLI</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/deployment.html#validation">Validation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/deployment.html#huggingface-transformers-export">HuggingFace Transformers Export</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/optimizers.html">Optimizer Families Specification</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../specs/optimizers.html#optimizer-routing-framework">Optimizer Routing Framework</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../specs/optimizers.html#optimizer-selection-decision-tree">Optimizer Selection Decision Tree</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/optimizers.html#prefixed-key-contract">Prefixed Key Contract</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../specs/optimizers.html#shared-per-group-suffix-families">Shared Per-Group Suffix Families</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../specs/optimizers.html#optimizer-specific-global-suffixes">Optimizer-Specific Global Suffixes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/optimizers.html#complete-optimizer-inventory">Complete Optimizer Inventory</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/optimizers.html#optimizer-family-groupings">Optimizer Family Groupings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/optimizers.html#key-optimizer-equations">Key Optimizer Equations</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../specs/optimizers.html#adamw-baseline">AdamW (Baseline)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../specs/optimizers.html#apollo-family">APOLLO Family</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../specs/optimizers.html#anon-adaptivity-tunable-with-idu">Anon (Adaptivity-Tunable with IDU)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/sbert-workflows.html">SBERT Training and Inference Specification</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../specs/sbert-workflows.html#overview">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/sbert-workflows.html#siamese-training">Siamese Training</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../specs/sbert-workflows.html#cosine-similarity-loss">Cosine Similarity Loss</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/sbert-workflows.html#pooling-modes">Pooling Modes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/sbert-workflows.html#dataset-types">Dataset Types</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/sbert-workflows.html#sbert-configuration-block">SBERT Configuration Block</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/sbert-workflows.html#inference-modes">Inference Modes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../specs/sbert-workflows.html#similarity-pairwise-scoring"><code class="docutils literal notranslate"><span class="pre">similarity</span></code> — Pairwise Scoring</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../specs/sbert-workflows.html#search-top-k-retrieval"><code class="docutils literal notranslate"><span class="pre">search</span></code> — Top-k Retrieval</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../specs/sbert-workflows.html#cluster-embedding-clustering"><code class="docutils literal notranslate"><span class="pre">cluster</span></code> — Embedding Clustering</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../specs/sbert-workflows.html#encode-embedding-export"><code class="docutils literal notranslate"><span class="pre">encode</span></code> — Embedding Export</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/sbert-workflows.html#sbert-inference-mode-router-pseudocode">SBERT Inference Mode Router (Pseudocode)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/sbert-workflows.html#cli-examples">CLI Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/schema-reference.html">Schema Field Reference</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../specs/schema-reference.html#strict-validation-policy">Strict Validation Policy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/schema-reference.html#top-level-sections">Top-Level Sections</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/schema-reference.html#model-fields">Model Fields</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../specs/schema-reference.html#layer-pattern-valid-values">Layer Pattern Valid Values</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../specs/schema-reference.html#normalization-valid-values">Normalization Valid Values</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/schema-reference.html#training-fields">Training Fields</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/schema-reference.html#optimizer-fields">Optimizer Fields</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../specs/schema-reference.html#valid-optimizer-class-values">Valid <code class="docutils literal notranslate"><span class="pre">optimizer_class</span></code> Values</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/schema-reference.html#scheduler-types">Scheduler Types</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/schema-reference.html#gpu-metrics-backends">GPU Metrics Backends</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/schema-reference.html#sbert-dataset-types">SBERT Dataset Types</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/schema-reference.html#critical-gotchas">Critical Gotchas</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/training-safety.html">Training Safety and Stability Specification</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../specs/training-safety.html#gradient-accumulation">Gradient Accumulation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/training-safety.html#global-norm-clipping">Global Norm Clipping</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/training-safety.html#post-clip-explosion-guard">Post-Clip Explosion Guard</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/training-safety.html#nan-inf-retry-logic">NaN/Inf Retry Logic</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/training-safety.html#checkpointing-policy">Checkpointing Policy</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../specs/training-safety.html#rolling-checkpoints">Rolling Checkpoints</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../specs/training-safety.html#best-checkpoints">Best Checkpoints</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/training-safety.html#telemetry">Telemetry</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../specs/training-safety.html#csv-logging">CSV Logging</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../specs/training-safety.html#gpu-metrics">GPU Metrics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../specs/training-safety.html#block-gradient-norms">Block Gradient Norms</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/training-safety.html#gpu-thermal-guard">GPU Thermal Guard</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../specs/training-safety.html#thermal-state-machine">Thermal State Machine</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/training-safety.html#galore-controls">GaLore Controls</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/training-safety.html#scheduler-types">Scheduler Types</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/training-safety.html#training-step-algorithm-full">Training Step Algorithm (Full)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/training-safety.html#stability-best-practices">Stability Best Practices</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Bibliography</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="TRANSFORMER_TYPES.html">Advanced Sequence Modeling Architectures: A Comprehensive Theoretical and Empirical Analysis of Transformer Blocks and Emerging Paradigms</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="TRANSFORMER_TYPES.html#standard-attention-the-foundation-of-global-contextualization">1. Standard Attention: The Foundation of Global Contextualization</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="TRANSFORMER_TYPES.html#mathematical-formulation-and-token-routing-mechanism">1.1 Mathematical Formulation and Token Routing Mechanism</a></li>
+<li class="toctree-l4"><a class="reference internal" href="TRANSFORMER_TYPES.html#computational-complexity-and-the-kv-cache-bottleneck">1.2 Computational Complexity and the KV Cache Bottleneck</a></li>
+<li class="toctree-l4"><a class="reference internal" href="TRANSFORMER_TYPES.html#architectural-profile-standard-attention">1.3 Architectural Profile: Standard Attention</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="TRANSFORMER_TYPES.html#sigmoid-attention-hardware-aware-algorithmic-locality">2. Sigmoid Attention: Hardware-Aware Algorithmic Locality</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="TRANSFORMER_TYPES.html#mathematical-foundation-and-mixture-of-experts-perspective">2.1 Mathematical Foundation and Mixture-of-Experts Perspective</a></li>
+<li class="toctree-l4"><a class="reference internal" href="TRANSFORMER_TYPES.html#stabilization-and-the-hybrid-norm-requirement">2.2 Stabilization and the Hybrid-Norm Requirement</a></li>
+<li class="toctree-l4"><a class="reference internal" href="TRANSFORMER_TYPES.html#computational-complexity-and-hardware-optimization">2.3 Computational Complexity and Hardware Optimization</a></li>
+<li class="toctree-l4"><a class="reference internal" href="TRANSFORMER_TYPES.html#architectural-profile-sigmoid-attention">2.4 Architectural Profile: Sigmoid Attention</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="TRANSFORMER_TYPES.html#retnet-the-duality-of-recurrence-and-attention">3. RetNet: The Duality of Recurrence and Attention</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="TRANSFORMER_TYPES.html#mathematical-foundation-and-the-multi-scale-retention-mechanism">3.1 Mathematical Foundation and the Multi-Scale Retention Mechanism</a></li>
+<li class="toctree-l4"><a class="reference internal" href="TRANSFORMER_TYPES.html#computational-complexity-and-performance-scaling">3.2 Computational Complexity and Performance Scaling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="TRANSFORMER_TYPES.html#architectural-profile-retnet">3.3 Architectural Profile: RetNet</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="TRANSFORMER_TYPES.html#mamba-selective-state-space-modeling">4. Mamba: Selective State Space Modeling</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="TRANSFORMER_TYPES.html#mathematical-foundation-and-the-selection-mechanism">4.1 Mathematical Foundation and the Selection Mechanism</a></li>
+<li class="toctree-l4"><a class="reference internal" href="TRANSFORMER_TYPES.html#computational-complexity-and-the-hardware-aware-scan">4.2 Computational Complexity and the Hardware-Aware Scan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="TRANSFORMER_TYPES.html#architectural-profile-mamba">4.3 Architectural Profile: Mamba</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="TRANSFORMER_TYPES.html#ode-transformer-sequence-generation-via-dynamical-systems">5. ODE Transformer: Sequence Generation via Dynamical Systems</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="TRANSFORMER_TYPES.html#mathematical-foundation-and-runge-kutta-refinement">5.1 Mathematical Foundation and Runge-Kutta Refinement</a></li>
+<li class="toctree-l4"><a class="reference internal" href="TRANSFORMER_TYPES.html#computational-complexity-and-the-accuracy-trade-off">5.2 Computational Complexity and the Accuracy Trade-off</a></li>
+<li class="toctree-l4"><a class="reference internal" href="TRANSFORMER_TYPES.html#architectural-profile-ode-transformer">5.3 Architectural Profile: ODE Transformer</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="TRANSFORMER_TYPES.html#titans-test-time-neural-memorization">6. Titans: Test-Time Neural Memorization</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="TRANSFORMER_TYPES.html#mathematical-foundation-and-the-surprise-metric">6.1 Mathematical Foundation and the Surprise Metric</a></li>
+<li class="toctree-l4"><a class="reference internal" href="TRANSFORMER_TYPES.html#computational-complexity-and-infinite-context">6.2 Computational Complexity and Infinite Context</a></li>
+<li class="toctree-l4"><a class="reference internal" href="TRANSFORMER_TYPES.html#architectural-profile-titans">6.3 Architectural Profile: Titans</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="TRANSFORMER_TYPES.html#synthesis-and-systemic-insights-the-future-of-sequence-architectures">7. Synthesis and Systemic Insights: The Future of Sequence Architectures</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="TRANSFORMER_TYPES.html#the-expressivity-versus-compression-duality">7.1 The Expressivity versus Compression Duality</a></li>
+<li class="toctree-l4"><a class="reference internal" href="TRANSFORMER_TYPES.html#the-dictatorship-of-hardware-substrates">7.2 The Dictatorship of Hardware Substrates</a></li>
+<li class="toctree-l4"><a class="reference internal" href="TRANSFORMER_TYPES.html#continuous-dynamics-and-geometrical-trajectories">7.3 Continuous Dynamics and Geometrical Trajectories</a></li>
+<li class="toctree-l4"><a class="reference internal" href="TRANSFORMER_TYPES.html#the-convergence-towards-test-time-adaptation-and-hybridization">7.4 The Convergence Towards Test-Time Adaptation and Hybridization</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="SPARSE_TRANSFORMER_TYPES.html">Review of Sparse Attention Blocks in Transformers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="SPARSE_TRANSFORMER_TYPES.html#executive-summary">Executive Summary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="SPARSE_TRANSFORMER_TYPES.html#sparse-transformer-child-et-al-2019">Sparse Transformer (Child et al., 2019)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="SPARSE_TRANSFORMER_TYPES.html#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="SPARSE_TRANSFORMER_TYPES.html#mathematical-formulation">Mathematical Formulation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="SPARSE_TRANSFORMER_TYPES.html#pros-and-cons">Pros and Cons</a></li>
+<li class="toctree-l4"><a class="reference internal" href="SPARSE_TRANSFORMER_TYPES.html#pytorch-implementation">PyTorch Implementation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="SPARSE_TRANSFORMER_TYPES.html#longformer-beltagy-et-al-2020">Longformer (Beltagy et al., 2020)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="SPARSE_TRANSFORMER_TYPES.html#id10">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="SPARSE_TRANSFORMER_TYPES.html#id15">Mathematical Formulation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="SPARSE_TRANSFORMER_TYPES.html#id18">Pros and Cons</a></li>
+<li class="toctree-l4"><a class="reference internal" href="SPARSE_TRANSFORMER_TYPES.html#id22">PyTorch Implementation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="SPARSE_TRANSFORMER_TYPES.html#bigbird-zaheer-et-al-2020">BigBird (Zaheer et al., 2020)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="SPARSE_TRANSFORMER_TYPES.html#id23">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="SPARSE_TRANSFORMER_TYPES.html#id29">Mathematical Formulation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="SPARSE_TRANSFORMER_TYPES.html#id31">Pros and Cons</a></li>
+<li class="toctree-l4"><a class="reference internal" href="SPARSE_TRANSFORMER_TYPES.html#id35">PyTorch Implementation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="SPARSE_TRANSFORMER_TYPES.html#fasa-frequency-aware-sparse-attention-wang-et-al-2026">FASA — Frequency-Aware Sparse Attention (Wang et al., 2026)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="SPARSE_TRANSFORMER_TYPES.html#id36">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="SPARSE_TRANSFORMER_TYPES.html#id41">Mathematical Formulation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="SPARSE_TRANSFORMER_TYPES.html#id43">Pros and Cons</a></li>
+<li class="toctree-l4"><a class="reference internal" href="SPARSE_TRANSFORMER_TYPES.html#id49">PyTorch Implementation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="SPARSE_TRANSFORMER_TYPES.html#nsa-native-sparse-attention-yuan-et-al-2025">NSA — Native Sparse Attention (Yuan et al., 2025)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="SPARSE_TRANSFORMER_TYPES.html#id50">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="SPARSE_TRANSFORMER_TYPES.html#id56">Mathematical Formulation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="SPARSE_TRANSFORMER_TYPES.html#id57">Pros and Cons</a></li>
+<li class="toctree-l4"><a class="reference internal" href="SPARSE_TRANSFORMER_TYPES.html#id62">PyTorch Implementation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="SPARSE_TRANSFORMER_TYPES.html#sparsek-attention-lou-et-al-2024">SparseK Attention (Lou et al., 2024)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="SPARSE_TRANSFORMER_TYPES.html#id63">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="SPARSE_TRANSFORMER_TYPES.html#id67">Mathematical Formulation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="SPARSE_TRANSFORMER_TYPES.html#id70">Pros and Cons</a></li>
+<li class="toctree-l4"><a class="reference internal" href="SPARSE_TRANSFORMER_TYPES.html#id75">PyTorch Implementation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="SPARSE_TRANSFORMER_TYPES.html#spargeattn-zhang-et-al-2025">SpargeAttn (Zhang et al., 2025)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="SPARSE_TRANSFORMER_TYPES.html#id76">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="SPARSE_TRANSFORMER_TYPES.html#id80">Mathematical Formulation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="SPARSE_TRANSFORMER_TYPES.html#id81">Pros and Cons</a></li>
+<li class="toctree-l4"><a class="reference internal" href="SPARSE_TRANSFORMER_TYPES.html#id87">PyTorch Implementation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="SPARSE_TRANSFORMER_TYPES.html#summary-comparison-table">Summary Comparison Table</a></li>
+<li class="toctree-l3"><a class="reference internal" href="SPARSE_TRANSFORMER_TYPES.html#references">References</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="GATED_TRANSFORMER_TYPES.html">Gated Attention Blocks in Transformers: A Literature Review</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="GATED_TRANSFORMER_TYPES.html#executive-summary">Executive Summary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="GATED_TRANSFORMER_TYPES.html#gated-linear-attention-gla">1. Gated Linear Attention (GLA)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="GATED_TRANSFORMER_TYPES.html#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="GATED_TRANSFORMER_TYPES.html#mathematical-formulation">Mathematical Formulation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="GATED_TRANSFORMER_TYPES.html#pros-and-cons">Pros and Cons</a></li>
+<li class="toctree-l4"><a class="reference internal" href="GATED_TRANSFORMER_TYPES.html#pytorch-implementation">PyTorch Implementation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="GATED_TRANSFORMER_TYPES.html#deltanet">2. DeltaNet</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="GATED_TRANSFORMER_TYPES.html#id1">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="GATED_TRANSFORMER_TYPES.html#id2">Mathematical Formulation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="GATED_TRANSFORMER_TYPES.html#id3">Pros and Cons</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="GATED_TRANSFORMER_TYPES.html#gated-deltanet">3. Gated DeltaNet</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="GATED_TRANSFORMER_TYPES.html#id4">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="GATED_TRANSFORMER_TYPES.html#id5">Mathematical Formulation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="GATED_TRANSFORMER_TYPES.html#id6">Pros and Cons</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="GATED_TRANSFORMER_TYPES.html#retnet-retentive-network">4. RetNet (Retentive Network)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="GATED_TRANSFORMER_TYPES.html#id7">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="GATED_TRANSFORMER_TYPES.html#id8">Mathematical Formulation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="GATED_TRANSFORMER_TYPES.html#id9">Pros and Cons</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="GATED_TRANSFORMER_TYPES.html#hgrn2-hierarchically-gated-recurrent-network-2">5. HGRN2 (Hierarchically Gated Recurrent Network 2)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="GATED_TRANSFORMER_TYPES.html#id10">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="GATED_TRANSFORMER_TYPES.html#id11">Mathematical Formulation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="GATED_TRANSFORMER_TYPES.html#id12">Pros and Cons</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="GATED_TRANSFORMER_TYPES.html#forgetting-transformer-fox">6. Forgetting Transformer (FoX)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="GATED_TRANSFORMER_TYPES.html#id13">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="GATED_TRANSFORMER_TYPES.html#id14">Mathematical Formulation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="GATED_TRANSFORMER_TYPES.html#id15">Pros and Cons</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="GATED_TRANSFORMER_TYPES.html#gated-attention-sigmoid-after-sdpa">7. Gated Attention (Sigmoid after SDPA)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="GATED_TRANSFORMER_TYPES.html#id16">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="GATED_TRANSFORMER_TYPES.html#id17">Mathematical Formulation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="GATED_TRANSFORMER_TYPES.html#id18">Pros and Cons</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="GATED_TRANSFORMER_TYPES.html#summary-comparison-table">Summary Comparison Table</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="GATED_TRANSFORMER_TYPES.html#additional-comparison-dimensions">Additional Comparison Dimensions</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="GATED_TRANSFORMER_TYPES.html#pytorch-reference-implementations">PyTorch Reference Implementations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="GATED_TRANSFORMER_TYPES.html#taxonomy-and-evolution">Taxonomy and Evolution</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="OPTIMIZERS.html">Advanced Optimization Algorithms in Transformer Architectures: A Comprehensive Analysis</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="OPTIMIZERS.html#the-evolution-of-optimization-in-neural-networks">The Evolution of Optimization in Neural Networks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="OPTIMIZERS.html#standard-baseline-and-adaptive-optimizers">1. Standard Baseline and Adaptive Optimizers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="OPTIMIZERS.html#sgd-with-momentum">SGD with Momentum</a></li>
+<li class="toctree-l4"><a class="reference internal" href="OPTIMIZERS.html#adam-and-adamw">Adam and AdamW</a></li>
+<li class="toctree-l4"><a class="reference internal" href="OPTIMIZERS.html#radam-rectified-adam">RAdam (Rectified Adam)</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="OPTIMIZERS.html#advanced-momentum-and-variance-reduction-2024-2025">2. Advanced Momentum and Variance Reduction (2024-2025)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="OPTIMIZERS.html#adan-adaptive-nesterov-momentum">Adan (Adaptive Nesterov Momentum)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="OPTIMIZERS.html#adopt-modified-adam-with-optimal-convergence">ADOPT (Modified Adam with Optimal Convergence)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="OPTIMIZERS.html#ademamix-mixture-of-two-emas">AdEMAMix (Mixture of Two EMAs)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="OPTIMIZERS.html#mars-make-variance-reduction-shine">MARS (Make Variance Reduction Shine)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="OPTIMIZERS.html#cautious-optimizers-c-adamw-c-lion">Cautious Optimizers (C-AdamW, C-Lion)</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="OPTIMIZERS.html#large-batch-memory-efficient-and-parameter-free-optimizers">3. Large-Batch, Memory-Efficient, and Parameter-Free Optimizers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="OPTIMIZERS.html#lamb">LAMB</a></li>
+<li class="toctree-l4"><a class="reference internal" href="OPTIMIZERS.html#schedule-free-adamw">Schedule-Free (AdamW)</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="OPTIMIZERS.html#second-order-geometric-and-orthogonality-optimizers">4. Second-Order, Geometric, and Orthogonality Optimizers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="OPTIMIZERS.html#shampoo">Shampoo</a></li>
+<li class="toctree-l4"><a class="reference internal" href="OPTIMIZERS.html#soap-shampoo-with-adam-in-preconditioners-eigenbasis">SOAP (Shampoo with Adam in Preconditioner’s Eigenbasis)</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="OPTIMIZERS.html#memory-efficient-and-low-rank-optimizers">3. Memory-Efficient and Low-Rank Optimizers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="OPTIMIZERS.html#adafactor">Adafactor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="OPTIMIZERS.html#galore-gradient-low-rank-projection">GaLore (Gradient Low-Rank Projection)</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="OPTIMIZERS.html#parameter-free-and-distance-adaptive-methods">4. Parameter-Free and Distance-Adaptive Methods</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="OPTIMIZERS.html#prodigy">Prodigy</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="OPTIMIZERS.html#sign-and-second-order-dynamics">5. Sign and Second-Order Dynamics</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="OPTIMIZERS.html#lion-evolved-sign-momentum">Lion (EvoLved Sign Momentum)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="OPTIMIZERS.html#sophia">Sophia</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="OPTIMIZERS.html#orthogonality-based-optimizers">6. Orthogonality-Based Optimizers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="OPTIMIZERS.html#muon">Muon</a></li>
+<li class="toctree-l4"><a class="reference internal" href="OPTIMIZERS.html#turbo-muon">Turbo-Muon</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="attention_types.html">Attention Types Bibliography</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Optimizers Bibliography</a></li>
+<li class="toctree-l2"><a class="reference internal" href="other.html">Other Bibliography</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../paper-en.html">Technical Report (English)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../paper-en.html#abstract">Abstract</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../paper-es.html">Informe Tecnico (Espanol)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../paper-es.html#resumen">Resumen</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Quick Links:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/erickfmm/frankestein-transformer">GitHub Repository</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../specs/cli-reference.html">CLI Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../specs/cli-reference.html#entrypoint">Entrypoint</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/cli-reference.html#subcommand-overview">Subcommand Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/cli-reference.html#device-choices">Device Choices</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/cli-reference.html#train-main-training"><code class="docutils literal notranslate"><span class="pre">train</span></code> — Main Training</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../specs/cli-reference.html#examples">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/cli-reference.html#deploy-deployment-artifact-creation"><code class="docutils literal notranslate"><span class="pre">deploy</span></code> — Deployment Artifact Creation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../specs/cli-reference.html#id1">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/cli-reference.html#quantize-quantized-export"><code class="docutils literal notranslate"><span class="pre">quantize</span></code> — Quantized Export</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../specs/cli-reference.html#id2">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/cli-reference.html#infer-model-inference"><code class="docutils literal notranslate"><span class="pre">infer</span></code> — Model Inference</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../specs/cli-reference.html#id3">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/cli-reference.html#sbert-train-sbert-training"><code class="docutils literal notranslate"><span class="pre">sbert-train</span></code> — SBERT Training</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../specs/cli-reference.html#id4">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/cli-reference.html#sbert-infer-sbert-inference"><code class="docutils literal notranslate"><span class="pre">sbert-infer</span></code> — SBERT Inference</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../specs/cli-reference.html#id5">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/cli-reference.html#web-server-streamlit-configuration-builder"><code class="docutils literal notranslate"><span class="pre">web-server</span></code> — Streamlit Configuration Builder</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../specs/cli-reference.html#id6">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/cli-reference.html#transformers-export-huggingface-export"><code class="docutils literal notranslate"><span class="pre">transformers-export</span></code> — HuggingFace Export</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../specs/cli-reference.html#id7">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/cli-reference.html#gpu-thermal-guard-flags">GPU Thermal Guard Flags</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../specs/schema-reference.html">Schema Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../specs/schema-reference.html#strict-validation-policy">Strict Validation Policy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/schema-reference.html#top-level-sections">Top-Level Sections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/schema-reference.html#model-fields">Model Fields</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../specs/schema-reference.html#layer-pattern-valid-values">Layer Pattern Valid Values</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/schema-reference.html#normalization-valid-values">Normalization Valid Values</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/schema-reference.html#training-fields">Training Fields</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/schema-reference.html#optimizer-fields">Optimizer Fields</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../specs/schema-reference.html#valid-optimizer-class-values">Valid <code class="docutils literal notranslate"><span class="pre">optimizer_class</span></code> Values</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/schema-reference.html#scheduler-types">Scheduler Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/schema-reference.html#gpu-metrics-backends">GPU Metrics Backends</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/schema-reference.html#sbert-dataset-types">SBERT Dataset Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/schema-reference.html#critical-gotchas">Critical Gotchas</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../specs/architecture.html">Architecture</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../specs/architecture.html#system-design-overview">System Design Overview</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../specs/architecture.html#system-architecture-diagram">System Architecture Diagram</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/architecture.html#model-classes">Model Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/architecture.html#training-modes">Training Modes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/architecture.html#looped-depth-formula">Looped Depth Formula</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/architecture.html#layer-pattern-dispatcher">Layer Pattern Dispatcher</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/architecture.html#mixture-of-depths-mod-routing">Mixture-of-Depths (MoD) Routing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/architecture.html#engram-conditional-memory">Engram Conditional Memory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/architecture.html#bitnet-path">BitNet Path</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/architecture.html#factorized-embeddings">Factorized Embeddings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/architecture.html#embedding-convolution">Embedding Convolution</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/architecture.html#normalization-variants">Normalization Variants</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/architecture.html#positional-encodings">Positional Encodings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/architecture.html#moe-ffn-routing">MoE FFN Routing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../specs/attention-mixers.html">Attention Mixers</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../specs/attention-mixers.html#taxonomy-overview">Taxonomy Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/attention-mixers.html#training-free-policy">Training-Free Policy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/attention-mixers.html#dense-attention-baselines-2">Dense Attention Baselines (2)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../specs/attention-mixers.html#standard-attn-standard-softmax-attention"><code class="docutils literal notranslate"><span class="pre">standard_attn</span></code> — Standard Softmax Attention</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/attention-mixers.html#sigmoid-attn-sigmoid-self-attention"><code class="docutils literal notranslate"><span class="pre">sigmoid_attn</span></code> — Sigmoid Self-Attention</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/attention-mixers.html#recurrent-and-retentive-architectures-5">Recurrent and Retentive Architectures (5)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../specs/attention-mixers.html#retnet-retnet-attn-retentive-network"><code class="docutils literal notranslate"><span class="pre">retnet</span></code> / <code class="docutils literal notranslate"><span class="pre">retnet_attn</span></code> — Retentive Network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/attention-mixers.html#mamba-selective-state-space-model"><code class="docutils literal notranslate"><span class="pre">mamba</span></code> — Selective State Space Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/attention-mixers.html#ode-ode-style-continuous-depth-block"><code class="docutils literal notranslate"><span class="pre">ode</span></code> — ODE-style Continuous Depth Block</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/attention-mixers.html#titan-attn-titans-memory-augmented-attention"><code class="docutils literal notranslate"><span class="pre">titan_attn</span></code> — Titans Memory-Augmented Attention</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/attention-mixers.html#engram-attn-engram-conditional-memory"><code class="docutils literal notranslate"><span class="pre">engram_attn</span></code> — Engram Conditional Memory</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/attention-mixers.html#sparse-attention-patterns-7">Sparse Attention Patterns (7)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../specs/attention-mixers.html#sparse-attention-design-strategies">Sparse Attention Design Strategies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/attention-mixers.html#sparse-transformer-attn-sparse-transformer"><code class="docutils literal notranslate"><span class="pre">sparse_transformer_attn</span></code> — Sparse Transformer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/attention-mixers.html#longformer-attn-longformer"><code class="docutils literal notranslate"><span class="pre">longformer_attn</span></code> — Longformer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/attention-mixers.html#bigbird-attn-bigbird"><code class="docutils literal notranslate"><span class="pre">bigbird_attn</span></code> — BigBird</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/attention-mixers.html#sparsek-attn-sparsek-attention"><code class="docutils literal notranslate"><span class="pre">sparsek_attn</span></code> — SparseK Attention</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/attention-mixers.html#nsa-attn-native-sparse-attention-nsa"><code class="docutils literal notranslate"><span class="pre">nsa_attn</span></code> — Native Sparse Attention (NSA)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/attention-mixers.html#sparge-attn-spargeattn-training-free"><code class="docutils literal notranslate"><span class="pre">sparge_attn</span></code> — SpargeAttn ⚠️ TRAINING-FREE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/attention-mixers.html#fasa-attn-fasa-frequency-aware-sparse-attention-training-free"><code class="docutils literal notranslate"><span class="pre">fasa_attn</span></code> — FASA (Frequency-Aware Sparse Attention) ⚠️ TRAINING-FREE</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/attention-mixers.html#gated-attention-mechanisms-6">Gated Attention Mechanisms (6)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../specs/attention-mixers.html#generic-gating-template">Generic Gating Template</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/attention-mixers.html#gla-attn-gated-linear-attention"><code class="docutils literal notranslate"><span class="pre">gla_attn</span></code> — Gated Linear Attention</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/attention-mixers.html#deltanet-attn-deltanet"><code class="docutils literal notranslate"><span class="pre">deltanet_attn</span></code> — DeltaNet</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/attention-mixers.html#gated-deltanet-attn-gated-deltanet"><code class="docutils literal notranslate"><span class="pre">gated_deltanet_attn</span></code> — Gated DeltaNet</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/attention-mixers.html#hgrn2-attn-hgrn2"><code class="docutils literal notranslate"><span class="pre">hgrn2_attn</span></code> — HGRN2</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/attention-mixers.html#fox-attn-forgetting-transformer-fox"><code class="docutils literal notranslate"><span class="pre">fox_attn</span></code> — Forgetting Transformer (FoX)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/attention-mixers.html#gated-softmax-attn-gated-softmax-attention"><code class="docutils literal notranslate"><span class="pre">gated_softmax_attn</span></code> — Gated Softmax Attention</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/attention-mixers.html#comprehensive-comparison-table">Comprehensive Comparison Table</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../specs/optimizers.html">Optimizers</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../specs/optimizers.html#optimizer-routing-framework">Optimizer Routing Framework</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../specs/optimizers.html#optimizer-selection-decision-tree">Optimizer Selection Decision Tree</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/optimizers.html#prefixed-key-contract">Prefixed Key Contract</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../specs/optimizers.html#shared-per-group-suffix-families">Shared Per-Group Suffix Families</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/optimizers.html#optimizer-specific-global-suffixes">Optimizer-Specific Global Suffixes</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/optimizers.html#complete-optimizer-inventory">Complete Optimizer Inventory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/optimizers.html#optimizer-family-groupings">Optimizer Family Groupings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/optimizers.html#key-optimizer-equations">Key Optimizer Equations</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../specs/optimizers.html#adamw-baseline">AdamW (Baseline)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/optimizers.html#apollo-family">APOLLO Family</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/optimizers.html#anon-adaptivity-tunable-with-idu">Anon (Adaptivity-Tunable with IDU)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../specs/deployment.html">Deployment</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../specs/deployment.html#deploy-pipeline">Deploy Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/deployment.html#quantization-methods">Quantization Methods</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../specs/deployment.html#ternary-weight-packing">Ternary Weight Packing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/deployment.html#int8-activation-quantization">INT8 Activation Quantization</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/deployment.html#size-estimates">Size Estimates</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/deployment.html#deployment-artifact-contents">Deployment Artifact Contents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/deployment.html#inference-modes">Inference Modes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../specs/deployment.html#inference-options">Inference Options</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/deployment.html#quantization-cli">Quantization CLI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/deployment.html#validation">Validation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/deployment.html#huggingface-transformers-export">HuggingFace Transformers Export</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../specs/sbert-workflows.html">SBERT Workflows</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../specs/sbert-workflows.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/sbert-workflows.html#siamese-training">Siamese Training</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../specs/sbert-workflows.html#cosine-similarity-loss">Cosine Similarity Loss</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/sbert-workflows.html#pooling-modes">Pooling Modes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/sbert-workflows.html#dataset-types">Dataset Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/sbert-workflows.html#sbert-configuration-block">SBERT Configuration Block</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/sbert-workflows.html#inference-modes">Inference Modes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../specs/sbert-workflows.html#similarity-pairwise-scoring"><code class="docutils literal notranslate"><span class="pre">similarity</span></code> — Pairwise Scoring</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/sbert-workflows.html#search-top-k-retrieval"><code class="docutils literal notranslate"><span class="pre">search</span></code> — Top-k Retrieval</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/sbert-workflows.html#cluster-embedding-clustering"><code class="docutils literal notranslate"><span class="pre">cluster</span></code> — Embedding Clustering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/sbert-workflows.html#encode-embedding-export"><code class="docutils literal notranslate"><span class="pre">encode</span></code> — Embedding Export</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/sbert-workflows.html#sbert-inference-mode-router-pseudocode">SBERT Inference Mode Router (Pseudocode)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/sbert-workflows.html#cli-examples">CLI Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../specs/training-safety.html">Training Safety</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../specs/training-safety.html#gradient-accumulation">Gradient Accumulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/training-safety.html#global-norm-clipping">Global Norm Clipping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/training-safety.html#post-clip-explosion-guard">Post-Clip Explosion Guard</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/training-safety.html#nan-inf-retry-logic">NaN/Inf Retry Logic</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/training-safety.html#checkpointing-policy">Checkpointing Policy</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../specs/training-safety.html#rolling-checkpoints">Rolling Checkpoints</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/training-safety.html#best-checkpoints">Best Checkpoints</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/training-safety.html#telemetry">Telemetry</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../specs/training-safety.html#csv-logging">CSV Logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/training-safety.html#gpu-metrics">GPU Metrics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../specs/training-safety.html#block-gradient-norms">Block Gradient Norms</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/training-safety.html#gpu-thermal-guard">GPU Thermal Guard</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../specs/training-safety.html#thermal-state-machine">Thermal State Machine</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/training-safety.html#galore-controls">GaLore Controls</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/training-safety.html#scheduler-types">Scheduler Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/training-safety.html#training-step-algorithm-full">Training Step Algorithm (Full)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../specs/training-safety.html#stability-best-practices">Stability Best Practices</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Frankestein Transformer</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Bibliography</a></li>
+      <li class="breadcrumb-item active">Optimizers Bibliography</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/bibliography/optimizers.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="optimizers-bibliography">
+<h1>Optimizers Bibliography<a class="headerlink" href="#optimizers-bibliography" title="Link to this heading"></a></h1>
+<div class="highlight-bibtex notranslate"><div class="highlight"><pre><span></span><span class="nc">@misc</span><span class="p">{</span><span class="nl">loshchilov_decoupled_2017</span><span class="p">,</span>
+<span class="w">	</span><span class="na">title</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Decoupled Weight Decay Regularization}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">rights</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{arXiv}.org perpetual, non-exclusive license}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">url</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{https://arxiv.org/abs/1711.05101}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">doi</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{10.48550/ARXIV.1711.05101}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">abstract</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{L\$\_2\$ regularization and weight decay regularization are equivalent for standard stochastic gradient descent (when rescaled by the learning rate), but as we demonstrate this is {\textbackslash}emph\{not\} the case for adaptive gradient algorithms, such as Adam. While common implementations of these algorithms employ L\$\_2\$ regularization (often calling it &quot;weight decay&quot; in what may be misleading due to the inequivalence we expose), we propose a simple modification to recover the original formulation of weight decay regularization by {\textbackslash}emph\{decoupling\} the weight decay from the optimization steps taken w.r.t. the loss function. We provide empirical evidence that our proposed modification (i) decouples the optimal choice of weight decay factor from the setting of the learning rate for both standard {SGD} and Adam and (ii) substantially improves Adam&#39;s generalization performance, allowing it to compete with {SGD} with momentum on image classification datasets (on which it was previously typically outperformed by the latter). Our proposed decoupled weight decay has already been adopted by many researchers, and the community has implemented it in {TensorFlow} and {PyTorch}; the complete source code for our experiments is available at https://github.com/loshchil/{AdamW}-and-{SGDW}}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">publisher</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{arXiv}}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">author</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Loshchilov, Ilya and Hutter, Frank}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">urldate</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2026-02-24}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">date</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2017}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">note</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Version Number: 3}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">keywords</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{FOS}: Computer and information sciences, {FOS}: Mathematics, Machine Learning (cs.{LG}), Neural and Evolutionary Computing (cs.{NE}), Optimization and Control (math.{OC})}</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="nc">@misc</span><span class="p">{</span><span class="nl">liu_variance_2019</span><span class="p">,</span>
+<span class="w">	</span><span class="na">title</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{On the Variance of the Adaptive Learning Rate and Beyond}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">rights</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{arXiv}.org perpetual, non-exclusive license}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">url</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{https://arxiv.org/abs/1908.03265}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">doi</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{10.48550/ARXIV.1908.03265}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">abstract</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{The learning rate warmup heuristic achieves remarkable success in stabilizing training, accelerating convergence and improving generalization for adaptive stochastic optimization algorithms like {RMSprop} and Adam. Here, we study its mechanism in details. Pursuing the theory behind warmup, we identify a problem of the adaptive learning rate (i.e., it has problematically large variance in the early stage), suggest warmup works as a variance reduction technique, and provide both empirical and theoretical evidence to verify our hypothesis. We further propose {RAdam}, a new variant of Adam, by introducing a term to rectify the variance of the adaptive learning rate. Extensive experimental results on image classification, language modeling, and neural machine translation verify our intuition and demonstrate the effectiveness and robustness of our proposed method. All implementations are available at: https://github.com/{LiyuanLucasLiu}/{RAdam}.}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">publisher</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{arXiv}}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">author</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Liu, Liyuan and Jiang, Haoming and He, Pengcheng and Chen, Weizhu and Liu, Xiaodong and Gao, Jianfeng and Han, Jiawei}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">urldate</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2026-02-24}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">date</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2019}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">note</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Version Number: 4}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">keywords</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Computation and Language (cs.{CL}), {FOS}: Computer and information sciences, Machine Learning (cs.{LG}), Machine Learning (stat.{ML})}</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="nc">@misc</span><span class="p">{</span><span class="nl">xie_adan_2022</span><span class="p">,</span>
+<span class="w">	</span><span class="na">title</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Adan: Adaptive Nesterov Momentum Algorithm for Faster Optimizing Deep Models}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">rights</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{arXiv}.org perpetual, non-exclusive license}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">url</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{https://arxiv.org/abs/2208.06677}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">doi</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{10.48550/ARXIV.2208.06677}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">shorttitle</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Adan}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">abstract</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{In deep learning, different kinds of deep networks typically need different optimizers, which have to be chosen after multiple trials, making the training process inefficient. To relieve this issue and consistently improve the model training speed across deep networks, we propose the {ADAptive} Nesterov momentum algorithm, Adan for short. Adan first reformulates the vanilla Nesterov acceleration to develop a new Nesterov momentum estimation ({NME}) method, which avoids the extra overhead of computing gradient at the extrapolation point. Then, Adan adopts {NME} to estimate the gradient&#39;s first- and second-order moments in adaptive gradient algorithms for convergence acceleration. Besides, we prove that Adan finds an \$ε\$-approximate first-order stationary point within \${\textbackslash}mathcal\{O\}(ε{\textasciicircum}\{-3.5\})\$ stochastic gradient complexity on the non-convex stochastic problems (e.g., deep learning problems), matching the best-known lower bound. Extensive experimental results show that Adan consistently surpasses the corresponding {SoTA} optimizers on vision, language, and {RL} tasks and sets new {SoTAs} for many popular networks and frameworks, e.g., {ResNet}, {ConvNext}, {ViT}, Swin, {MAE}, {DETR}, {GPT}-2, Transformer-{XL}, and {BERT}. More surprisingly, Adan can use half of the training cost (epochs) of {SoTA} optimizers to achieve higher or comparable performance on {ViT}, {GPT}-2, {MAE}, etc., and also shows great tolerance to a large range of minibatch size, e.g., from 1k to 32k. Code is released at https://github.com/sail-sg/Adan, and has been used in multiple popular deep learning frameworks or projects.}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">publisher</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{arXiv}}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">author</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Xie, Xingyu and Zhou, Pan and Li, Huan and Lin, Zhouchen and Yan, Shuicheng}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">urldate</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2026-02-24}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">date</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2022}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">note</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Version Number: 5}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">keywords</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{FOS}: Computer and information sciences, {FOS}: Mathematics, Machine Learning (cs.{LG}), Optimization and Control (math.{OC})}</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="nc">@misc</span><span class="p">{</span><span class="nl">taniguchi_adopt_2024</span><span class="p">,</span>
+<span class="w">	</span><span class="na">title</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{ADOPT}: Modified Adam Can Converge with Any $\beta_2$ with the Optimal Rate}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">rights</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{arXiv}.org perpetual, non-exclusive license}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">url</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{https://arxiv.org/abs/2411.02853}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">doi</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{10.48550/ARXIV.2411.02853}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">shorttitle</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{ADOPT}}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">publisher</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{arXiv}}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">author</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Taniguchi, Shohei and Harada, Keno and Minegishi, Gouki and Oshima, Yuta and Jeong, Seong Cheol and Nagahara, Go and Iiyama, Tomoshi and Suzuki, Masahiro and Iwasawa, Yusuke and Matsuo, Yutaka}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">urldate</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2026-02-24}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">date</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2024}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">note</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Version Number: 3}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">keywords</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{FOS}: Computer and information sciences, Machine Learning (cs.{LG}), Machine Learning (stat.{ML})}</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="nc">@misc</span><span class="p">{</span><span class="nl">pagliardini_ademamix_2024</span><span class="p">,</span>
+<span class="w">	</span><span class="na">title</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{The {AdEMAMix} Optimizer: Better, Faster, Older}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">rights</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Creative Commons Attribution 4.0 International}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">url</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{https://arxiv.org/abs/2409.03137}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">doi</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{10.48550/ARXIV.2409.03137}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">shorttitle</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{The {AdEMAMix} Optimizer}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">abstract</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Momentum based optimizers are central to a wide range of machine learning applications. These typically rely on an Exponential Moving Average ({EMA}) of gradients, which decays exponentially the present contribution of older gradients. This accounts for gradients being local linear approximations which lose their relevance as the iterate moves along the loss landscape. This work questions the use of a single {EMA} to accumulate past gradients and empirically demonstrates how this choice can be sub-optimal: a single {EMA} cannot simultaneously give a high weight to the immediate past, and a non-negligible weight to older gradients. Building on this observation, we propose {AdEMAMix}, a simple modification of the Adam optimizer with a mixture of two {EMAs} to better take advantage of past gradients. Our experiments on language modeling and image classification show -- quite surprisingly -- that gradients can stay relevant for tens of thousands of steps. They help to converge faster, and often to lower minima: e.g., a \$1.3\$B parameter {AdEMAMix} {LLM} trained on \$101\$B tokens performs comparably to an {AdamW} model trained on \$197\$B tokens (\$+95{\textbackslash}\%\$). Moreover, our method significantly slows-down model forgetting during training. Our work motivates further exploration of different types of functions to leverage past gradients, beyond {EMAs}.}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">publisher</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{arXiv}}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">author</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Pagliardini, Matteo and Ablin, Pierre and Grangier, David}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">urldate</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2026-02-24}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">date</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2024}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">note</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Version Number: 2}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">keywords</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{FOS}: Computer and information sciences, Machine Learning (cs.{LG}), Machine Learning (stat.{ML})}</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="nc">@misc</span><span class="p">{</span><span class="nl">yuan_mars_2024</span><span class="p">,</span>
+<span class="w">	</span><span class="na">title</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{MARS}: Unleashing the Power of Variance Reduction for Training Large Models}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">rights</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{arXiv}.org perpetual, non-exclusive license}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">url</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{https://arxiv.org/abs/2411.10438}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">doi</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{10.48550/ARXIV.2411.10438}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">shorttitle</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{MARS}}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">abstract</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Training deep neural networks--and more recently, large models demands efficient and scalable optimizers. Adaptive gradient algorithms like Adam, {AdamW}, and their variants have been central to this task. Despite the development of numerous variance reduction algorithms in the past decade aimed at accelerating stochastic optimization in both convex and nonconvex settings, variance reduction has not found widespread success in training deep neural networks or large language models. Consequently, it has remained a less favored approach in modern {AI}. In this paper, to unleash the power of variance reduction for efficient training of large models, we propose a unified optimization framework, {MARS} (Make {vAriance} Reduction Shine), which reconciles preconditioned gradient methods with variance reduction via a scaled stochastic recursive momentum technique. Within our framework, we introduce three instances of {MARS} that leverage preconditioned gradient updates based on {AdamW}, Lion, and Shampoo, respectively. We also draw a connection between our algorithms and existing optimizers. Experimental results on training {GPT}-2 models indicate that {MARS} consistently outperforms {AdamW} by a large margin. The implementation of {MARS} is available at https://github.com/{AGI}-Arena/{MARS}.}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">publisher</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{arXiv}}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">author</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Yuan, Huizhuo and Liu, Yifeng and Wu, Shuang and Zhou, Xun and Gu, Quanquan}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">urldate</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2026-02-24}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">date</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2024}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">note</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Version Number: 4}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">keywords</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{FOS}: Computer and information sciences, {FOS}: Mathematics, Machine Learning (cs.{LG}), Machine Learning (stat.{ML}), Optimization and Control (math.{OC})}</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="nc">@misc</span><span class="p">{</span><span class="nl">liang_cautious_2024</span><span class="p">,</span>
+<span class="w">	</span><span class="na">title</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Cautious Optimizers: Improving Training with One Line of Code}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">rights</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Creative Commons Attribution 4.0 International}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">url</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{https://arxiv.org/abs/2411.16085}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">doi</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{10.48550/ARXIV.2411.16085}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">shorttitle</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Cautious Optimizers}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">abstract</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{AdamW} has been the default optimizer for transformer pretraining. For many years, our community searched for faster and more stable optimizers with only constrained positive outcomes. In this work, we propose a {\textbackslash}textbf\{one-line modification in Pytorch\} to any momentum-based optimizer, which we rename cautious optimizer, e.g. C-{AdamW} and C-Lion. Our theoretical result shows that this modification preserves Adam&#39;s Hamiltonian function and it does not break the convergence guarantee under the Lyapunov analysis. In addition, a whole new family of optimizers is revealed by our theoretical insight. Among them, we pick the simplest one for empirical experiments, showing not only consistent speed-up on {LLM} pretraining, but also image classification, with minimum extra tuning on hyperparameters. Code is available at https://github.com/kyleliang919/C-Optim.}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">publisher</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{arXiv}}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">author</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Liang, Kaizhao and Chen, Lizhang and Liu, Bo and Liu, Qiang}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">urldate</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2026-02-24}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">date</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2024}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">note</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Version Number: 4}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">keywords</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Artificial Intelligence (cs.{AI}), Computation and Language (cs.{CL}), Computer Vision and Pattern Recognition (cs.{CV}), Discrete Mathematics (cs.{DM}), {FOS}: Computer and information sciences, Machine Learning (cs.{LG})}</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="nc">@misc</span><span class="p">{</span><span class="nl">you_largebatch_2020</span><span class="p">,</span>
+<span class="w">	</span><span class="na">title</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Large Batch Optimization for Deep Learning: Training {BERT} in 76 minutes}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">rights</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{arXiv}.org perpetual, non-exclusive license}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">url</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{https://arxiv.org/abs/1904.00962}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">doi</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{10.48550/ARXIV.1904.00962}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">shorttitle</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Large Batch Optimization for Deep Learning}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">publisher</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{arXiv}}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">author</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{You, Yang and Li, Jing and Reddi, Sashank and Hseu, Jonathan and Kumar, Sanjiv and Bhojanapalli, Srinadh and Song, Xiaodan and Demmel, James and Hsieh, Cho-Jui}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">urldate</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2026-05-07}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">date</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2020}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">note</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Version Number: 3}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">keywords</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{FOS}: Computer and information sciences, Machine Learning (cs.{LG}), Optimization and Control (math.{OC})}</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="nc">@misc</span><span class="p">{</span><span class="nl">defazio_road_2024</span><span class="p">,</span>
+<span class="w">	</span><span class="na">title</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{The Road Less Scheduled}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">rights</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Creative Commons Attribution 4.0 International}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">url</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{https://arxiv.org/abs/2405.15682}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">doi</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{10.48550/ARXIV.2405.15682}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">abstract</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Existing learning rate schedules that do not require specification of the optimization stopping step T are greatly out-performed by learning rate schedules that depend on T. We propose an approach that avoids the need for this stopping time by eschewing the use of schedules entirely, while exhibiting state-of-the-art performance compared to schedules across a wide family of problems ranging from convex problems to large-scale deep learning problems. Our Schedule-Free approach introduces no additional hyper-parameters over standard optimizers with momentum. Our method is a direct consequence of a new theory we develop that unifies scheduling and iterate averaging. An open source implementation of our method is available at https://github.com/facebookresearch/schedule\_free. Schedule-Free {AdamW} is the core algorithm behind our winning entry to the {MLCommons} 2024 {AlgoPerf} Algorithmic Efficiency Challenge Self-Tuning track.}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">publisher</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{arXiv}}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">author</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Defazio, Aaron and Yang, Xingyu Alice and Mehta, Harsh and Mishchenko, Konstantin and Khaled, Ahmed and Cutkosky, Ashok}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">urldate</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2026-02-24}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">date</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2024}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">note</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Version Number: 4}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">keywords</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Artificial Intelligence (cs.{AI}), {FOS}: Computer and information sciences, {FOS}: Mathematics, Machine Learning (cs.{LG}), Machine Learning (stat.{ML}), Optimization and Control (math.{OC})}</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="nc">@misc</span><span class="p">{</span><span class="nl">gupta_shampoo_2018</span><span class="p">,</span>
+<span class="w">	</span><span class="na">title</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Shampoo: Preconditioned Stochastic Tensor Optimization}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">rights</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{arXiv}.org perpetual, non-exclusive license}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">url</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{https://arxiv.org/abs/1802.09568}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">doi</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{10.48550/ARXIV.1802.09568}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">shorttitle</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Shampoo}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">abstract</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Preconditioned gradient methods are among the most general and powerful tools in optimization. However, preconditioning requires storing and manipulating prohibitively large matrices. We describe and analyze a new structure-aware preconditioning algorithm, called Shampoo, for stochastic optimization over tensor spaces. Shampoo maintains a set of preconditioning matrices, each of which operates on a single dimension, contracting over the remaining dimensions. We establish convergence guarantees in the stochastic convex setting, the proof of which builds upon matrix trace inequalities. Our experiments with state-of-the-art deep learning models show that Shampoo is capable of converging considerably faster than commonly used optimizers. Although it involves a more complex update rule, Shampoo&#39;s runtime per step is comparable to that of simple gradient methods such as {SGD}, {AdaGrad}, and Adam.}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">publisher</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{arXiv}}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">author</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Gupta, Vineet and Koren, Tomer and Singer, Yoram}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">urldate</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2026-02-24}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">date</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2018}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">note</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Version Number: 2}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">keywords</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{FOS}: Computer and information sciences, {FOS}: Mathematics, Machine Learning (cs.{LG}), Machine Learning (stat.{ML}), Optimization and Control (math.{OC})}</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="nc">@misc</span><span class="p">{</span><span class="nl">vyas_soap_2024</span><span class="p">,</span>
+<span class="w">	</span><span class="na">title</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{SOAP}: Improving and Stabilizing Shampoo using Adam}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">rights</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{arXiv}.org perpetual, non-exclusive license}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">url</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{https://arxiv.org/abs/2409.11321}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">doi</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{10.48550/ARXIV.2409.11321}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">shorttitle</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{SOAP}}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">abstract</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{There is growing evidence of the effectiveness of Shampoo, a higher-order preconditioning method, over Adam in deep learning optimization tasks. However, Shampoo&#39;s drawbacks include additional hyperparameters and computational overhead when compared to Adam, which only updates running averages of first- and second-moment quantities. This work establishes a formal connection between Shampoo (implemented with the 1/2 power) and Adafactor -- a memory-efficient approximation of Adam -- showing that Shampoo is equivalent to running Adafactor in the eigenbasis of Shampoo&#39;s preconditioner. This insight leads to the design of a simpler and computationally efficient algorithm: \${\textbackslash}textbf\{S\}\$hampo\${\textbackslash}textbf\{O\}\$ with \${\textbackslash}textbf\{A\}\$dam in the \${\textbackslash}textbf\{P\}\$reconditioner&#39;s eigenbasis ({SOAP}).</span>
+<span class="s"> With regards to improving Shampoo&#39;s computational efficiency, the most straightforward approach would be to simply compute Shampoo&#39;s eigendecomposition less frequently. Unfortunately, as our empirical results show, this leads to performance degradation that worsens with this frequency. {SOAP} mitigates this degradation by continually updating the running average of the second moment, just as Adam does, but in the current (slowly changing) coordinate basis. Furthermore, since {SOAP} is equivalent to running Adam in a rotated space, it introduces only one additional hyperparameter (the preconditioning frequency) compared to Adam. We empirically evaluate {SOAP} on language model pre-training with 360m and 660m sized models. In the large batch regime, {SOAP} reduces the number of iterations by over 40\% and wall clock time by over 35\% compared to {AdamW}, with approximately 20\% improvements in both metrics compared to Shampoo. An implementation of {SOAP} is available at https://github.com/nikhilvyas/{SOAP}.}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">publisher</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{arXiv}}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">author</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Vyas, Nikhil and Morwani, Depen and Zhao, Rosie and Kwun, Mujin and Shapira, Itai and Brandfonbrener, David and Janson, Lucas and Kakade, Sham}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">urldate</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2026-02-24}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">date</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2024}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">note</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Version Number: 2}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">keywords</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Artificial Intelligence (cs.{AI}), {FOS}: Computer and information sciences, Machine Learning (cs.{LG})}</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="nc">@misc</span><span class="p">{</span><span class="nl">shazeer_adafactor_2018</span><span class="p">,</span>
+<span class="w">	</span><span class="na">title</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Adafactor: Adaptive Learning Rates with Sublinear Memory Cost}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">rights</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{arXiv}.org perpetual, non-exclusive license}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">url</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{https://arxiv.org/abs/1804.04235}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">doi</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{10.48550/ARXIV.1804.04235}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">shorttitle</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Adafactor}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">abstract</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{In several recently proposed stochastic optimization methods (e.g. {RMSProp}, Adam, Adadelta), parameter updates are scaled by the inverse square roots of exponential moving averages of squared past gradients. Maintaining these per-parameter second-moment estimators requires memory equal to the number of parameters. For the case of neural network weight matrices, we propose maintaining only the per-row and per-column sums of these moving averages, and estimating the per-parameter second moments based on these sums. We demonstrate empirically that this method produces similar results to the baseline. Secondly, we show that adaptive methods can produce larger-than-desired updates when the decay rate of the second moment accumulator is too slow. We propose update clipping and a gradually increasing decay rate scheme as remedies. Combining these methods and dropping momentum, we achieve comparable results to the published Adam regime in training the Transformer model on the {WMT} 2014 English-German machine translation task, while using very little auxiliary storage in the optimizer. Finally, we propose scaling the parameter updates based on the scale of the parameters themselves.}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">publisher</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{arXiv}}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">author</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Shazeer, Noam and Stern, Mitchell}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">urldate</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2026-02-24}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">date</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2018}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">note</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Version Number: 1}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">keywords</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Artificial Intelligence (cs.{AI}), {FOS}: Computer and information sciences, Machine Learning (cs.{LG}), Machine Learning (stat.{ML})}</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="nc">@misc</span><span class="p">{</span><span class="nl">zhao_galore_2024</span><span class="p">,</span>
+<span class="w">	</span><span class="na">title</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{GaLore}: Memory-Efficient {LLM} Training by Gradient Low-Rank Projection}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">rights</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Creative Commons Attribution 4.0 International}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">url</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{https://arxiv.org/abs/2403.03507}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">doi</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{10.48550/ARXIV.2403.03507}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">shorttitle</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{GaLore}}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">abstract</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Training Large Language Models ({LLMs}) presents significant memory challenges, predominantly due to the growing size of weights and optimizer states. Common memory-reduction approaches, such as low-rank adaptation ({LoRA}), add a trainable low-rank matrix to the frozen pre-trained weight in each layer, reducing trainable parameters and optimizer states. However, such approaches typically underperform training with full-rank weights in both pre-training and fine-tuning stages since they limit the parameter search to a low-rank subspace and alter the training dynamics, and further, may require full-rank warm start. In this work, we propose Gradient Low-Rank Projection ({GaLore}), a training strategy that allows full-parameter learning but is more memory-efficient than common low-rank adaptation methods such as {LoRA}. Our approach reduces memory usage by up to 65.5\% in optimizer states while maintaining both efficiency and performance for pre-training on {LLaMA} 1B and 7B architectures with C4 dataset with up to 19.7B tokens, and on fine-tuning {RoBERTa} on {GLUE} tasks. Our 8-bit {GaLore} further reduces optimizer memory by up to 82.5\% and total training memory by 63.3\%, compared to a {BF}16 baseline. Notably, we demonstrate, for the first time, the feasibility of pre-training a 7B model on consumer {GPUs} with 24GB memory (e.g., {NVIDIA} {RTX} 4090) without model parallel, checkpointing, or offloading strategies.}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">publisher</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{arXiv}}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">author</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Zhao, Jiawei and Zhang, Zhenyu and Chen, Beidi and Wang, Zhangyang and Anandkumar, Anima and Tian, Yuandong}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">urldate</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2026-02-24}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">date</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2024}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">note</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Version Number: 2}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">keywords</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{FOS}: Computer and information sciences, Machine Learning (cs.{LG})}</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="nc">@misc</span><span class="p">{</span><span class="nl">mishchenko_prodigy_2023</span><span class="p">,</span>
+<span class="w">	</span><span class="na">title</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Prodigy: An Expeditiously Adaptive Parameter-Free Learner}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">rights</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{arXiv}.org perpetual, non-exclusive license}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">url</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{https://arxiv.org/abs/2306.06101}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">doi</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{10.48550/ARXIV.2306.06101}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">shorttitle</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Prodigy}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">abstract</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{We consider the problem of estimating the learning rate in adaptive methods, such as {AdaGrad} and Adam. We propose Prodigy, an algorithm that provably estimates the distance to the solution \$D\$, which is needed to set the learning rate optimally. At its core, Prodigy is a modification of the D-Adaptation method for learning-rate-free learning. It improves upon the convergence rate of D-Adaptation by a factor of \$O({\textbackslash}sqrt\{{\textbackslash}log(D/d\_0)\})\$, where \$d\_0\$ is the initial estimate of \$D\$. We test Prodigy on 12 common logistic-regression benchmark datasets, {VGG}11 and {ResNet}-50 training on {CIFAR}10, {ViT} training on Imagenet, {LSTM} training on {IWSLT}14, {DLRM} training on Criteo dataset, {VarNet} on Knee {MRI} dataset, as well as {RoBERTa} and {GPT} transformer training on {BookWiki}. Our experimental results show that our approach consistently outperforms D-Adaptation and reaches test accuracy values close to that of hand-tuned Adam.}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">publisher</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{arXiv}}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">author</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Mishchenko, Konstantin and Defazio, Aaron}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">urldate</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2026-02-24}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">date</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2023}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">note</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Version Number: 4}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">keywords</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Artificial Intelligence (cs.{AI}), {FOS}: Computer and information sciences, {FOS}: Mathematics, Machine Learning (cs.{LG}), Machine Learning (stat.{ML}), Optimization and Control (math.{OC})}</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="nc">@misc</span><span class="p">{</span><span class="nl">chen_symbolic_2023</span><span class="p">,</span>
+<span class="w">	</span><span class="na">title</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Symbolic Discovery of Optimization Algorithms}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">rights</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{arXiv}.org perpetual, non-exclusive license}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">url</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{https://arxiv.org/abs/2302.06675}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">doi</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{10.48550/ARXIV.2302.06675}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">abstract</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{We present a method to formulate algorithm discovery as program search, and apply it to discover optimization algorithms for deep neural network training. We leverage efficient search techniques to explore an infinite and sparse program space. To bridge the large generalization gap between proxy and target tasks, we also introduce program selection and simplification strategies. Our method discovers a simple and effective optimization algorithm, \${\textbackslash}textbf\{Lion\}\$ (\${\textbackslash}textit\{Evo\${\textbackslash}textbf\{L\}\$ved S\${\textbackslash}textbf\{i\}\$gn M\${\textbackslash}textbf\{o\}\$me\${\textbackslash}textbf\{n\}\$tum\}\$). It is more memory-efficient than Adam as it only keeps track of the momentum. Different from adaptive optimizers, its update has the same magnitude for each parameter calculated through the sign operation. We compare Lion with widely used optimizers, such as Adam and Adafactor, for training a variety of models on different tasks. On image classification, Lion boosts the accuracy of {ViT} by up to 2\% on {ImageNet} and saves up to 5x the pre-training compute on {JFT}. On vision-language contrastive learning, we achieve 88.3\% \${\textbackslash}textit\{zero-shot\}\$ and 91.1\% \${\textbackslash}textit\{fine-tuning\}\$ accuracy on {ImageNet}, surpassing the previous best results by 2\% and 0.1\%, respectively. On diffusion models, Lion outperforms Adam by achieving a better {FID} score and reducing the training compute by up to 2.3x. For autoregressive, masked language modeling, and fine-tuning, Lion exhibits a similar or better performance compared to Adam. Our analysis of Lion reveals that its performance gain grows with the training batch size. It also requires a smaller learning rate than Adam due to the larger norm of the update produced by the sign function. Additionally, we examine the limitations of Lion and identify scenarios where its improvements are small or not statistically significant. Lion is also successfully deployed in production systems such as Google search ads {CTR} model.}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">publisher</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{arXiv}}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">author</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Chen, Xiangning and Liang, Chen and Huang, Da and Real, Esteban and Wang, Kaiyuan and Liu, Yao and Pham, Hieu and Dong, Xuanyi and Luong, Thang and Hsieh, Cho-Jui and Lu, Yifeng and Le, Quoc V.}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">urldate</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2026-02-24}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">date</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2023}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">note</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Version Number: 4}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">keywords</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Artificial Intelligence (cs.{AI}), Computation and Language (cs.{CL}), Computer Vision and Pattern Recognition (cs.{CV}), {FOS}: Computer and information sciences, Machine Learning (cs.{LG}), Neural and Evolutionary Computing (cs.{NE})}</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="nc">@misc</span><span class="p">{</span><span class="nl">liu_sophia_2023</span><span class="p">,</span>
+<span class="w">	</span><span class="na">title</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Sophia: A Scalable Stochastic Second-order Optimizer for Language Model Pre-training}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">rights</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Creative Commons Attribution 4.0 International}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">url</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{https://arxiv.org/abs/2305.14342}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">doi</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{10.48550/ARXIV.2305.14342}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">shorttitle</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Sophia}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">abstract</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Given the massive cost of language model pre-training, a non-trivial improvement of the optimization algorithm would lead to a material reduction on the time and cost of training. Adam and its variants have been state-of-the-art for years, and more sophisticated second-order (Hessian-based) optimizers often incur too much per-step overhead. In this paper, we propose Sophia, Second-order Clipped Stochastic Optimization, a simple scalable second-order optimizer that uses a light-weight estimate of the diagonal Hessian as the pre-conditioner. The update is the moving average of the gradients divided by the moving average of the estimated Hessian, followed by element-wise clipping. The clipping controls the worst-case update size and tames the negative impact of non-convexity and rapid change of Hessian along the trajectory. Sophia only estimates the diagonal Hessian every handful of iterations, which has negligible average per-step time and memory overhead. On language modeling with {GPT} models of sizes ranging from 125M to 1.5B, Sophia achieves a 2x speed-up compared to Adam in the number of steps, total compute, and wall-clock time, achieving the same perplexity with 50\% fewer steps, less total compute, and reduced wall-clock time. Theoretically, we show that Sophia, in a much simplified setting, adapts to the heterogeneous curvatures in different parameter dimensions, and thus has a run-time bound that does not depend on the condition number of the loss.}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">publisher</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{arXiv}}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">author</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Liu, Hong and Li, Zhiyuan and Hall, David and Liang, Percy and Ma, Tengyu}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">urldate</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2026-02-24}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">date</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2023}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">note</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Version Number: 4}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">keywords</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Computation and Language (cs.{CL}), {FOS}: Computer and information sciences, {FOS}: Mathematics, Machine Learning (cs.{LG}), Optimization and Control (math.{OC})}</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="nc">@misc</span><span class="p">{</span><span class="nl">shen_convergence_2025</span><span class="p">,</span>
+<span class="w">	</span><span class="na">title</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{On the Convergence Analysis of Muon}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">rights</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{arXiv}.org perpetual, non-exclusive license}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">url</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{https://arxiv.org/abs/2505.23737}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">doi</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{10.48550/ARXIV.2505.23737}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">abstract</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{The majority of parameters in neural networks are naturally represented as matrices. However, most commonly used optimizers treat these matrix parameters as flattened vectors during optimization, potentially overlooking their inherent structural properties. Recently, an optimizer called Muon has been proposed, specifically designed to optimize matrix-structured parameters. Extensive empirical evidence shows that Muon can significantly outperform traditional optimizers when training neural networks. Nonetheless, the theoretical understanding of Muon&#39;s convergence behavior and the reasons behind its superior performance remain limited. In this work, we present a comprehensive convergence rate analysis of Muon and its comparison with Gradient Descent ({GD}). We further characterize the conditions under which Muon can outperform {GD}. Our theoretical results reveal that Muon can benefit from the low-rank and approximate blockwise diagonal structure of Hessian matrices -- phenomena widely observed in practical neural network training. Our experimental results support and corroborate the theoretical findings.}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">publisher</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{arXiv}}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">author</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Shen, Wei and Huang, Ruichuan and Huang, Minhui and Shen, Cong and Zhang, Jiawei}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">urldate</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2026-02-24}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">date</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2025}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">note</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Version Number: 1}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">keywords</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{FOS}: Computer and information sciences, {FOS}: Mathematics, Information Theory (cs.{IT}), Machine Learning (cs.{LG}), Machine Learning (stat.{ML}), Optimization and Control (math.{OC})}</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="nc">@misc</span><span class="p">{</span><span class="nl">boissin_turbo-muon_2025</span><span class="p">,</span>
+<span class="w">	</span><span class="na">title</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Turbo-Muon: Accelerating Orthogonality-Based Optimization with Pre-Conditioning}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">rights</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{arXiv}.org perpetual, non-exclusive license}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">url</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{https://arxiv.org/abs/2512.04632}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">doi</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{10.48550/ARXIV.2512.04632}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">shorttitle</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Turbo-Muon}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">abstract</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Orthogonality-based optimizers, such as Muon, have recently shown strong performance across large-scale training and community-driven efficiency challenges. However, these methods rely on a costly gradient orthogonalization step. Even efficient iterative approximations such as Newton-Schulz remain expensive, typically requiring dozens of matrix multiplications to converge. We introduce a preconditioning procedure that accelerates Newton-Schulz convergence and reduces its computational cost. We evaluate its impact and show that the overhead of our preconditioning can be made negligible. Furthermore, the faster convergence it enables allows us to remove one iteration out of the usual five without degrading approximation quality. Our publicly available implementation achieves up to a 2.8x speedup in the Newton-Schulz approximation. We also show that this has a direct impact on end-to-end training runtime with 5-10\% improvement in realistic training scenarios across two efficiency-focused tasks. On challenging language or vision tasks, we validate that our method maintains equal or superior model performance while improving runtime. Crucially, these improvements require no hyperparameter tuning and can be adopted as a simple drop-in replacement. Our code is publicly available on github.}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">publisher</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{arXiv}}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">author</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Boissin, Thibaut and Massena, Thomas and Mamalet, Franck and Serrurier, Mathieu}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">urldate</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2026-02-24}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">date</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2025}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">note</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Version Number: 1}</span><span class="p">,</span>
+<span class="w">	</span><span class="na">keywords</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Artificial Intelligence (cs.{AI}), {FOS}: Computer and information sciences}</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="nc">@misc</span><span class="p">{</span><span class="nl">zhu2025apollosgdlikememoryadamwlevel</span><span class="p">,</span>
+<span class="w">      </span><span class="na">title</span><span class="p">=</span><span class="s">{APOLLO: SGD-like Memory, AdamW-level Performance}</span><span class="p">,</span><span class="w"> </span>
+<span class="w">      </span><span class="na">author</span><span class="p">=</span><span class="s">{Hanqing Zhu and Zhenyu Zhang and Wenyan Cong and Xi Liu and Sem Park and Vikas Chandra and Bo Long and David Z. Pan and Zhangyang Wang and Jinwon Lee}</span><span class="p">,</span>
+<span class="w">      </span><span class="na">year</span><span class="p">=</span><span class="s">{2025}</span><span class="p">,</span>
+<span class="w">      </span><span class="na">eprint</span><span class="p">=</span><span class="s">{2412.05270}</span><span class="p">,</span>
+<span class="w">      </span><span class="na">archivePrefix</span><span class="p">=</span><span class="s">{arXiv}</span><span class="p">,</span>
+<span class="w">      </span><span class="na">primaryClass</span><span class="p">=</span><span class="s">{cs.LG}</span><span class="p">,</span>
+<span class="w">      </span><span class="na">url</span><span class="p">=</span><span class="s">{https://arxiv.org/abs/2412.05270}</span><span class="p">,</span><span class="w"> </span>
+<span class="p">}</span>
+
+<span class="nc">@misc</span><span class="p">{</span><span class="nl">anon2026anon</span><span class="p">,</span>
+<span class="w">      </span><span class="na">title</span><span class="p">=</span><span class="s">{Anon: Extrapolating Adaptivity Beyond SGD and Adam}</span><span class="p">,</span>
+<span class="w">      </span><span class="na">author</span><span class="p">=</span><span class="s">{Anonymous authors}</span><span class="p">,</span>
+<span class="w">      </span><span class="na">year</span><span class="p">=</span><span class="s">{2026}</span><span class="p">,</span>
+<span class="w">      </span><span class="na">eprint</span><span class="p">=</span><span class="s">{2605.02317}</span><span class="p">,</span>
+<span class="w">      </span><span class="na">archivePrefix</span><span class="p">=</span><span class="s">{arXiv}</span><span class="p">,</span>
+<span class="w">      </span><span class="na">primaryClass</span><span class="p">=</span><span class="s">{cs.LG}</span><span class="p">,</span>
+<span class="w">      </span><span class="na">url</span><span class="p">=</span><span class="s">{https://arxiv.org/abs/2605.02317}</span><span class="p">,</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="attention_types.html" class="btn btn-neutral float-left" title="Attention Types Bibliography" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="other.html" class="btn btn-neutral float-right" title="Other Bibliography" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Erick F. Merino M..</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
