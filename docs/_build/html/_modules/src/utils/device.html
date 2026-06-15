@@ -1,0 +1,372 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>src.utils.device &mdash; Frankestein Transformer 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Frankestein Transformer
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../index.html">Frankestein Transformer Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/index.html">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/cli.html">CLI Module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/cli.html#src.cli.build_parser"><code class="docutils literal notranslate"><span class="pre">build_parser()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/cli.html#src.cli.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/model/index.html">Model Package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/model/tormented_bert_frankestein.html">Tormented BERT Frankestein</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.FactorizedEmbedding"><code class="docutils literal notranslate"><span class="pre">FactorizedEmbedding</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.FrankensteinDecoder"><code class="docutils literal notranslate"><span class="pre">FrankensteinDecoder</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.HybridLayer"><code class="docutils literal notranslate"><span class="pre">HybridLayer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.TormentedBertFrankenstein"><code class="docutils literal notranslate"><span class="pre">TormentedBertFrankenstein</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.TormentedBertMini"><code class="docutils literal notranslate"><span class="pre">TormentedBertMini</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.UltraConfig"><code class="docutils literal notranslate"><span class="pre">UltraConfig</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/model/attention/index.html">Attention Package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/common.html">Common Attention Utilities</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/standard.html">Standard Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/sigmoid.html">Sigmoid Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/retnet.html">RetNet Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/ode.html">ODE Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/titan.html">Titan Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/engram.html">Engram Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/hope.html">HoPE Positional Encoding</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/rope.html">RoPE Positional Encoding</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/gated/index.html">Gated Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/sparse/index.html">Sparse Attention</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/model/optimizer/index.html">Optimizer Package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/base.html">Optimizer Base</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/factory.html">Optimizer Factory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/sgd_momentum.html">SGD Momentum</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/adamw.html">AdamW</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/adafactor.html">Adafactor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/galore_adamw.html">GaLore AdamW</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/prodigy.html">Prodigy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/lion.html">Lion</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/sophia.html">Sophia</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/muon.html">Muon</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/turbo_muon.html">Turbo-Muon</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/radam.html">RAdam</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/adan.html">Adan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/adopt.html">ADOPT</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/ademamix.html">AdEMAMix</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/mars_adamw.html">MARS AdamW</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/cautious_adamw.html">Cautious AdamW</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/lamb.html">LAMB</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/schedulefree_adamw.html">Schedule-Free AdamW</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/shampoo.html">Shampoo</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/soap.html">SOAP</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/anon.html">Anon</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/apollo.html">Apollo</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/apollo_mini.html">Apollo-Mini</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/q_apollo.html">Q-Apollo</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/training/index.html">Training Package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/training/config_loader.html">Config Loader</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/training/config_loader.html#src.training.config_loader.LoadedTrainingConfig"><code class="docutils literal notranslate"><span class="pre">LoadedTrainingConfig</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/training/config_loader.html#src.training.config_loader.list_config_paths"><code class="docutils literal notranslate"><span class="pre">list_config_paths()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/training/config_loader.html#src.training.config_loader.load_training_config"><code class="docutils literal notranslate"><span class="pre">load_training_config()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/training/main.html">Training Main</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/training/main.html#src.training.main.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/training/streaming_mlm_dataset.html">Streaming MLM Dataset</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/training/streaming_mlm_dataset.html#src.training.streaming_mlm_dataset.StreamingMLMDataset"><code class="docutils literal notranslate"><span class="pre">StreamingMLMDataset</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/training/trainer.html">Trainer</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/training/trainer.html#src.training.trainer.TitanTrainer"><code class="docutils literal notranslate"><span class="pre">TitanTrainer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/training/trainer.html#src.training.trainer.TrainingConfig"><code class="docutils literal notranslate"><span class="pre">TrainingConfig</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/sbert/index.html">SBERT Package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/sbert/train_sbert.html">SBERT Training</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/train_sbert.html#src.sbert.train_sbert.SBERTTrainer"><code class="docutils literal notranslate"><span class="pre">SBERTTrainer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/train_sbert.html#src.sbert.train_sbert.TormentedBertSentenceTransformer"><code class="docutils literal notranslate"><span class="pre">TormentedBertSentenceTransformer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/train_sbert.html#src.sbert.train_sbert.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/sbert/inference_sbert.html">SBERT Inference</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/inference_sbert.html#src.sbert.inference_sbert.SBERTInference"><code class="docutils literal notranslate"><span class="pre">SBERTInference</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/inference_sbert.html#src.sbert.inference_sbert.SimilarityResult"><code class="docutils literal notranslate"><span class="pre">SimilarityResult</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/inference_sbert.html#src.sbert.inference_sbert.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/sbert/example_usage.html">SBERT Example Usage</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/example_usage.html#src.sbert.example_usage.example_basic_similarity"><code class="docutils literal notranslate"><span class="pre">example_basic_similarity()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/example_usage.html#src.sbert.example_usage.example_batch_comparison"><code class="docutils literal notranslate"><span class="pre">example_batch_comparison()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/example_usage.html#src.sbert.example_usage.example_batch_encoding"><code class="docutils literal notranslate"><span class="pre">example_batch_encoding()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/example_usage.html#src.sbert.example_usage.example_clustering"><code class="docutils literal notranslate"><span class="pre">example_clustering()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/example_usage.html#src.sbert.example_usage.example_save_load_embeddings"><code class="docutils literal notranslate"><span class="pre">example_save_load_embeddings()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/example_usage.html#src.sbert.example_usage.example_semantic_search"><code class="docutils literal notranslate"><span class="pre">example_semantic_search()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/example_usage.html#src.sbert.example_usage.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/deploy/index.html">Deploy Package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/deploy/deploy.html">Deploy</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/deploy.html#src.deploy.deploy.ModelDeployer"><code class="docutils literal notranslate"><span class="pre">ModelDeployer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/deploy.html#src.deploy.deploy.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/deploy/inference.html">Deploy Inference</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/inference.html#src.deploy.inference.TormentedBertInference"><code class="docutils literal notranslate"><span class="pre">TormentedBertInference</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/inference.html#src.deploy.inference.interactive_mode"><code class="docutils literal notranslate"><span class="pre">interactive_mode()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/inference.html#src.deploy.inference.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/deploy/quantization.html">Quantization</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/quantization.html#src.deploy.quantization.ActivationQuantizer"><code class="docutils literal notranslate"><span class="pre">ActivationQuantizer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/quantization.html#src.deploy.quantization.BitNetQuantizer"><code class="docutils literal notranslate"><span class="pre">BitNetQuantizer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/quantization.html#src.deploy.quantization.estimate_model_size"><code class="docutils literal notranslate"><span class="pre">estimate_model_size()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/quantization.html#src.deploy.quantization.load_quantized_checkpoint"><code class="docutils literal notranslate"><span class="pre">load_quantized_checkpoint()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/quantization.html#src.deploy.quantization.save_quantized_checkpoint"><code class="docutils literal notranslate"><span class="pre">save_quantized_checkpoint()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/deploy/transformers_export.html">Transformers Export</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/transformers_export.html#src.deploy.transformers_export.check_yaml_export_compatibility"><code class="docutils literal notranslate"><span class="pre">check_yaml_export_compatibility()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/transformers_export.html#src.deploy.transformers_export.export_transformers_model"><code class="docutils literal notranslate"><span class="pre">export_transformers_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/transformers_export.html#src.deploy.transformers_export.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/deploy/example.html">Deploy Example</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/example.html#src.deploy.example.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/tokenizer/index.html">Tokenizer Package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/tokenizer/spm_spa_redpajama35.html">SPM Spa RedPajama35 Tokenizer</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/tokenizer/spm_spa_redpajama35.html#src.tokenizer.spm_spa_redpajama35.SpanishSPMTokenizer"><code class="docutils literal notranslate"><span class="pre">SpanishSPMTokenizer</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/streamlit_gui.html">Streamlit GUI</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.build_cli_command"><code class="docutils literal notranslate"><span class="pre">build_cli_command()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.build_config_from_schema"><code class="docutils literal notranslate"><span class="pre">build_config_from_schema()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.get_current_language"><code class="docutils literal notranslate"><span class="pre">get_current_language()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.get_field_description"><code class="docutils literal notranslate"><span class="pre">get_field_description()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.get_field_title"><code class="docutils literal notranslate"><span class="pre">get_field_title()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.get_localized_schema_value"><code class="docutils literal notranslate"><span class="pre">get_localized_schema_value()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.get_ui_text"><code class="docutils literal notranslate"><span class="pre">get_ui_text()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.load_schema"><code class="docutils literal notranslate"><span class="pre">load_schema()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.render_field"><code class="docutils literal notranslate"><span class="pre">render_field()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.render_object"><code class="docutils literal notranslate"><span class="pre">render_object()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.render_optimizer_section"><code class="docutils literal notranslate"><span class="pre">render_optimizer_section()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.run_command_with_nohup"><code class="docutils literal notranslate"><span class="pre">run_command_with_nohup()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/utils/index.html">Utils Package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/utils/device.html">Device Utilities</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/utils/device.html#src.utils.device.is_mps_available"><code class="docutils literal notranslate"><span class="pre">is_mps_available()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/utils/device.html#src.utils.device.resolve_torch_device"><code class="docutils literal notranslate"><span class="pre">resolve_torch_device()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/utils/gpu_temp_guard.html">GPU Temperature Guard</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/utils/gpu_temp_guard.html#src.utils.gpu_temp_guard.GPUTelemetryError"><code class="docutils literal notranslate"><span class="pre">GPUTelemetryError</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/utils/gpu_temp_guard.html#src.utils.gpu_temp_guard.GPUTempCheckResult"><code class="docutils literal notranslate"><span class="pre">GPUTempCheckResult</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/utils/gpu_temp_guard.html#src.utils.gpu_temp_guard.GPUTemperatureGuard"><code class="docutils literal notranslate"><span class="pre">GPUTemperatureGuard</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/utils/storage_manager.html">Storage Manager</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/utils/storage_manager.html#src.utils.storage_manager.StorageManager"><code class="docutils literal notranslate"><span class="pre">StorageManager</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../specs/index.html">Specifications</a><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../bibliography/index.html">Bibliography</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../bibliography/attention_types.html">Attention Types Bibliography</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../bibliography/optimizers.html">Optimizers Bibliography</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../bibliography/other.html">Other Bibliography</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../paper-en.html">Technical Report (English)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../paper-en.html#abstract">Abstract</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../paper-es.html">Informe Tecnico (Espanol)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../paper-es.html#resumen">Resumen</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Quick Links:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/erickfmm/frankestein-transformer">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Frankestein Transformer</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">src.utils.device</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for src.utils.device</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Device resolution utilities for PyTorch training and inference.</span>
+
+<span class="sd">Provides a single entry point for resolving user-requested device strings</span>
+<span class="sd">(``auto``, ``cpu``, ``cuda``, ``mps``) into concrete PyTorch device identifiers,</span>
+<span class="sd">with availability checks for CUDA and Apple Metal Performance Shaders (MPS).</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+
+
+<span class="n">SUPPORTED_DEVICE_CHOICES</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span> <span class="s2">&quot;cpu&quot;</span><span class="p">,</span> <span class="s2">&quot;cuda&quot;</span><span class="p">,</span> <span class="s2">&quot;mps&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="is_mps_available">
+<a class="viewcode-back" href="../../../api/utils/device.html#src.utils.device.is_mps_available">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">is_mps_available</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check whether Apple Metal Performance Shaders (MPS) backend is available.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        ``True`` if ``torch.backends.mps`` is available and built, ``False`` otherwise.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span>
+        <span class="nb">hasattr</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">backends</span><span class="p">,</span> <span class="s2">&quot;mps&quot;</span><span class="p">)</span>
+        <span class="ow">and</span> <span class="n">torch</span><span class="o">.</span><span class="n">backends</span><span class="o">.</span><span class="n">mps</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span>
+        <span class="ow">and</span> <span class="n">torch</span><span class="o">.</span><span class="n">backends</span><span class="o">.</span><span class="n">mps</span><span class="o">.</span><span class="n">is_built</span><span class="p">()</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="resolve_torch_device">
+<a class="viewcode-back" href="../../../api/utils/device.html#src.utils.device.resolve_torch_device">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">resolve_torch_device</span><span class="p">(</span><span class="n">requested</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;auto&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolve a user-requested device string to a concrete PyTorch device.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        requested: One of ``&quot;auto&quot;``, ``&quot;cpu&quot;``, ``&quot;cuda&quot;``, or ``&quot;mps&quot;``.</span>
+<span class="sd">            ``&quot;auto&quot;`` selects CUDA if available, then MPS, falling back to CPU.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The resolved device string (``&quot;cuda&quot;``, ``&quot;mps&quot;``, or ``&quot;cpu&quot;``).</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If ``requested`` is not a supported choice, or if the</span>
+<span class="sd">            requested device is not available on the current machine.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">requested_normalized</span> <span class="o">=</span> <span class="p">(</span><span class="n">requested</span> <span class="ow">or</span> <span class="s2">&quot;auto&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">requested_normalized</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">SUPPORTED_DEVICE_CHOICES</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Unsupported device &#39;</span><span class="si">{</span><span class="n">requested</span><span class="si">}</span><span class="s2">&#39;. Supported values: </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">SUPPORTED_DEVICE_CHOICES</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">requested_normalized</span> <span class="o">==</span> <span class="s2">&quot;auto&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">():</span>
+            <span class="k">return</span> <span class="s2">&quot;cuda&quot;</span>
+        <span class="k">if</span> <span class="n">is_mps_available</span><span class="p">():</span>
+            <span class="k">return</span> <span class="s2">&quot;mps&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;cpu&quot;</span>
+
+    <span class="k">if</span> <span class="n">requested_normalized</span> <span class="o">==</span> <span class="s2">&quot;cuda&quot;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">():</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;CUDA was requested but is not available on this machine&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">requested_normalized</span> <span class="o">==</span> <span class="s2">&quot;mps&quot;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_mps_available</span><span class="p">():</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;MPS was requested but is not available on this machine&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">requested_normalized</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Erick F. Merino M..</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

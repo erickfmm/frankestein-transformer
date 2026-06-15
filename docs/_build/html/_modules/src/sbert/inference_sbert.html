@@ -1,0 +1,821 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>src.sbert.inference_sbert &mdash; Frankestein Transformer 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Frankestein Transformer
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../index.html">Frankestein Transformer Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/index.html">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/cli.html">CLI Module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/cli.html#src.cli.build_parser"><code class="docutils literal notranslate"><span class="pre">build_parser()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/cli.html#src.cli.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/model/index.html">Model Package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/model/tormented_bert_frankestein.html">Tormented BERT Frankestein</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.FactorizedEmbedding"><code class="docutils literal notranslate"><span class="pre">FactorizedEmbedding</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.FrankensteinDecoder"><code class="docutils literal notranslate"><span class="pre">FrankensteinDecoder</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.HybridLayer"><code class="docutils literal notranslate"><span class="pre">HybridLayer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.TormentedBertFrankenstein"><code class="docutils literal notranslate"><span class="pre">TormentedBertFrankenstein</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.TormentedBertMini"><code class="docutils literal notranslate"><span class="pre">TormentedBertMini</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.UltraConfig"><code class="docutils literal notranslate"><span class="pre">UltraConfig</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/model/attention/index.html">Attention Package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/common.html">Common Attention Utilities</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/standard.html">Standard Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/sigmoid.html">Sigmoid Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/retnet.html">RetNet Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/ode.html">ODE Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/titan.html">Titan Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/engram.html">Engram Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/hope.html">HoPE Positional Encoding</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/rope.html">RoPE Positional Encoding</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/gated/index.html">Gated Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/sparse/index.html">Sparse Attention</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/model/optimizer/index.html">Optimizer Package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/base.html">Optimizer Base</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/factory.html">Optimizer Factory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/sgd_momentum.html">SGD Momentum</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/adamw.html">AdamW</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/adafactor.html">Adafactor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/galore_adamw.html">GaLore AdamW</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/prodigy.html">Prodigy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/lion.html">Lion</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/sophia.html">Sophia</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/muon.html">Muon</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/turbo_muon.html">Turbo-Muon</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/radam.html">RAdam</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/adan.html">Adan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/adopt.html">ADOPT</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/ademamix.html">AdEMAMix</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/mars_adamw.html">MARS AdamW</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/cautious_adamw.html">Cautious AdamW</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/lamb.html">LAMB</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/schedulefree_adamw.html">Schedule-Free AdamW</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/shampoo.html">Shampoo</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/soap.html">SOAP</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/anon.html">Anon</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/apollo.html">Apollo</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/apollo_mini.html">Apollo-Mini</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/q_apollo.html">Q-Apollo</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/training/index.html">Training Package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/training/config_loader.html">Config Loader</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/training/config_loader.html#src.training.config_loader.LoadedTrainingConfig"><code class="docutils literal notranslate"><span class="pre">LoadedTrainingConfig</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/training/config_loader.html#src.training.config_loader.list_config_paths"><code class="docutils literal notranslate"><span class="pre">list_config_paths()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/training/config_loader.html#src.training.config_loader.load_training_config"><code class="docutils literal notranslate"><span class="pre">load_training_config()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/training/main.html">Training Main</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/training/main.html#src.training.main.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/training/streaming_mlm_dataset.html">Streaming MLM Dataset</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/training/streaming_mlm_dataset.html#src.training.streaming_mlm_dataset.StreamingMLMDataset"><code class="docutils literal notranslate"><span class="pre">StreamingMLMDataset</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/training/trainer.html">Trainer</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/training/trainer.html#src.training.trainer.TitanTrainer"><code class="docutils literal notranslate"><span class="pre">TitanTrainer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/training/trainer.html#src.training.trainer.TrainingConfig"><code class="docutils literal notranslate"><span class="pre">TrainingConfig</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/sbert/index.html">SBERT Package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/sbert/train_sbert.html">SBERT Training</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/train_sbert.html#src.sbert.train_sbert.SBERTTrainer"><code class="docutils literal notranslate"><span class="pre">SBERTTrainer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/train_sbert.html#src.sbert.train_sbert.TormentedBertSentenceTransformer"><code class="docutils literal notranslate"><span class="pre">TormentedBertSentenceTransformer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/train_sbert.html#src.sbert.train_sbert.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/sbert/inference_sbert.html">SBERT Inference</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/inference_sbert.html#src.sbert.inference_sbert.SBERTInference"><code class="docutils literal notranslate"><span class="pre">SBERTInference</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/inference_sbert.html#src.sbert.inference_sbert.SimilarityResult"><code class="docutils literal notranslate"><span class="pre">SimilarityResult</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/inference_sbert.html#src.sbert.inference_sbert.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/sbert/example_usage.html">SBERT Example Usage</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/example_usage.html#src.sbert.example_usage.example_basic_similarity"><code class="docutils literal notranslate"><span class="pre">example_basic_similarity()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/example_usage.html#src.sbert.example_usage.example_batch_comparison"><code class="docutils literal notranslate"><span class="pre">example_batch_comparison()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/example_usage.html#src.sbert.example_usage.example_batch_encoding"><code class="docutils literal notranslate"><span class="pre">example_batch_encoding()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/example_usage.html#src.sbert.example_usage.example_clustering"><code class="docutils literal notranslate"><span class="pre">example_clustering()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/example_usage.html#src.sbert.example_usage.example_save_load_embeddings"><code class="docutils literal notranslate"><span class="pre">example_save_load_embeddings()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/example_usage.html#src.sbert.example_usage.example_semantic_search"><code class="docutils literal notranslate"><span class="pre">example_semantic_search()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/example_usage.html#src.sbert.example_usage.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/deploy/index.html">Deploy Package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/deploy/deploy.html">Deploy</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/deploy.html#src.deploy.deploy.ModelDeployer"><code class="docutils literal notranslate"><span class="pre">ModelDeployer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/deploy.html#src.deploy.deploy.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/deploy/inference.html">Deploy Inference</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/inference.html#src.deploy.inference.TormentedBertInference"><code class="docutils literal notranslate"><span class="pre">TormentedBertInference</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/inference.html#src.deploy.inference.interactive_mode"><code class="docutils literal notranslate"><span class="pre">interactive_mode()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/inference.html#src.deploy.inference.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/deploy/quantization.html">Quantization</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/quantization.html#src.deploy.quantization.ActivationQuantizer"><code class="docutils literal notranslate"><span class="pre">ActivationQuantizer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/quantization.html#src.deploy.quantization.BitNetQuantizer"><code class="docutils literal notranslate"><span class="pre">BitNetQuantizer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/quantization.html#src.deploy.quantization.estimate_model_size"><code class="docutils literal notranslate"><span class="pre">estimate_model_size()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/quantization.html#src.deploy.quantization.load_quantized_checkpoint"><code class="docutils literal notranslate"><span class="pre">load_quantized_checkpoint()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/quantization.html#src.deploy.quantization.save_quantized_checkpoint"><code class="docutils literal notranslate"><span class="pre">save_quantized_checkpoint()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/deploy/transformers_export.html">Transformers Export</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/transformers_export.html#src.deploy.transformers_export.check_yaml_export_compatibility"><code class="docutils literal notranslate"><span class="pre">check_yaml_export_compatibility()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/transformers_export.html#src.deploy.transformers_export.export_transformers_model"><code class="docutils literal notranslate"><span class="pre">export_transformers_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/transformers_export.html#src.deploy.transformers_export.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/deploy/example.html">Deploy Example</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/example.html#src.deploy.example.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/tokenizer/index.html">Tokenizer Package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/tokenizer/spm_spa_redpajama35.html">SPM Spa RedPajama35 Tokenizer</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/tokenizer/spm_spa_redpajama35.html#src.tokenizer.spm_spa_redpajama35.SpanishSPMTokenizer"><code class="docutils literal notranslate"><span class="pre">SpanishSPMTokenizer</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/streamlit_gui.html">Streamlit GUI</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.build_cli_command"><code class="docutils literal notranslate"><span class="pre">build_cli_command()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.build_config_from_schema"><code class="docutils literal notranslate"><span class="pre">build_config_from_schema()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.get_current_language"><code class="docutils literal notranslate"><span class="pre">get_current_language()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.get_field_description"><code class="docutils literal notranslate"><span class="pre">get_field_description()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.get_field_title"><code class="docutils literal notranslate"><span class="pre">get_field_title()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.get_localized_schema_value"><code class="docutils literal notranslate"><span class="pre">get_localized_schema_value()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.get_ui_text"><code class="docutils literal notranslate"><span class="pre">get_ui_text()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.load_schema"><code class="docutils literal notranslate"><span class="pre">load_schema()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.render_field"><code class="docutils literal notranslate"><span class="pre">render_field()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.render_object"><code class="docutils literal notranslate"><span class="pre">render_object()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.render_optimizer_section"><code class="docutils literal notranslate"><span class="pre">render_optimizer_section()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.run_command_with_nohup"><code class="docutils literal notranslate"><span class="pre">run_command_with_nohup()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/utils/index.html">Utils Package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/utils/device.html">Device Utilities</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/utils/device.html#src.utils.device.is_mps_available"><code class="docutils literal notranslate"><span class="pre">is_mps_available()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/utils/device.html#src.utils.device.resolve_torch_device"><code class="docutils literal notranslate"><span class="pre">resolve_torch_device()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/utils/gpu_temp_guard.html">GPU Temperature Guard</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/utils/gpu_temp_guard.html#src.utils.gpu_temp_guard.GPUTelemetryError"><code class="docutils literal notranslate"><span class="pre">GPUTelemetryError</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/utils/gpu_temp_guard.html#src.utils.gpu_temp_guard.GPUTempCheckResult"><code class="docutils literal notranslate"><span class="pre">GPUTempCheckResult</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/utils/gpu_temp_guard.html#src.utils.gpu_temp_guard.GPUTemperatureGuard"><code class="docutils literal notranslate"><span class="pre">GPUTemperatureGuard</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/utils/storage_manager.html">Storage Manager</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/utils/storage_manager.html#src.utils.storage_manager.StorageManager"><code class="docutils literal notranslate"><span class="pre">StorageManager</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../specs/index.html">Specifications</a><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../bibliography/index.html">Bibliography</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../bibliography/attention_types.html">Attention Types Bibliography</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../bibliography/optimizers.html">Optimizers Bibliography</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../bibliography/other.html">Other Bibliography</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../paper-en.html">Technical Report (English)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../paper-en.html#abstract">Abstract</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../paper-es.html">Informe Tecnico (Espanol)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../paper-es.html#resumen">Resumen</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Quick Links:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/erickfmm/frankestein-transformer">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Frankestein Transformer</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">src.sbert.inference_sbert</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for src.sbert.inference_sbert</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="sd">&quot;&quot;&quot;SBERT inference engine for TORMENTED-BERT-Frankenstein.</span>
+
+<span class="sd">Provides :class:`SBERTInference` for computing sentence embeddings,</span>
+<span class="sd">similarity scores, semantic search, clustering, and embedding</span>
+<span class="sd">serialization using fine-tuned Sentence-BERT models.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">sentence_transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">SentenceTransformer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.spatial.distance</span><span class="w"> </span><span class="kn">import</span> <span class="n">cosine</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..utils.device</span><span class="w"> </span><span class="kn">import</span> <span class="n">SUPPORTED_DEVICE_CHOICES</span><span class="p">,</span> <span class="n">resolve_torch_device</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">utils.device</span><span class="w"> </span><span class="kn">import</span> <span class="n">SUPPORTED_DEVICE_CHOICES</span><span class="p">,</span> <span class="n">resolve_torch_device</span>
+
+<span class="c1"># Setup logging</span>
+<span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span>
+    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
+    <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%(asctime)s</span><span class="s1"> - </span><span class="si">%(name)s</span><span class="s1"> - </span><span class="si">%(levelname)s</span><span class="s1"> - </span><span class="si">%(message)s</span><span class="s1">&#39;</span>
+<span class="p">)</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="SimilarityResult">
+<a class="viewcode-back" href="../../../api/sbert/inference_sbert.html#src.sbert.inference_sbert.SimilarityResult">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SimilarityResult</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Result of a pairwise sentence similarity computation.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        sentence1: First sentence text.</span>
+<span class="sd">        sentence2: Second sentence text.</span>
+<span class="sd">        similarity: Cosine similarity score in ``[0, 1]`` (normalized).</span>
+<span class="sd">        distance: Cosine distance (``1 - similarity``).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">sentence1</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">sentence2</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">similarity</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">distance</span><span class="p">:</span> <span class="nb">float</span>
+
+<div class="viewcode-block" id="SimilarityResult.to_dict">
+<a class="viewcode-back" href="../../../api/sbert/inference_sbert.html#src.sbert.inference_sbert.SimilarityResult.to_dict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Serialize the result to a plain dictionary.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s1">&#39;sentence1&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">sentence1</span><span class="p">,</span>
+            <span class="s1">&#39;sentence2&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">sentence2</span><span class="p">,</span>
+            <span class="s1">&#39;similarity&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">similarity</span><span class="p">,</span>
+            <span class="s1">&#39;distance&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">distance</span>
+        <span class="p">}</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="SBERTInference">
+<a class="viewcode-back" href="../../../api/sbert/inference_sbert.html#src.sbert.inference_sbert.SBERTInference">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SBERTInference</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Inference engine for fine-tuned SBERT models.</span>
+
+<span class="sd">    Loads a :class:`SentenceTransformer` model and provides methods for</span>
+<span class="sd">    encoding sentences to embeddings, computing pairwise similarity,</span>
+<span class="sd">    semantic search over a corpus, clustering, and embedding serialization.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        model_path: Path to the fine-tuned SBERT model directory.</span>
+<span class="sd">        batch_size: Default batch size for encoding.</span>
+<span class="sd">        device: Resolved PyTorch device string.</span>
+<span class="sd">        model: Loaded :class:`SentenceTransformer` instance.</span>
+<span class="sd">        max_seq_length: Maximum sequence length from the loaded model.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="SBERTInference.__init__">
+<a class="viewcode-back" href="../../../api/sbert/inference_sbert.html#src.sbert.inference_sbert.SBERTInference.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">model_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">device</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the SBERT inference engine.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            model_path: Path to a fine-tuned SBERT model directory.</span>
+<span class="sd">            device: Device string (``&quot;cuda&quot;``, ``&quot;cpu&quot;``, or ``None`` for</span>
+<span class="sd">                auto-resolution).</span>
+<span class="sd">            batch_size: Default batch size for encoding operations.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model_path</span> <span class="o">=</span> <span class="n">model_path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span> <span class="o">=</span> <span class="n">batch_size</span>
+        <span class="n">requested_device</span> <span class="o">=</span> <span class="n">device</span> <span class="k">if</span> <span class="n">device</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;auto&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">device</span> <span class="o">=</span> <span class="n">resolve_torch_device</span><span class="p">(</span><span class="n">requested_device</span><span class="p">)</span>
+        
+        <span class="c1"># Load model</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loading SBERT model from </span><span class="si">{</span><span class="n">model_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">SentenceTransformer</span><span class="p">(</span><span class="n">model_path</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Model loaded on device: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        
+        <span class="c1"># Get model info</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_seq_length</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">max_seq_length</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Max sequence length: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">max_seq_length</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="SBERTInference.encode">
+<a class="viewcode-back" href="../../../api/sbert/inference_sbert.html#src.sbert.inference_sbert.SBERTInference.encode">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">encode</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">sentences</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
+        <span class="n">batch_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">show_progress</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">normalize</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Encode sentences into embeddings.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            sentences: Single sentence or list of sentences</span>
+<span class="sd">            batch_size: Batch size (uses default if None)</span>
+<span class="sd">            show_progress: Show progress bar</span>
+<span class="sd">            normalize: Normalize embeddings to unit length</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            Embeddings array of shape (n_sentences, embedding_dim)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sentences</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">sentences</span> <span class="o">=</span> <span class="p">[</span><span class="n">sentences</span><span class="p">]</span>
+        
+        <span class="n">batch_size</span> <span class="o">=</span> <span class="n">batch_size</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span>
+        
+        <span class="n">embeddings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span>
+            <span class="n">sentences</span><span class="p">,</span>
+            <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
+            <span class="n">show_progress_bar</span><span class="o">=</span><span class="n">show_progress</span><span class="p">,</span>
+            <span class="n">convert_to_numpy</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">normalize_embeddings</span><span class="o">=</span><span class="n">normalize</span>
+        <span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">embeddings</span></div>
+
+    
+<div class="viewcode-block" id="SBERTInference.compute_similarity">
+<a class="viewcode-back" href="../../../api/sbert/inference_sbert.html#src.sbert.inference_sbert.SBERTInference.compute_similarity">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">compute_similarity</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">sentence1</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
+        <span class="n">sentence2</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
+        <span class="n">metric</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;cosine&quot;</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute similarity between sentence(s).</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            sentence1: First sentence(s)</span>
+<span class="sd">            sentence2: Second sentence(s)</span>
+<span class="sd">            metric: Similarity metric (&#39;cosine&#39; or &#39;dot&#39;)</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            Similarity score(s) in range [0, 1] (or [-1, 1] for unnormalized)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Encode sentences</span>
+        <span class="n">emb1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">sentence1</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="p">(</span><span class="n">metric</span> <span class="o">==</span> <span class="s2">&quot;cosine&quot;</span><span class="p">))</span>
+        <span class="n">emb2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">sentence2</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="p">(</span><span class="n">metric</span> <span class="o">==</span> <span class="s2">&quot;cosine&quot;</span><span class="p">))</span>
+        
+        <span class="c1"># Compute similarity</span>
+        <span class="k">if</span> <span class="n">metric</span> <span class="o">==</span> <span class="s2">&quot;cosine&quot;</span><span class="p">:</span>
+            <span class="c1"># For normalized embeddings, dot product = cosine similarity</span>
+            <span class="n">similarity</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">emb1</span> <span class="o">*</span> <span class="n">emb2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="n">emb1</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">emb1</span><span class="p">,</span> <span class="n">emb2</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">metric</span> <span class="o">==</span> <span class="s2">&quot;dot&quot;</span><span class="p">:</span>
+            <span class="n">similarity</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">emb1</span> <span class="o">*</span> <span class="n">emb2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="n">emb1</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">emb1</span><span class="p">,</span> <span class="n">emb2</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown metric: </span><span class="si">{</span><span class="n">metric</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">similarity</span></div>
+
+    
+<div class="viewcode-block" id="SBERTInference.find_most_similar">
+<a class="viewcode-back" href="../../../api/sbert/inference_sbert.html#src.sbert.inference_sbert.SBERTInference.find_most_similar">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">find_most_similar</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">candidates</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">top_k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Find most similar sentences to query from candidates.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            query: Query sentence</span>
+<span class="sd">            candidates: List of candidate sentences</span>
+<span class="sd">            top_k: Number of top results to return</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            List of (sentence, similarity_score) tuples, sorted by similarity</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Encode query and candidates</span>
+        <span class="n">query_emb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+        <span class="n">candidate_embs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">candidates</span><span class="p">,</span> <span class="n">show_progress</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        
+        <span class="c1"># Compute similarities</span>
+        <span class="n">similarities</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">candidate_embs</span><span class="p">,</span> <span class="n">query_emb</span><span class="p">)</span>
+        
+        <span class="c1"># Get top-k</span>
+        <span class="n">top_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">similarities</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">][:</span><span class="n">top_k</span><span class="p">]</span>
+        
+        <span class="n">results</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="n">candidates</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="nb">float</span><span class="p">(</span><span class="n">similarities</span><span class="p">[</span><span class="n">idx</span><span class="p">]))</span>
+            <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">top_indices</span>
+        <span class="p">]</span>
+        
+        <span class="k">return</span> <span class="n">results</span></div>
+
+    
+<div class="viewcode-block" id="SBERTInference.batch_compare">
+<a class="viewcode-back" href="../../../api/sbert/inference_sbert.html#src.sbert.inference_sbert.SBERTInference.batch_compare">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">batch_compare</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">sentences1</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">sentences2</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">SimilarityResult</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Batch comparison of sentence pairs.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            sentences1: First sentences</span>
+<span class="sd">            sentences2: Second sentences (must match length of sentences1)</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            List of SimilarityResult objects</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sentences1</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">sentences2</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;sentences1 and sentences2 must have same length&quot;</span><span class="p">)</span>
+        
+        <span class="c1"># Encode both sets</span>
+        <span class="n">emb1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">sentences1</span><span class="p">,</span> <span class="n">show_progress</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">emb2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">sentences2</span><span class="p">,</span> <span class="n">show_progress</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        
+        <span class="c1"># Compute pairwise similarities</span>
+        <span class="n">similarities</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">emb1</span> <span class="o">*</span> <span class="n">emb2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">distances</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">similarities</span>
+        
+        <span class="c1"># Create results</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">SimilarityResult</span><span class="p">(</span>
+                <span class="n">sentence1</span><span class="o">=</span><span class="n">s1</span><span class="p">,</span>
+                <span class="n">sentence2</span><span class="o">=</span><span class="n">s2</span><span class="p">,</span>
+                <span class="n">similarity</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">sim</span><span class="p">),</span>
+                <span class="n">distance</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">dist</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">s1</span><span class="p">,</span> <span class="n">s2</span><span class="p">,</span> <span class="n">sim</span><span class="p">,</span> <span class="n">dist</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">sentences1</span><span class="p">,</span> <span class="n">sentences2</span><span class="p">,</span> <span class="n">similarities</span><span class="p">,</span> <span class="n">distances</span><span class="p">)</span>
+        <span class="p">]</span>
+        
+        <span class="k">return</span> <span class="n">results</span></div>
+
+    
+<div class="viewcode-block" id="SBERTInference.semantic_search">
+<a class="viewcode-back" href="../../../api/sbert/inference_sbert.html#src.sbert.inference_sbert.SBERTInference.semantic_search">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">semantic_search</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">queries</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
+        <span class="n">corpus</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">top_k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Semantic search: find most similar corpus sentences for each query.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            queries: Query sentence(s)</span>
+<span class="sd">            corpus: Corpus of sentences to search</span>
+<span class="sd">            top_k: Number of results per query</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            List of results for each query, each result is (corpus_idx, score)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">queries</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">queries</span> <span class="o">=</span> <span class="p">[</span><span class="n">queries</span><span class="p">]</span>
+        
+        <span class="c1"># Encode</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Encoding </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">queries</span><span class="p">)</span><span class="si">}</span><span class="s2"> queries...&quot;</span><span class="p">)</span>
+        <span class="n">query_embs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">queries</span><span class="p">,</span> <span class="n">show_progress</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Encoding corpus of </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">corpus</span><span class="p">)</span><span class="si">}</span><span class="s2"> sentences...&quot;</span><span class="p">)</span>
+        <span class="n">corpus_embs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">show_progress</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        
+        <span class="c1"># Compute similarities (queries x corpus)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Computing similarities...&quot;</span><span class="p">)</span>
+        <span class="n">similarities</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">query_embs</span><span class="p">,</span> <span class="n">corpus_embs</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+        
+        <span class="c1"># Get top-k for each query</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">query_sims</span> <span class="ow">in</span> <span class="n">similarities</span><span class="p">:</span>
+            <span class="n">top_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">query_sims</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">][:</span><span class="n">top_k</span><span class="p">]</span>
+            <span class="n">query_results</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">idx</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">query_sims</span><span class="p">[</span><span class="n">idx</span><span class="p">]))</span>
+                <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">top_indices</span>
+            <span class="p">]</span>
+            <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">query_results</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">results</span></div>
+
+    
+<div class="viewcode-block" id="SBERTInference.cluster_sentences">
+<a class="viewcode-back" href="../../../api/sbert/inference_sbert.html#src.sbert.inference_sbert.SBERTInference.cluster_sentences">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">cluster_sentences</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">sentences</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">n_clusters</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
+        <span class="n">method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;kmeans&quot;</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Cluster sentences by semantic similarity.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            sentences: List of sentences to cluster</span>
+<span class="sd">            n_clusters: Number of clusters</span>
+<span class="sd">            method: Clustering method (&#39;kmeans&#39; or &#39;agglomerative&#39;)</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            (cluster_labels, embeddings)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.cluster</span><span class="w"> </span><span class="kn">import</span> <span class="n">KMeans</span><span class="p">,</span> <span class="n">AgglomerativeClustering</span>
+        
+        <span class="c1"># Encode sentences</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Encoding </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">sentences</span><span class="p">)</span><span class="si">}</span><span class="s2"> sentences for clustering...&quot;</span><span class="p">)</span>
+        <span class="n">embeddings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">sentences</span><span class="p">,</span> <span class="n">show_progress</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        
+        <span class="c1"># Cluster</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Clustering into </span><span class="si">{</span><span class="n">n_clusters</span><span class="si">}</span><span class="s2"> groups using </span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;kmeans&quot;</span><span class="p">:</span>
+            <span class="n">clusterer</span> <span class="o">=</span> <span class="n">KMeans</span><span class="p">(</span><span class="n">n_clusters</span><span class="o">=</span><span class="n">n_clusters</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;agglomerative&quot;</span><span class="p">:</span>
+            <span class="n">clusterer</span> <span class="o">=</span> <span class="n">AgglomerativeClustering</span><span class="p">(</span><span class="n">n_clusters</span><span class="o">=</span><span class="n">n_clusters</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown method: </span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        
+        <span class="n">labels</span> <span class="o">=</span> <span class="n">clusterer</span><span class="o">.</span><span class="n">fit_predict</span><span class="p">(</span><span class="n">embeddings</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">labels</span><span class="p">,</span> <span class="n">embeddings</span></div>
+
+    
+<div class="viewcode-block" id="SBERTInference.save_embeddings">
+<a class="viewcode-back" href="../../../api/sbert/inference_sbert.html#src.sbert.inference_sbert.SBERTInference.save_embeddings">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save_embeddings</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">sentences</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Encode sentences and save embeddings to file.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            sentences: List of sentences</span>
+<span class="sd">            output_path: Output file path (.npz format)</span>
+<span class="sd">            metadata: Optional metadata to save</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Encoding </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">sentences</span><span class="p">)</span><span class="si">}</span><span class="s2"> sentences...&quot;</span><span class="p">)</span>
+        <span class="n">embeddings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">sentences</span><span class="p">,</span> <span class="n">show_progress</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        
+        <span class="c1"># Prepare data</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;embeddings&#39;</span><span class="p">:</span> <span class="n">embeddings</span><span class="p">,</span>
+            <span class="s1">&#39;sentences&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">sentences</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span>
+        <span class="p">}</span>
+        
+        <span class="k">if</span> <span class="n">metadata</span><span class="p">:</span>
+            <span class="n">data</span><span class="p">[</span><span class="s1">&#39;metadata&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">metadata</span><span class="p">)</span>
+        
+        <span class="c1"># Save</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">savez_compressed</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="o">**</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Embeddings saved to </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="SBERTInference.load_embeddings">
+<a class="viewcode-back" href="../../../api/sbert/inference_sbert.html#src.sbert.inference_sbert.SBERTInference.load_embeddings">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_embeddings</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Load precomputed embeddings.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            input_path: Path to .npz file</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            (embeddings, sentences, metadata)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">input_path</span><span class="p">,</span> <span class="n">allow_pickle</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        
+        <span class="n">embeddings</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;embeddings&#39;</span><span class="p">]</span>
+        <span class="n">sentences</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;sentences&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="n">metadata</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;metadata&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">())</span> <span class="k">if</span> <span class="s1">&#39;metadata&#39;</span> <span class="ow">in</span> <span class="n">data</span> <span class="k">else</span> <span class="kc">None</span>
+        
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loaded </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">sentences</span><span class="p">)</span><span class="si">}</span><span class="s2"> embeddings from </span><span class="si">{</span><span class="n">input_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">embeddings</span><span class="p">,</span> <span class="n">sentences</span><span class="p">,</span> <span class="n">metadata</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="main">
+<a class="viewcode-back" href="../../../api/sbert/inference_sbert.html#src.sbert.inference_sbert.main">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">argv</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Main inference script with CLI&quot;&quot;&quot;</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
+    
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;SBERT Inference&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--model_path&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to fine-tuned model&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--mode&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                       <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;similarity&quot;</span><span class="p">,</span> <span class="s2">&quot;search&quot;</span><span class="p">,</span> <span class="s2">&quot;cluster&quot;</span><span class="p">,</span> <span class="s2">&quot;encode&quot;</span><span class="p">],</span>
+                       <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Inference mode&quot;</span><span class="p">)</span>
+    
+    <span class="c1"># Similarity mode</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--sentence1&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;First sentence (similarity mode)&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--sentence2&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Second sentence (similarity mode)&quot;</span><span class="p">)</span>
+    
+    <span class="c1"># Search mode</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--query&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Query sentence (search mode)&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--corpus_file&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;File with corpus sentences (one per line)&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--top_k&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Number of results (search mode)&quot;</span><span class="p">)</span>
+    
+    <span class="c1"># Cluster mode</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--sentences_file&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;File with sentences to cluster&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--n_clusters&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Number of clusters&quot;</span><span class="p">)</span>
+    
+    <span class="c1"># Encode mode</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--input_file&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Input sentences file&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--output_file&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Output embeddings file (.npz)&quot;</span><span class="p">)</span>
+    
+    <span class="c1"># General</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--batch_size&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">32</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--device&quot;</span><span class="p">,</span>
+        <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>
+        <span class="n">choices</span><span class="o">=</span><span class="n">SUPPORTED_DEVICE_CHOICES</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Device to run SBERT inference on&quot;</span>
+    <span class="p">)</span>
+
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">(</span><span class="n">argv</span><span class="p">)</span>
+    <span class="n">resolved_device</span> <span class="o">=</span> <span class="n">resolve_torch_device</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;SBERT infer device requested=&#39;</span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">device</span><span class="si">}</span><span class="s2">&#39;, resolved=&#39;</span><span class="si">{</span><span class="n">resolved_device</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+    
+    <span class="c1"># Initialize inference engine</span>
+    <span class="n">inference</span> <span class="o">=</span> <span class="n">SBERTInference</span><span class="p">(</span>
+        <span class="n">model_path</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">model_path</span><span class="p">,</span>
+        <span class="n">device</span><span class="o">=</span><span class="n">resolved_device</span><span class="p">,</span>
+        <span class="n">batch_size</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">batch_size</span>
+    <span class="p">)</span>
+    
+    <span class="c1"># Execute based on mode</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;similarity&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">sentence1</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">sentence2</span><span class="p">:</span>
+            <span class="n">parser</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;--sentence1 and --sentence2 required for similarity mode&quot;</span><span class="p">)</span>
+        
+        <span class="n">similarity</span> <span class="o">=</span> <span class="n">inference</span><span class="o">.</span><span class="n">compute_similarity</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">sentence1</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">sentence2</span><span class="p">)</span>
+        
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Sentence 1: </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">sentence1</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Sentence 2: </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">sentence2</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Similarity: </span><span class="si">{</span><span class="n">similarity</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;search&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">query</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">corpus_file</span><span class="p">:</span>
+            <span class="n">parser</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;--query and --corpus_file required for search mode&quot;</span><span class="p">)</span>
+        
+        <span class="c1"># Load corpus</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">corpus_file</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">corpus</span> <span class="o">=</span> <span class="p">[</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span> <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span>
+        
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Searching corpus of </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">corpus</span><span class="p">)</span><span class="si">}</span><span class="s2"> sentences...&quot;</span><span class="p">)</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">inference</span><span class="o">.</span><span class="n">find_most_similar</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">query</span><span class="p">,</span> <span class="n">corpus</span><span class="p">,</span> <span class="n">top_k</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">top_k</span><span class="p">)</span>
+        
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Query: </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">query</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Top </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">top_k</span><span class="si">}</span><span class="s2"> results:&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">sentence</span><span class="p">,</span> <span class="n">score</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">. [</span><span class="si">{</span><span class="n">score</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">] </span><span class="si">{</span><span class="n">sentence</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;cluster&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">sentences_file</span><span class="p">:</span>
+            <span class="n">parser</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;--sentences_file required for cluster mode&quot;</span><span class="p">)</span>
+        
+        <span class="c1"># Load sentences</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">sentences_file</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">sentences</span> <span class="o">=</span> <span class="p">[</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span> <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span>
+        
+        <span class="n">labels</span><span class="p">,</span> <span class="n">embeddings</span> <span class="o">=</span> <span class="n">inference</span><span class="o">.</span><span class="n">cluster_sentences</span><span class="p">(</span><span class="n">sentences</span><span class="p">,</span> <span class="n">n_clusters</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">n_clusters</span><span class="p">)</span>
+        
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Clustered </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">sentences</span><span class="p">)</span><span class="si">}</span><span class="s2"> sentences into </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">n_clusters</span><span class="si">}</span><span class="s2"> groups:&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">cluster_id</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">n_clusters</span><span class="p">):</span>
+            <span class="n">cluster_sentences</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span><span class="p">,</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">sentences</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span> <span class="k">if</span> <span class="n">l</span> <span class="o">==</span> <span class="n">cluster_id</span><span class="p">]</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Cluster </span><span class="si">{</span><span class="n">cluster_id</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">cluster_sentences</span><span class="p">)</span><span class="si">}</span><span class="s2"> sentences):&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">sent</span> <span class="ow">in</span> <span class="n">cluster_sentences</span><span class="p">[:</span><span class="mi">5</span><span class="p">]:</span>  <span class="c1"># Show first 5</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - </span><span class="si">{</span><span class="n">sent</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">cluster_sentences</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">5</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  ... and </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">cluster_sentences</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">5</span><span class="si">}</span><span class="s2"> more&quot;</span><span class="p">)</span>
+    
+    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;encode&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">input_file</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">output_file</span><span class="p">:</span>
+            <span class="n">parser</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;--input_file and --output_file required for encode mode&quot;</span><span class="p">)</span>
+        
+        <span class="c1"># Load sentences</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">input_file</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">sentences</span> <span class="o">=</span> <span class="p">[</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span> <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span>
+        
+        <span class="c1"># Save embeddings</span>
+        <span class="n">inference</span><span class="o">.</span><span class="n">save_embeddings</span><span class="p">(</span><span class="n">sentences</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">output_file</span><span class="p">)</span></div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Erick F. Merino M..</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

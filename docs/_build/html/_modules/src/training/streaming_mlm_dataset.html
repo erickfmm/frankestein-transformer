@@ -1,0 +1,1304 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>src.training.streaming_mlm_dataset &mdash; Frankestein Transformer 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Frankestein Transformer
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../index.html">Frankestein Transformer Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/index.html">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/cli.html">CLI Module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/cli.html#src.cli.build_parser"><code class="docutils literal notranslate"><span class="pre">build_parser()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/cli.html#src.cli.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/model/index.html">Model Package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/model/tormented_bert_frankestein.html">Tormented BERT Frankestein</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.FactorizedEmbedding"><code class="docutils literal notranslate"><span class="pre">FactorizedEmbedding</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.FrankensteinDecoder"><code class="docutils literal notranslate"><span class="pre">FrankensteinDecoder</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.HybridLayer"><code class="docutils literal notranslate"><span class="pre">HybridLayer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.TormentedBertFrankenstein"><code class="docutils literal notranslate"><span class="pre">TormentedBertFrankenstein</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.TormentedBertMini"><code class="docutils literal notranslate"><span class="pre">TormentedBertMini</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.UltraConfig"><code class="docutils literal notranslate"><span class="pre">UltraConfig</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/model/attention/index.html">Attention Package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/common.html">Common Attention Utilities</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/standard.html">Standard Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/sigmoid.html">Sigmoid Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/retnet.html">RetNet Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/ode.html">ODE Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/titan.html">Titan Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/engram.html">Engram Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/hope.html">HoPE Positional Encoding</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/rope.html">RoPE Positional Encoding</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/gated/index.html">Gated Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/sparse/index.html">Sparse Attention</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/model/optimizer/index.html">Optimizer Package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/base.html">Optimizer Base</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/factory.html">Optimizer Factory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/sgd_momentum.html">SGD Momentum</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/adamw.html">AdamW</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/adafactor.html">Adafactor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/galore_adamw.html">GaLore AdamW</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/prodigy.html">Prodigy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/lion.html">Lion</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/sophia.html">Sophia</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/muon.html">Muon</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/turbo_muon.html">Turbo-Muon</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/radam.html">RAdam</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/adan.html">Adan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/adopt.html">ADOPT</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/ademamix.html">AdEMAMix</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/mars_adamw.html">MARS AdamW</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/cautious_adamw.html">Cautious AdamW</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/lamb.html">LAMB</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/schedulefree_adamw.html">Schedule-Free AdamW</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/shampoo.html">Shampoo</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/soap.html">SOAP</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/anon.html">Anon</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/apollo.html">Apollo</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/apollo_mini.html">Apollo-Mini</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/q_apollo.html">Q-Apollo</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/training/index.html">Training Package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/training/config_loader.html">Config Loader</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/training/config_loader.html#src.training.config_loader.LoadedTrainingConfig"><code class="docutils literal notranslate"><span class="pre">LoadedTrainingConfig</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/training/config_loader.html#src.training.config_loader.list_config_paths"><code class="docutils literal notranslate"><span class="pre">list_config_paths()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/training/config_loader.html#src.training.config_loader.load_training_config"><code class="docutils literal notranslate"><span class="pre">load_training_config()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/training/main.html">Training Main</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/training/main.html#src.training.main.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/training/streaming_mlm_dataset.html">Streaming MLM Dataset</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/training/streaming_mlm_dataset.html#src.training.streaming_mlm_dataset.StreamingMLMDataset"><code class="docutils literal notranslate"><span class="pre">StreamingMLMDataset</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/training/trainer.html">Trainer</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/training/trainer.html#src.training.trainer.TitanTrainer"><code class="docutils literal notranslate"><span class="pre">TitanTrainer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/training/trainer.html#src.training.trainer.TrainingConfig"><code class="docutils literal notranslate"><span class="pre">TrainingConfig</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/sbert/index.html">SBERT Package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/sbert/train_sbert.html">SBERT Training</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/train_sbert.html#src.sbert.train_sbert.SBERTTrainer"><code class="docutils literal notranslate"><span class="pre">SBERTTrainer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/train_sbert.html#src.sbert.train_sbert.TormentedBertSentenceTransformer"><code class="docutils literal notranslate"><span class="pre">TormentedBertSentenceTransformer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/train_sbert.html#src.sbert.train_sbert.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/sbert/inference_sbert.html">SBERT Inference</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/inference_sbert.html#src.sbert.inference_sbert.SBERTInference"><code class="docutils literal notranslate"><span class="pre">SBERTInference</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/inference_sbert.html#src.sbert.inference_sbert.SimilarityResult"><code class="docutils literal notranslate"><span class="pre">SimilarityResult</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/inference_sbert.html#src.sbert.inference_sbert.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/sbert/example_usage.html">SBERT Example Usage</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/example_usage.html#src.sbert.example_usage.example_basic_similarity"><code class="docutils literal notranslate"><span class="pre">example_basic_similarity()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/example_usage.html#src.sbert.example_usage.example_batch_comparison"><code class="docutils literal notranslate"><span class="pre">example_batch_comparison()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/example_usage.html#src.sbert.example_usage.example_batch_encoding"><code class="docutils literal notranslate"><span class="pre">example_batch_encoding()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/example_usage.html#src.sbert.example_usage.example_clustering"><code class="docutils literal notranslate"><span class="pre">example_clustering()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/example_usage.html#src.sbert.example_usage.example_save_load_embeddings"><code class="docutils literal notranslate"><span class="pre">example_save_load_embeddings()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/example_usage.html#src.sbert.example_usage.example_semantic_search"><code class="docutils literal notranslate"><span class="pre">example_semantic_search()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/example_usage.html#src.sbert.example_usage.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/deploy/index.html">Deploy Package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/deploy/deploy.html">Deploy</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/deploy.html#src.deploy.deploy.ModelDeployer"><code class="docutils literal notranslate"><span class="pre">ModelDeployer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/deploy.html#src.deploy.deploy.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/deploy/inference.html">Deploy Inference</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/inference.html#src.deploy.inference.TormentedBertInference"><code class="docutils literal notranslate"><span class="pre">TormentedBertInference</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/inference.html#src.deploy.inference.interactive_mode"><code class="docutils literal notranslate"><span class="pre">interactive_mode()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/inference.html#src.deploy.inference.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/deploy/quantization.html">Quantization</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/quantization.html#src.deploy.quantization.ActivationQuantizer"><code class="docutils literal notranslate"><span class="pre">ActivationQuantizer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/quantization.html#src.deploy.quantization.BitNetQuantizer"><code class="docutils literal notranslate"><span class="pre">BitNetQuantizer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/quantization.html#src.deploy.quantization.estimate_model_size"><code class="docutils literal notranslate"><span class="pre">estimate_model_size()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/quantization.html#src.deploy.quantization.load_quantized_checkpoint"><code class="docutils literal notranslate"><span class="pre">load_quantized_checkpoint()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/quantization.html#src.deploy.quantization.save_quantized_checkpoint"><code class="docutils literal notranslate"><span class="pre">save_quantized_checkpoint()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/deploy/transformers_export.html">Transformers Export</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/transformers_export.html#src.deploy.transformers_export.check_yaml_export_compatibility"><code class="docutils literal notranslate"><span class="pre">check_yaml_export_compatibility()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/transformers_export.html#src.deploy.transformers_export.export_transformers_model"><code class="docutils literal notranslate"><span class="pre">export_transformers_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/transformers_export.html#src.deploy.transformers_export.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/deploy/example.html">Deploy Example</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/example.html#src.deploy.example.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/tokenizer/index.html">Tokenizer Package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/tokenizer/spm_spa_redpajama35.html">SPM Spa RedPajama35 Tokenizer</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/tokenizer/spm_spa_redpajama35.html#src.tokenizer.spm_spa_redpajama35.SpanishSPMTokenizer"><code class="docutils literal notranslate"><span class="pre">SpanishSPMTokenizer</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/streamlit_gui.html">Streamlit GUI</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.build_cli_command"><code class="docutils literal notranslate"><span class="pre">build_cli_command()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.build_config_from_schema"><code class="docutils literal notranslate"><span class="pre">build_config_from_schema()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.get_current_language"><code class="docutils literal notranslate"><span class="pre">get_current_language()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.get_field_description"><code class="docutils literal notranslate"><span class="pre">get_field_description()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.get_field_title"><code class="docutils literal notranslate"><span class="pre">get_field_title()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.get_localized_schema_value"><code class="docutils literal notranslate"><span class="pre">get_localized_schema_value()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.get_ui_text"><code class="docutils literal notranslate"><span class="pre">get_ui_text()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.load_schema"><code class="docutils literal notranslate"><span class="pre">load_schema()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.render_field"><code class="docutils literal notranslate"><span class="pre">render_field()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.render_object"><code class="docutils literal notranslate"><span class="pre">render_object()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.render_optimizer_section"><code class="docutils literal notranslate"><span class="pre">render_optimizer_section()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.run_command_with_nohup"><code class="docutils literal notranslate"><span class="pre">run_command_with_nohup()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/utils/index.html">Utils Package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/utils/device.html">Device Utilities</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/utils/device.html#src.utils.device.is_mps_available"><code class="docutils literal notranslate"><span class="pre">is_mps_available()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/utils/device.html#src.utils.device.resolve_torch_device"><code class="docutils literal notranslate"><span class="pre">resolve_torch_device()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/utils/gpu_temp_guard.html">GPU Temperature Guard</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/utils/gpu_temp_guard.html#src.utils.gpu_temp_guard.GPUTelemetryError"><code class="docutils literal notranslate"><span class="pre">GPUTelemetryError</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/utils/gpu_temp_guard.html#src.utils.gpu_temp_guard.GPUTempCheckResult"><code class="docutils literal notranslate"><span class="pre">GPUTempCheckResult</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/utils/gpu_temp_guard.html#src.utils.gpu_temp_guard.GPUTemperatureGuard"><code class="docutils literal notranslate"><span class="pre">GPUTemperatureGuard</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/utils/storage_manager.html">Storage Manager</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/utils/storage_manager.html#src.utils.storage_manager.StorageManager"><code class="docutils literal notranslate"><span class="pre">StorageManager</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../specs/index.html">Specifications</a><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../bibliography/index.html">Bibliography</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../bibliography/attention_types.html">Attention Types Bibliography</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../bibliography/optimizers.html">Optimizers Bibliography</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../bibliography/other.html">Other Bibliography</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../paper-en.html">Technical Report (English)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../paper-en.html#abstract">Abstract</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../paper-es.html">Informe Tecnico (Espanol)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../paper-es.html#resumen">Resumen</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Quick Links:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/erickfmm/frankestein-transformer">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Frankestein Transformer</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">src.training.streaming_mlm_dataset</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for src.training.streaming_mlm_dataset</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Streaming MLM dataset with fault-tolerant parallel processing.</span>
+
+<span class="sd">Provides :class:`StreamingMLMDataset`, a PyTorch ``Dataset`` that streams</span>
+<span class="sd">text from HuggingFace datasets or local Parquet files, tokenizes and applies</span>
+<span class="sd">MLM masking in parallel via process-pool workers, and caches processed</span>
+<span class="sd">batches to disk for fault-tolerant resumption.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">bisect</span><span class="w"> </span><span class="kn">import</span> <span class="n">bisect_right</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">concurrent.futures</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProcessPoolExecutor</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">multiprocessing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pickle</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torch.utils.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dataset</span> <span class="k">as</span> <span class="n">TorchDataset</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..utils.storage_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">StorageManager</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..tokenizer.spm_spa_redpajama35</span><span class="w"> </span><span class="kn">import</span> <span class="n">SpanishSPMTokenizer</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">utils.storage_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">StorageManager</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">tokenizer.spm_spa_redpajama35</span><span class="w"> </span><span class="kn">import</span> <span class="n">SpanishSPMTokenizer</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_load_tokenizer_from_spec</span><span class="p">(</span><span class="n">tokenizer_spec</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reconstruct a tokenizer from a serialized specification dict.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        tokenizer_spec: Dictionary with ``backend`` (``&quot;spm&quot;`` or ``&quot;hf&quot;``)</span>
+<span class="sd">            and backend-specific fields.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A tokenizer instance (:class:`SpanishSPMTokenizer` or HuggingFace</span>
+<span class="sd">        ``AutoTokenizer``).</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        RuntimeError: If ``transformers`` is not installed for HF backend.</span>
+<span class="sd">        ValueError: If the backend is unsupported.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">backend</span> <span class="o">=</span> <span class="n">tokenizer_spec</span><span class="p">[</span><span class="s2">&quot;backend&quot;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">backend</span> <span class="o">==</span> <span class="s2">&quot;spm&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">SpanishSPMTokenizer</span><span class="p">(</span><span class="n">model_path</span><span class="o">=</span><span class="n">tokenizer_spec</span><span class="p">[</span><span class="s2">&quot;model_path&quot;</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="n">backend</span> <span class="o">==</span> <span class="s2">&quot;hf&quot;</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoTokenizer</span>
+        <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="s2">&quot;transformers is required for HF tokenizer processing in StreamingMLMDataset&quot;</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
+
+        <span class="k">return</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span>
+            <span class="n">tokenizer_spec</span><span class="p">[</span><span class="s2">&quot;name_or_path&quot;</span><span class="p">],</span>
+            <span class="n">use_fast</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">tokenizer_spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;use_fast&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)),</span>
+            <span class="n">trust_remote_code</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">tokenizer_spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;trust_remote_code&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)),</span>
+        <span class="p">)</span>
+
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported tokenizer backend: </span><span class="si">{</span><span class="n">backend</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_encode_text_with_spec</span><span class="p">(</span>
+    <span class="n">tokenizer_spec</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+    <span class="n">tokenizer</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">max_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Encode text to token IDs using the appropriate tokenizer backend.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        tokenizer_spec: Tokenizer specification dict with ``backend`` key.</span>
+<span class="sd">        tokenizer: Pre-loaded tokenizer instance.</span>
+<span class="sd">        text: Raw input text string.</span>
+<span class="sd">        max_length: Maximum sequence length for truncation/padding.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dictionary with ``&quot;input_ids&quot;`` and ``&quot;attention_mask&quot;`` lists.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">backend</span> <span class="o">=</span> <span class="n">tokenizer_spec</span><span class="p">[</span><span class="s2">&quot;backend&quot;</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">backend</span> <span class="o">==</span> <span class="s2">&quot;spm&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">max_length</span><span class="p">)</span>
+
+    <span class="n">encoded</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span>
+        <span class="n">text</span><span class="p">,</span>
+        <span class="n">truncation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">max_length</span><span class="o">=</span><span class="n">max_length</span><span class="p">,</span>
+        <span class="n">padding</span><span class="o">=</span><span class="s2">&quot;max_length&quot;</span><span class="p">,</span>
+        <span class="n">add_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">return_attention_mask</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;input_ids&quot;</span><span class="p">:</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">encoded</span><span class="p">[</span><span class="s2">&quot;input_ids&quot;</span><span class="p">]],</span>
+        <span class="s2">&quot;attention_mask&quot;</span><span class="p">:</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">encoded</span><span class="p">[</span><span class="s2">&quot;attention_mask&quot;</span><span class="p">]],</span>
+    <span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_apply_mlm_mask_standalone</span><span class="p">(</span>
+    <span class="n">input_ids</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+    <span class="n">attention_mask</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+    <span class="n">mlm_probability</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">vocab_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">mask_token_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">special_token_ids</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+    <span class="n">pad_token_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply standard BERT-style MLM masking to token IDs.</span>
+
+<span class="sd">    Masks 15% of eligible tokens: 80% replaced with ``[MASK]``, 10% with</span>
+<span class="sd">    random tokens, 10% left unchanged. Special tokens and padding are</span>
+<span class="sd">    excluded from masking.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        input_ids: List of token IDs.</span>
+<span class="sd">        attention_mask: List of attention mask values (1 = attend).</span>
+<span class="sd">        mlm_probability: Fraction of eligible tokens to mask.</span>
+<span class="sd">        vocab_size: Vocabulary size for random token replacement.</span>
+<span class="sd">        mask_token_id: Token ID for ``[MASK]``.</span>
+<span class="sd">        special_token_ids: Token IDs excluded from masking.</span>
+<span class="sd">        pad_token_id: Padding token ID excluded from masking.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Tuple of ``(masked_input_ids, labels)`` where ``labels`` is a copy</span>
+<span class="sd">        of the original ``input_ids``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">labels</span> <span class="o">=</span> <span class="n">input_ids</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">special_tokens</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">token_id</span><span class="p">)</span> <span class="k">for</span> <span class="n">token_id</span> <span class="ow">in</span> <span class="n">special_token_ids</span><span class="p">)</span>
+
+    <span class="n">maskable_positions</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">idx</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">token_id</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">input_ids</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">attention_mask</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span> <span class="o">==</span> <span class="mi">1</span>
+        <span class="ow">and</span> <span class="nb">int</span><span class="p">(</span><span class="n">token_id</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">special_tokens</span>
+        <span class="ow">and</span> <span class="nb">int</span><span class="p">(</span><span class="n">token_id</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">int</span><span class="p">(</span><span class="n">pad_token_id</span><span class="p">)</span>
+    <span class="p">]</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">maskable_positions</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">input_ids</span><span class="p">,</span> <span class="n">labels</span>
+
+    <span class="n">num_to_mask</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">maskable_positions</span><span class="p">)</span> <span class="o">*</span> <span class="n">mlm_probability</span><span class="p">))</span>
+    <span class="n">masked_positions</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">maskable_positions</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="n">num_to_mask</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">maskable_positions</span><span class="p">)))</span>
+
+    <span class="k">for</span> <span class="n">pos</span> <span class="ow">in</span> <span class="n">masked_positions</span><span class="p">:</span>
+        <span class="n">rand</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">rand</span> <span class="o">&lt;</span> <span class="mf">0.8</span><span class="p">:</span>
+            <span class="n">input_ids</span><span class="p">[</span><span class="n">pos</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">mask_token_id</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">rand</span> <span class="o">&lt;</span> <span class="mf">0.9</span><span class="p">:</span>
+            <span class="n">input_ids</span><span class="p">[</span><span class="n">pos</span><span class="p">]</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">vocab_size</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">input_ids</span><span class="p">,</span> <span class="n">labels</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_process_single_example</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Process a single text example: tokenize and apply MLM masking.</span>
+
+<span class="sd">    Designed for use with :class:`ProcessPoolExecutor` for parallel</span>
+<span class="sd">    processing. Each worker reconstructs its own tokenizer from the</span>
+<span class="sd">    serialized spec to avoid pickling issues.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        args: Tuple of ``(text, tokenizer_spec, max_length, mlm_probability)``.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dictionary with ``&quot;input_ids&quot;``, ``&quot;attention_mask&quot;``, and</span>
+<span class="sd">        ``&quot;labels&quot;``, or ``None`` on error.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">text</span><span class="p">,</span> <span class="n">tokenizer_spec</span><span class="p">,</span> <span class="n">max_length</span><span class="p">,</span> <span class="n">mlm_probability</span> <span class="o">=</span> <span class="n">args</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">_load_tokenizer_from_spec</span><span class="p">(</span><span class="n">tokenizer_spec</span><span class="p">)</span>
+        <span class="n">encoded</span> <span class="o">=</span> <span class="n">_encode_text_with_spec</span><span class="p">(</span><span class="n">tokenizer_spec</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">max_length</span><span class="p">)</span>
+        <span class="n">mlm_input</span><span class="p">,</span> <span class="n">mlm_labels</span> <span class="o">=</span> <span class="n">_apply_mlm_mask_standalone</span><span class="p">(</span>
+            <span class="n">encoded</span><span class="p">[</span><span class="s2">&quot;input_ids&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
+            <span class="n">encoded</span><span class="p">[</span><span class="s2">&quot;attention_mask&quot;</span><span class="p">],</span>
+            <span class="n">mlm_probability</span><span class="p">,</span>
+            <span class="nb">int</span><span class="p">(</span><span class="n">tokenizer_spec</span><span class="p">[</span><span class="s2">&quot;vocab_size&quot;</span><span class="p">]),</span>
+            <span class="nb">int</span><span class="p">(</span><span class="n">tokenizer_spec</span><span class="p">[</span><span class="s2">&quot;mask_token_id&quot;</span><span class="p">]),</span>
+            <span class="nb">list</span><span class="p">(</span><span class="n">tokenizer_spec</span><span class="p">[</span><span class="s2">&quot;special_token_ids&quot;</span><span class="p">]),</span>
+            <span class="nb">int</span><span class="p">(</span><span class="n">tokenizer_spec</span><span class="p">[</span><span class="s2">&quot;pad_token_id&quot;</span><span class="p">]),</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;input_ids&quot;</span><span class="p">:</span> <span class="n">mlm_input</span><span class="p">,</span>
+            <span class="s2">&quot;attention_mask&quot;</span><span class="p">:</span> <span class="n">encoded</span><span class="p">[</span><span class="s2">&quot;attention_mask&quot;</span><span class="p">],</span>
+            <span class="s2">&quot;labels&quot;</span><span class="p">:</span> <span class="n">mlm_labels</span><span class="p">,</span>
+        <span class="p">}</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Error processing example: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+
+<div class="viewcode-block" id="StreamingMLMDataset">
+<a class="viewcode-back" href="../../../api/training/streaming_mlm_dataset.html#src.training.streaming_mlm_dataset.StreamingMLMDataset">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">StreamingMLMDataset</span><span class="p">(</span><span class="n">TorchDataset</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Streaming MLM dataset with fault-tolerant parallel processing.</span>
+
+<span class="sd">    Streams raw text from HuggingFace datasets or local Parquet files,</span>
+<span class="sd">    tokenizes and applies MLM masking in parallel using process-pool workers,</span>
+<span class="sd">    and caches processed batches to disk as pickle files. Supports resumption</span>
+<span class="sd">    from partially completed caches and optional context-window joining for</span>
+<span class="sd">    longer contiguous sequences.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        tokenizer: The tokenizer instance.</span>
+<span class="sd">        max_length: Maximum sequence length for tokenization.</span>
+<span class="sd">        mlm_probability: Fraction of tokens to mask for MLM.</span>
+<span class="sd">        max_samples: Target maximum number of processed examples.</span>
+<span class="sd">        batch_size: Number of examples per cached batch file.</span>
+<span class="sd">        num_workers: Number of parallel process-pool workers.</span>
+<span class="sd">        total_examples: Total indexed examples available for ``__getitem__``.</span>
+<span class="sd">        cache_dir: Active cache directory path.</span>
+<span class="sd">        data_source: Label describing the data source used.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="StreamingMLMDataset.__init__">
+<a class="viewcode-back" href="../../../api/training/streaming_mlm_dataset.html#src.training.streaming_mlm_dataset.StreamingMLMDataset.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">tokenizer</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+        <span class="n">max_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">512</span><span class="p">,</span>
+        <span class="n">mlm_probability</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.15</span><span class="p">,</span>
+        <span class="n">max_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1_000_000</span><span class="p">,</span>
+        <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5000</span><span class="p">,</span>
+        <span class="n">num_workers</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">cache_dir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">max_batch_in_memory</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">parallel_chunksize</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span>
+        <span class="n">local_parquet_dir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">prefer_local_cache</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">stream_local_parquet</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">join_temp_data_context_window</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">join_temp_data_min_remainder_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">128</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the streaming MLM dataset.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            tokenizer: Tokenizer instance (SPM or HuggingFace).</span>
+<span class="sd">            max_length: Maximum sequence length after tokenization.</span>
+<span class="sd">            mlm_probability: Fraction of eligible tokens to mask.</span>
+<span class="sd">            max_samples: Target maximum number of examples to produce.</span>
+<span class="sd">            batch_size: Number of examples per cached batch file.</span>
+<span class="sd">            num_workers: Number of parallel workers. Defaults to</span>
+<span class="sd">                ``min(8, cpu_count // 2)``.</span>
+<span class="sd">            cache_dir: Directory for cached batch files. Defaults to</span>
+<span class="sd">                ``./temp_data/dataset_cache``.</span>
+<span class="sd">            max_batch_in_memory: Maximum in-memory batch size during</span>
+<span class="sd">                processing. Defaults to ``min(batch_size, 2000)``.</span>
+<span class="sd">            parallel_chunksize: Chunksize for ``ProcessPoolExecutor.map``.</span>
+<span class="sd">            local_parquet_dir: Optional path to local Parquet files.</span>
+<span class="sd">            prefer_local_cache: If ``True``, prefer local Parquet over</span>
+<span class="sd">                streaming from HuggingFace.</span>
+<span class="sd">            stream_local_parquet: If ``True``, stream local Parquet files</span>
+<span class="sd">                instead of loading them entirely into memory.</span>
+<span class="sd">            join_temp_data_context_window: If &gt; 0, join cached examples</span>
+<span class="sd">                into contiguous sequences of this length.</span>
+<span class="sd">            join_temp_data_min_remainder_tokens: Minimum remaining tokens</span>
+<span class="sd">                to form a final joined sequence.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span> <span class="o">=</span> <span class="n">tokenizer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_length</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">max_length</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mlm_probability</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">mlm_probability</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_samples</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">max_samples</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)</span>
+        <span class="n">requested_workers</span> <span class="o">=</span> <span class="n">num_workers</span> <span class="ow">or</span> <span class="nb">min</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">mp</span><span class="o">.</span><span class="n">cpu_count</span><span class="p">()</span> <span class="o">//</span> <span class="mi">2</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_workers</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">requested_workers</span><span class="p">),</span> <span class="n">mp</span><span class="o">.</span><span class="n">cpu_count</span><span class="p">()))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parallel_chunksize</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">parallel_chunksize</span><span class="p">))</span>
+        <span class="n">default_max_batch</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span> <span class="mi">2000</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_batch_in_memory</span> <span class="o">=</span> <span class="n">max_batch_in_memory</span> <span class="ow">or</span> <span class="n">default_max_batch</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">processing_batch_size</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_batch_in_memory</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">storage_manager</span> <span class="o">=</span> <span class="n">StorageManager</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prefer_local_cache</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">prefer_local_cache</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stream_local_parquet</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">stream_local_parquet</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">local_parquet_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">local_parquet_dir</span><span class="p">)</span> <span class="k">if</span> <span class="n">local_parquet_dir</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_source</span> <span class="o">=</span> <span class="s2">&quot;unknown&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">join_temp_data_context_window</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">join_temp_data_context_window</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">join_temp_data_min_remainder_tokens</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">join_temp_data_min_remainder_tokens</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">tokenizer_spec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_tokenizer_spec</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">special_token_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokenizer_spec</span><span class="p">[</span><span class="s2">&quot;special_token_ids&quot;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pad_token_id</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tokenizer_spec</span><span class="p">[</span><span class="s2">&quot;pad_token_id&quot;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mask_token_id</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tokenizer_spec</span><span class="p">[</span><span class="s2">&quot;mask_token_id&quot;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vocab_size</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tokenizer_spec</span><span class="p">[</span><span class="s2">&quot;vocab_size&quot;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cls_token_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokenizer_spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;cls_token_id&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sep_token_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokenizer_spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sep_token_id&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">cache_dir</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">base_cache_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">cache_dir</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">base_cache_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;./temp_data/dataset_cache&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">base_cache_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">cache_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_cache_dir</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metadata_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache_dir</span> <span class="o">/</span> <span class="s2">&quot;metadata.json&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache_dir</span> <span class="o">/</span> <span class="s2">&quot;progress.json&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_metadata</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">batch_meta</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cumulative_sizes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">total_examples</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_batch_cache_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_batch_cache</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_examples</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">join_temp_data_context_window</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_joined_cache</span><span class="p">()</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_build_tokenizer_spec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">,</span> <span class="n">SpanishSPMTokenizer</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">model_path</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;SpanishSPMTokenizer requires a model_path for multiprocessing&quot;</span><span class="p">)</span>
+
+            <span class="n">vocab</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">,</span> <span class="s2">&quot;vocab&quot;</span><span class="p">,</span> <span class="p">{})</span> <span class="ow">or</span> <span class="p">{}</span>
+            <span class="n">pad_token_id</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">vocab</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;[PAD]&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+            <span class="n">mask_token_id</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">vocab</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;[MASK]&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+            <span class="n">cls_token_id</span> <span class="o">=</span> <span class="n">vocab</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;[CLS]&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="n">sep_token_id</span> <span class="o">=</span> <span class="n">vocab</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;[SEP]&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="n">unk_token_id</span> <span class="o">=</span> <span class="n">vocab</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;&lt;unk&gt;&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">special_token_ids</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">pad_token_id</span><span class="p">,</span>
+                <span class="n">mask_token_id</span><span class="p">,</span>
+                <span class="nb">int</span><span class="p">(</span><span class="n">unk_token_id</span><span class="p">),</span>
+            <span class="p">}</span>
+            <span class="k">if</span> <span class="n">cls_token_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">special_token_ids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">cls_token_id</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">sep_token_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">special_token_ids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">sep_token_id</span><span class="p">))</span>
+
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s2">&quot;backend&quot;</span><span class="p">:</span> <span class="s2">&quot;spm&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;model_path&quot;</span><span class="p">:</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">model_path</span><span class="p">,</span>
+                <span class="s2">&quot;vocab_size&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">vocab_size</span><span class="p">),</span>
+                <span class="s2">&quot;special_token_ids&quot;</span><span class="p">:</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">special_token_ids</span><span class="p">),</span>
+                <span class="s2">&quot;mask_token_id&quot;</span><span class="p">:</span> <span class="n">mask_token_id</span><span class="p">,</span>
+                <span class="s2">&quot;pad_token_id&quot;</span><span class="p">:</span> <span class="n">pad_token_id</span><span class="p">,</span>
+                <span class="s2">&quot;cls_token_id&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">cls_token_id</span><span class="p">)</span> <span class="k">if</span> <span class="n">cls_token_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="s2">&quot;sep_token_id&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">sep_token_id</span><span class="p">)</span> <span class="k">if</span> <span class="n">sep_token_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="p">}</span>
+
+        <span class="n">tokenizer_name_or_path</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">,</span> <span class="s2">&quot;name_or_path&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">tokenizer_name_or_path</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;HF tokenizer must expose name_or_path to support multiprocessing tokenization&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">special_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">,</span> <span class="s2">&quot;all_special_ids&quot;</span><span class="p">,</span> <span class="p">[])</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">attr_name</span> <span class="ow">in</span> <span class="p">[</span>
+            <span class="s2">&quot;pad_token_id&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;mask_token_id&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;cls_token_id&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;sep_token_id&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;bos_token_id&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;eos_token_id&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;unk_token_id&quot;</span><span class="p">,</span>
+        <span class="p">]:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">special_ids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
+
+        <span class="n">pad_token_id</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">,</span> <span class="s2">&quot;pad_token_id&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">pad_token_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">pad_token_id</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="n">mask_token_id</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">,</span> <span class="s2">&quot;mask_token_id&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">mask_token_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;HF tokenizer must have mask_token_id for MLM training&quot;</span><span class="p">)</span>
+
+        <span class="n">cls_token_id</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">,</span> <span class="s2">&quot;cls_token_id&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">cls_token_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">cls_token_id</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">,</span> <span class="s2">&quot;bos_token_id&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+        <span class="n">sep_token_id</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">,</span> <span class="s2">&quot;sep_token_id&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">sep_token_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">sep_token_id</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">,</span> <span class="s2">&quot;eos_token_id&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+        <span class="n">tokenizer_length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">)</span>
+        <span class="n">init_kwargs</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">,</span> <span class="s2">&quot;init_kwargs&quot;</span><span class="p">,</span> <span class="p">{})</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;backend&quot;</span><span class="p">:</span> <span class="s2">&quot;hf&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;name_or_path&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">tokenizer_name_or_path</span><span class="p">),</span>
+            <span class="s2">&quot;use_fast&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">,</span> <span class="s2">&quot;is_fast&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)),</span>
+            <span class="s2">&quot;trust_remote_code&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">init_kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;trust_remote_code&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)),</span>
+            <span class="s2">&quot;vocab_size&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">tokenizer_length</span><span class="p">),</span>
+            <span class="s2">&quot;special_token_ids&quot;</span><span class="p">:</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">special_ids</span><span class="p">),</span>
+            <span class="s2">&quot;mask_token_id&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">mask_token_id</span><span class="p">),</span>
+            <span class="s2">&quot;pad_token_id&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">pad_token_id</span><span class="p">),</span>
+            <span class="s2">&quot;cls_token_id&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">cls_token_id</span><span class="p">)</span> <span class="k">if</span> <span class="n">cls_token_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">&quot;sep_token_id&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">sep_token_id</span><span class="p">)</span> <span class="k">if</span> <span class="n">sep_token_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_load_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata_file</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata_file</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">handle</span><span class="p">:</span>
+                    <span class="n">metadata</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">handle</span><span class="p">)</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                    <span class="s2">&quot;Loaded metadata: </span><span class="si">%s</span><span class="s2"> batches completed&quot;</span><span class="p">,</span>
+                    <span class="nb">len</span><span class="p">(</span><span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;completed_batches&quot;</span><span class="p">,</span> <span class="p">[])),</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="n">metadata</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Error loading metadata: </span><span class="si">%s</span><span class="s2">, creating new&quot;</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;total_samples_target&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_samples</span><span class="p">,</span>
+            <span class="s2">&quot;total_samples_processed&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;completed_batches&quot;</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="s2">&quot;batch_size&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
+            <span class="s2">&quot;last_batch_id&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_save_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata_file</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">handle</span><span class="p">:</span>
+                <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">,</span> <span class="n">handle</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Error saving metadata: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_batch_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;batch_</span><span class="si">{</span><span class="n">batch_id</span><span class="si">:</span><span class="s2">05d</span><span class="si">}</span><span class="s2">.pkl&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_batch_file_for_dir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">directory</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">batch_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">directory</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;batch_</span><span class="si">{</span><span class="n">batch_id</span><span class="si">:</span><span class="s2">05d</span><span class="si">}</span><span class="s2">.pkl&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_load_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+        <span class="n">batch_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_batch_file</span><span class="p">(</span><span class="n">batch_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">batch_file</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="k">return</span> <span class="p">[]</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">batch_file</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">handle</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">handle</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Error loading batch </span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">batch_id</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">[]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_load_batch_from_dir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">directory</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">batch_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+        <span class="n">batch_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_batch_file_for_dir</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">batch_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">batch_file</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="k">return</span> <span class="p">[]</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">batch_file</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">handle</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">handle</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Error loading batch </span><span class="si">%s</span><span class="s2"> from </span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">batch_id</span><span class="p">,</span> <span class="n">directory</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">[]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_save_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">examples</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="n">batch_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_batch_file</span><span class="p">(</span><span class="n">batch_id</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">batch_file</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">handle</span><span class="p">:</span>
+                <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">examples</span><span class="p">,</span> <span class="n">handle</span><span class="p">,</span> <span class="n">protocol</span><span class="o">=</span><span class="n">pickle</span><span class="o">.</span><span class="n">HIGHEST_PROTOCOL</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Error saving batch </span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">batch_id</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_save_batch_to_dir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">directory</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">batch_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">examples</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="n">batch_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_batch_file_for_dir</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">batch_id</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">batch_file</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">handle</span><span class="p">:</span>
+                <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">examples</span><span class="p">,</span> <span class="n">handle</span><span class="p">,</span> <span class="n">protocol</span><span class="o">=</span><span class="n">pickle</span><span class="o">.</span><span class="n">HIGHEST_PROTOCOL</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Error saving batch </span><span class="si">%s</span><span class="s2"> to </span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">batch_id</span><span class="p">,</span> <span class="n">directory</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_append_batch_meta</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">batch_size</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">batch_meta</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">&quot;batch_id&quot;</span><span class="p">:</span> <span class="n">batch_id</span><span class="p">,</span> <span class="s2">&quot;size&quot;</span><span class="p">:</span> <span class="n">batch_size</span><span class="p">})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">total_examples</span> <span class="o">+=</span> <span class="n">batch_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cumulative_sizes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">total_examples</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_reset_batch_index</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">batch_meta</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cumulative_sizes</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">total_examples</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_batch_cache_id</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_batch_cache</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_load_existing_batches</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">completed_batches</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;completed_batches&quot;</span><span class="p">,</span> <span class="p">[]))</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Indexing </span><span class="si">%s</span><span class="s2"> existing batches from </span><span class="si">%s</span><span class="s2">...&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">completed_batches</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache_dir</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">batch_id</span> <span class="ow">in</span> <span class="n">completed_batches</span><span class="p">:</span>
+            <span class="n">batch_examples</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_batch</span><span class="p">(</span><span class="n">batch_id</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_append_batch_meta</span><span class="p">(</span><span class="n">batch_id</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">batch_examples</span><span class="p">))</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_examples</span> <span class="o">%</span> <span class="mi">50000</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_examples</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Indexed </span><span class="si">%s</span><span class="s2"> examples so far...&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_examples</span><span class="p">)</span>
+
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s2">&quot;Indexed </span><span class="si">%s</span><span class="s2"> examples from </span><span class="si">%s</span><span class="s2"> batches&quot;</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">total_examples</span><span class="p">,</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">completed_batches</span><span class="p">),</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_prepare_examples</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_load_existing_batches</span><span class="p">()</span>
+        <span class="n">samples_processed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_examples</span>
+
+        <span class="k">if</span> <span class="n">samples_processed</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_samples</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Already have </span><span class="si">%s</span><span class="s2"> samples, skipping data preparation&quot;</span><span class="p">,</span> <span class="n">samples_processed</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Starting data preparation from </span><span class="si">%s</span><span class="s2"> samples...&quot;</span><span class="p">,</span> <span class="n">samples_processed</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Using </span><span class="si">%s</span><span class="s2"> parallel workers&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_workers</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">processing_batch_size</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;Reducing in-memory batch size to </span><span class="si">%s</span><span class="s2"> (configured batch_size=</span><span class="si">%s</span><span class="s2">)&quot;</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">processing_batch_size</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_dataset_source</span><span class="p">()</span>
+            <span class="n">dataset_iter</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">samples_processed</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Skipping first </span><span class="si">%s</span><span class="s2"> examples...&quot;</span><span class="p">,</span> <span class="n">samples_processed</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">samples_processed</span><span class="p">):</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="nb">next</span><span class="p">(</span><span class="n">dataset_iter</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
+                        <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Dataset exhausted during skip&quot;</span><span class="p">)</span>
+                        <span class="k">return</span>
+
+            <span class="n">current_batch_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;last_batch_id&quot;</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="n">batch_texts</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="k">while</span> <span class="n">samples_processed</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_samples</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">example</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">dataset_iter</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="s2">&quot;text&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">example</span><span class="p">:</span>
+                        <span class="k">continue</span>
+                    <span class="n">text</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">example</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">10</span><span class="p">:</span>
+                        <span class="k">continue</span>
+
+                    <span class="n">batch_texts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">batch_texts</span><span class="p">)</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">processing_batch_size</span><span class="p">:</span>
+                        <span class="k">continue</span>
+
+                    <span class="n">new_examples</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_batch_parallel</span><span class="p">(</span><span class="n">batch_texts</span><span class="p">,</span> <span class="n">current_batch_id</span><span class="p">)</span>
+                    <span class="n">batch_texts</span> <span class="o">=</span> <span class="p">[]</span>
+
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">new_examples</span><span class="p">:</span>
+                        <span class="n">current_batch_id</span> <span class="o">+=</span> <span class="mi">1</span>
+                        <span class="k">continue</span>
+
+                    <span class="n">batch_size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">new_examples</span><span class="p">)</span>
+                    <span class="n">samples_processed</span> <span class="o">+=</span> <span class="n">batch_size</span>
+
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_save_batch</span><span class="p">(</span><span class="n">current_batch_id</span><span class="p">,</span> <span class="n">new_examples</span><span class="p">):</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;completed_batches&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">current_batch_id</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;last_batch_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">current_batch_id</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;total_samples_processed&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">samples_processed</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_save_metadata</span><span class="p">()</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_append_batch_meta</span><span class="p">(</span><span class="n">current_batch_id</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">)</span>
+
+                        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                            <span class="s2">&quot;Batch </span><span class="si">%s</span><span class="s2"> completed: </span><span class="si">%s</span><span class="s2"> examples, total: </span><span class="si">%s</span><span class="s2">/</span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                            <span class="n">current_batch_id</span><span class="p">,</span>
+                            <span class="n">batch_size</span><span class="p">,</span>
+                            <span class="n">samples_processed</span><span class="p">,</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">max_samples</span><span class="p">,</span>
+                        <span class="p">)</span>
+
+                    <span class="n">current_batch_id</span> <span class="o">+=</span> <span class="mi">1</span>
+
+                    <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage_manager</span><span class="o">.</span><span class="n">register_file</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cache_dir</span><span class="p">)):</span>
+                        <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Storage limit reached&quot;</span><span class="p">)</span>
+                        <span class="k">break</span>
+
+                <span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
+                    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Dataset exhausted&quot;</span><span class="p">)</span>
+                    <span class="k">break</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                    <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Error reading from dataset: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+                    <span class="k">break</span>
+
+            <span class="k">if</span> <span class="n">batch_texts</span> <span class="ow">and</span> <span class="n">samples_processed</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_samples</span><span class="p">:</span>
+                <span class="n">new_examples</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_batch_parallel</span><span class="p">(</span><span class="n">batch_texts</span><span class="p">,</span> <span class="n">current_batch_id</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">new_examples</span><span class="p">:</span>
+                    <span class="n">batch_size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">new_examples</span><span class="p">)</span>
+                    <span class="n">samples_processed</span> <span class="o">+=</span> <span class="n">batch_size</span>
+
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_save_batch</span><span class="p">(</span><span class="n">current_batch_id</span><span class="p">,</span> <span class="n">new_examples</span><span class="p">):</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;completed_batches&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">current_batch_id</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;last_batch_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">current_batch_id</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;total_samples_processed&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">samples_processed</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_save_metadata</span><span class="p">()</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_append_batch_meta</span><span class="p">(</span><span class="n">current_batch_id</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">)</span>
+
+                        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                            <span class="s2">&quot;Final batch </span><span class="si">%s</span><span class="s2"> completed: </span><span class="si">%s</span><span class="s2"> examples, total: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                            <span class="n">current_batch_id</span><span class="p">,</span>
+                            <span class="n">batch_size</span><span class="p">,</span>
+                            <span class="n">samples_processed</span><span class="p">,</span>
+                        <span class="p">)</span>
+
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Data preparation completed: </span><span class="si">%s</span><span class="s2"> total examples&quot;</span><span class="p">,</span> <span class="n">samples_processed</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;🚨 CRITICAL ERROR: Dataset preparation failed&quot;</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Error type: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Error message: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Dataset: erickfmm/red_pajama_es_hq_35&quot;</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Samples processed before failure: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">samples_processed</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Examples indexed: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_examples</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Attempted configuration:&quot;</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;  - max_samples: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">max_samples</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;  - batch_size: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;  - num_workers: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_workers</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;  - cache_dir: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache_dir</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_examples</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">⚠️  </span><span class="si">%s</span><span class="s2"> examples available from cache&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_examples</span><span class="p">)</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Continuing with cached data only (no synthetic fallback)&quot;</span><span class="p">)</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
+                <span class="k">return</span>
+
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">⛔ SYSTEM HALTED - No cached data and no synthetic fallback allowed&quot;</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
+            <span class="kn">import</span><span class="w"> </span><span class="nn">traceback</span>
+
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Full traceback:&quot;</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">())</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="s2">&quot;Failed to prepare dataset and no cached data available. &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Error: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">. Check logs for details.&quot;</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_local_parquet_files</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="n">candidate_dirs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">local_parquet_dir</span><span class="p">:</span>
+            <span class="n">candidate_dirs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">local_parquet_dir</span><span class="p">)</span>
+
+        <span class="n">hf_cache</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;HF_DATASETS_CACHE&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">hf_cache</span><span class="p">:</span>
+            <span class="n">candidate_dirs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">hf_cache</span><span class="p">)</span> <span class="o">/</span> <span class="s2">&quot;hub&quot;</span> <span class="o">/</span> <span class="s2">&quot;datasets--erickfmm--red_pajama_es_hq_35&quot;</span><span class="p">)</span>
+
+        <span class="n">candidate_dirs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="n">Path</span><span class="o">.</span><span class="n">home</span><span class="p">()</span> <span class="o">/</span> <span class="s2">&quot;.cache&quot;</span> <span class="o">/</span> <span class="s2">&quot;huggingface&quot;</span> <span class="o">/</span> <span class="s2">&quot;hub&quot;</span> <span class="o">/</span> <span class="s2">&quot;datasets--erickfmm--red_pajama_es_hq_35&quot;</span>
+        <span class="p">)</span>
+
+        <span class="n">expanded_dirs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">base_dir</span> <span class="ow">in</span> <span class="n">candidate_dirs</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">base_dir</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                <span class="k">continue</span>
+
+            <span class="n">expanded_dirs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">base_dir</span><span class="p">)</span>
+            <span class="n">snapshots_dir</span> <span class="o">=</span> <span class="n">base_dir</span> <span class="o">/</span> <span class="s2">&quot;snapshots&quot;</span>
+            <span class="k">if</span> <span class="n">snapshots_dir</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                <span class="k">for</span> <span class="n">train_dir</span> <span class="ow">in</span> <span class="n">snapshots_dir</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;*/train&quot;</span><span class="p">):</span>
+                    <span class="n">expanded_dirs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">train_dir</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">base_dir</span> <span class="ow">in</span> <span class="n">expanded_dirs</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">base_dir</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                <span class="k">continue</span>
+
+            <span class="n">parquet_files</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">resolve</span><span class="p">())</span> <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">base_dir</span><span class="o">.</span><span class="n">rglob</span><span class="p">(</span><span class="s2">&quot;*.parquet&quot;</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">parquet_files</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">parquet_files</span>
+
+        <span class="k">return</span> <span class="p">[]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_load_dataset_source</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">parquet_files</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_local_parquet_files</span><span class="p">()</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">prefer_local_cache</span> <span class="k">else</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">parquet_files</span><span class="p">:</span>
+            <span class="n">mode</span> <span class="o">=</span> <span class="s2">&quot;stream&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stream_local_parquet</span> <span class="k">else</span> <span class="s2">&quot;in_memory&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data_source</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;local_parquet:</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">parquet_files</span><span class="p">)</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">mode</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;Using local parquet cache with </span><span class="si">%s</span><span class="s2"> files (no streaming download), mode=</span><span class="si">%s</span><span class="s2">.&quot;</span><span class="p">,</span>
+                <span class="nb">len</span><span class="p">(</span><span class="n">parquet_files</span><span class="p">),</span>
+                <span class="n">mode</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">load_dataset</span><span class="p">(</span>
+                <span class="s2">&quot;parquet&quot;</span><span class="p">,</span>
+                <span class="n">data_files</span><span class="o">=</span><span class="n">parquet_files</span><span class="p">,</span>
+                <span class="n">split</span><span class="o">=</span><span class="s2">&quot;train&quot;</span><span class="p">,</span>
+                <span class="n">streaming</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">stream_local_parquet</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_source</span> <span class="o">=</span> <span class="s2">&quot;streaming_remote&quot;</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s2">&quot;Local parquet cache not found (checked user path/HF cache); falling back to streaming.&quot;</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">&quot;erickfmm/red_pajama_es_hq_35&quot;</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="s2">&quot;train&quot;</span><span class="p">,</span> <span class="n">streaming</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_process_batch_parallel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">texts</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">batch_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">texts</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+
+        <span class="n">results</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">args_iter</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="p">(</span>
+                <span class="n">text</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">tokenizer_spec</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">max_length</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">mlm_probability</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">text</span> <span class="ow">in</span> <span class="n">texts</span>
+        <span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">ProcessPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_workers</span><span class="p">)</span> <span class="k">as</span> <span class="n">executor</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">executor</span><span class="o">.</span><span class="n">map</span><span class="p">(</span>
+                    <span class="n">_process_single_example</span><span class="p">,</span>
+                    <span class="n">args_iter</span><span class="p">,</span>
+                    <span class="n">chunksize</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">parallel_chunksize</span><span class="p">,</span>
+                <span class="p">):</span>
+                    <span class="k">if</span> <span class="n">result</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Error in parallel processing for batch </span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">batch_id</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Falling back to sequential processing...&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">text</span> <span class="ow">in</span> <span class="n">texts</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">result</span> <span class="o">=</span> <span class="n">_process_single_example</span><span class="p">(</span>
+                        <span class="p">(</span>
+                            <span class="n">text</span><span class="p">,</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">tokenizer_spec</span><span class="p">,</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">max_length</span><span class="p">,</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">mlm_probability</span><span class="p">,</span>
+                        <span class="p">)</span>
+                    <span class="p">)</span>
+                    <span class="k">if</span> <span class="n">result</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">fallback_exc</span><span class="p">:</span>
+                    <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Error in sequential fallback: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">fallback_exc</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">results</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_wrapper_special_tokens_count</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cls_token_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sep_token_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">count</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_extract_content_tokens</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">example</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+        <span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">token_id</span><span class="p">)</span> <span class="k">for</span> <span class="n">token_id</span> <span class="ow">in</span> <span class="n">example</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;labels&quot;</span><span class="p">,</span> <span class="p">[])]</span>
+        <span class="n">attention_mask</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">example</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;attention_mask&quot;</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">labels</span><span class="p">))]</span>
+
+        <span class="n">result</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">token_id</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">labels</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">idx</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">attention_mask</span><span class="p">)</span> <span class="ow">or</span> <span class="n">attention_mask</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">token_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">special_token_ids</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">token_id</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">pad_token_id</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">token_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_build_joined_sequence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">content_tokens</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">context_window</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]:</span>
+        <span class="n">sequence</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cls_token_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">sequence</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cls_token_id</span><span class="p">))</span>
+
+        <span class="n">sequence</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">token_id</span><span class="p">)</span> <span class="k">for</span> <span class="n">token_id</span> <span class="ow">in</span> <span class="n">content_tokens</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sep_token_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">sequence</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sep_token_id</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sequence</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">context_window</span><span class="p">:</span>
+            <span class="n">sequence</span> <span class="o">=</span> <span class="n">sequence</span><span class="p">[:</span><span class="n">context_window</span><span class="p">]</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sep_token_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">sequence</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sep_token_id</span><span class="p">)</span>
+
+        <span class="n">attention_mask</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">sequence</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sequence</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">context_window</span><span class="p">:</span>
+            <span class="n">pad_len</span> <span class="o">=</span> <span class="n">context_window</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">sequence</span><span class="p">)</span>
+            <span class="n">sequence</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">pad_token_id</span><span class="p">]</span> <span class="o">*</span> <span class="n">pad_len</span><span class="p">)</span>
+            <span class="n">attention_mask</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">pad_len</span><span class="p">)</span>
+
+        <span class="n">masked_input_ids</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">_apply_mlm_mask_standalone</span><span class="p">(</span>
+            <span class="n">sequence</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
+            <span class="n">attention_mask</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mlm_probability</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">vocab_size</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mask_token_id</span><span class="p">,</span>
+            <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">special_token_ids</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pad_token_id</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;input_ids&quot;</span><span class="p">:</span> <span class="n">masked_input_ids</span><span class="p">,</span>
+            <span class="s2">&quot;attention_mask&quot;</span><span class="p">:</span> <span class="n">attention_mask</span><span class="p">,</span>
+            <span class="s2">&quot;labels&quot;</span><span class="p">:</span> <span class="n">labels</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_prepare_joined_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">context_window</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">join_temp_data_context_window</span>
+        <span class="n">joined_cache_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_cache_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;joined_ctx_</span><span class="si">{</span><span class="n">context_window</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">joined_cache_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">joined_metadata_file</span> <span class="o">=</span> <span class="n">joined_cache_dir</span> <span class="o">/</span> <span class="s2">&quot;metadata.json&quot;</span>
+        <span class="n">joined_metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">joined_metadata_file</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">joined_metadata_file</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">handle</span><span class="p">:</span>
+                    <span class="n">candidate</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">handle</span><span class="p">)</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="n">candidate</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;join_temp_data_context_window&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="n">context_window</span>
+                    <span class="ow">and</span> <span class="n">candidate</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;source_cache_dir&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_cache_dir</span><span class="p">)</span>
+                    <span class="ow">and</span> <span class="n">candidate</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;total_samples_target&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_samples</span>
+                    <span class="ow">and</span> <span class="n">candidate</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;source_completed_batches&quot;</span><span class="p">)</span>
+                    <span class="o">==</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;completed_batches&quot;</span><span class="p">,</span> <span class="p">[]))</span>
+                <span class="p">):</span>
+                    <span class="n">joined_metadata</span> <span class="o">=</span> <span class="n">candidate</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Failed to load joined cache metadata: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">joined_metadata</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;Building joined context cache at </span><span class="si">%s</span><span class="s2"> (context_window=</span><span class="si">%s</span><span class="s2">)&quot;</span><span class="p">,</span>
+                <span class="n">joined_cache_dir</span><span class="p">,</span>
+                <span class="n">context_window</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">joined_metadata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_joined_cache</span><span class="p">(</span><span class="n">joined_cache_dir</span><span class="p">,</span> <span class="n">context_window</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_activate_cache</span><span class="p">(</span><span class="n">joined_cache_dir</span><span class="p">,</span> <span class="n">joined_metadata</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_build_joined_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">joined_cache_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">context_window</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="n">source_batches</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;completed_batches&quot;</span><span class="p">,</span> <span class="p">[]))</span>
+        <span class="n">wrapper_tokens</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wrapper_special_tokens_count</span><span class="p">()</span>
+        <span class="n">target_content_len</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">context_window</span> <span class="o">-</span> <span class="n">wrapper_tokens</span><span class="p">)</span>
+
+        <span class="n">total_joined_examples</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">current_batch_id</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">joined_batch_examples</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">content_buffer</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">completed_batches</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">source_batch_id</span> <span class="ow">in</span> <span class="n">source_batches</span><span class="p">:</span>
+            <span class="n">source_examples</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_batch_from_dir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_cache_dir</span><span class="p">,</span> <span class="n">source_batch_id</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">source_examples</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="k">for</span> <span class="n">source_example</span> <span class="ow">in</span> <span class="n">source_examples</span><span class="p">:</span>
+                <span class="n">content_tokens</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_content_tokens</span><span class="p">(</span><span class="n">source_example</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">content_tokens</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="n">content_buffer</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">content_tokens</span><span class="p">)</span>
+
+                <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">content_buffer</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">target_content_len</span> <span class="ow">and</span> <span class="n">total_joined_examples</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_samples</span><span class="p">:</span>
+                    <span class="n">chunk</span> <span class="o">=</span> <span class="n">content_buffer</span><span class="p">[:</span><span class="n">target_content_len</span><span class="p">]</span>
+                    <span class="k">del</span> <span class="n">content_buffer</span><span class="p">[:</span><span class="n">target_content_len</span><span class="p">]</span>
+                    <span class="n">joined_batch_examples</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_build_joined_sequence</span><span class="p">(</span><span class="n">chunk</span><span class="p">,</span> <span class="n">context_window</span><span class="p">))</span>
+                    <span class="n">total_joined_examples</span> <span class="o">+=</span> <span class="mi">1</span>
+
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">joined_batch_examples</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">processing_batch_size</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_save_batch_to_dir</span><span class="p">(</span><span class="n">joined_cache_dir</span><span class="p">,</span> <span class="n">current_batch_id</span><span class="p">,</span> <span class="n">joined_batch_examples</span><span class="p">):</span>
+                            <span class="n">completed_batches</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">current_batch_id</span><span class="p">)</span>
+                        <span class="n">current_batch_id</span> <span class="o">+=</span> <span class="mi">1</span>
+                        <span class="n">joined_batch_examples</span> <span class="o">=</span> <span class="p">[]</span>
+
+                <span class="k">if</span> <span class="n">total_joined_examples</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_samples</span><span class="p">:</span>
+                    <span class="k">break</span>
+
+            <span class="k">if</span> <span class="n">total_joined_examples</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_samples</span><span class="p">:</span>
+                <span class="k">break</span>
+
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">total_joined_examples</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_samples</span>
+            <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">content_buffer</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">join_temp_data_min_remainder_tokens</span>
+        <span class="p">):</span>
+            <span class="n">chunk</span> <span class="o">=</span> <span class="n">content_buffer</span><span class="p">[:</span><span class="n">target_content_len</span><span class="p">]</span>
+            <span class="n">joined_batch_examples</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_build_joined_sequence</span><span class="p">(</span><span class="n">chunk</span><span class="p">,</span> <span class="n">context_window</span><span class="p">))</span>
+            <span class="n">total_joined_examples</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="k">if</span> <span class="n">joined_batch_examples</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_save_batch_to_dir</span><span class="p">(</span><span class="n">joined_cache_dir</span><span class="p">,</span> <span class="n">current_batch_id</span><span class="p">,</span> <span class="n">joined_batch_examples</span><span class="p">):</span>
+                <span class="n">completed_batches</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">current_batch_id</span><span class="p">)</span>
+
+        <span class="n">metadata</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="s2">&quot;3.0-joined&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;total_samples_target&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_samples</span><span class="p">,</span>
+            <span class="s2">&quot;total_samples_processed&quot;</span><span class="p">:</span> <span class="n">total_joined_examples</span><span class="p">,</span>
+            <span class="s2">&quot;completed_batches&quot;</span><span class="p">:</span> <span class="n">completed_batches</span><span class="p">,</span>
+            <span class="s2">&quot;batch_size&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
+            <span class="s2">&quot;last_batch_id&quot;</span><span class="p">:</span> <span class="n">completed_batches</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">completed_batches</span> <span class="k">else</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+            <span class="s2">&quot;source_cache_dir&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_cache_dir</span><span class="p">),</span>
+            <span class="s2">&quot;source_completed_batches&quot;</span><span class="p">:</span> <span class="n">source_batches</span><span class="p">,</span>
+            <span class="s2">&quot;join_temp_data_context_window&quot;</span><span class="p">:</span> <span class="n">context_window</span><span class="p">,</span>
+            <span class="s2">&quot;join_temp_data_min_remainder_tokens&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">join_temp_data_min_remainder_tokens</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">joined_cache_dir</span> <span class="o">/</span> <span class="s2">&quot;metadata.json&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">handle</span><span class="p">:</span>
+            <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">metadata</span><span class="p">,</span> <span class="n">handle</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s2">&quot;Joined cache ready: </span><span class="si">%s</span><span class="s2"> examples across </span><span class="si">%s</span><span class="s2"> batches&quot;</span><span class="p">,</span>
+            <span class="n">total_joined_examples</span><span class="p">,</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">completed_batches</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">metadata</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_activate_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">directory</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cache_dir</span> <span class="o">=</span> <span class="n">directory</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metadata_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache_dir</span> <span class="o">/</span> <span class="s2">&quot;metadata.json&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache_dir</span> <span class="o">/</span> <span class="s2">&quot;progress.json&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span> <span class="o">=</span> <span class="n">metadata</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_reset_batch_index</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_load_existing_batches</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_apply_mlm_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_ids</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">attention_mask</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]:</span>
+        <span class="k">return</span> <span class="n">_apply_mlm_mask_standalone</span><span class="p">(</span>
+            <span class="n">input_ids</span><span class="p">,</span>
+            <span class="n">attention_mask</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mlm_probability</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">vocab_size</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mask_token_id</span><span class="p">,</span>
+            <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">special_token_ids</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pad_token_id</span><span class="p">,</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="StreamingMLMDataset.get_stats">
+<a class="viewcode-back" href="../../../api/training/streaming_mlm_dataset.html#src.training.streaming_mlm_dataset.StreamingMLMDataset.get_stats">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return dataset statistics and configuration summary.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dictionary with keys including ``total_examples``,</span>
+<span class="sd">            ``completed_batches``, ``total_samples_processed``,</span>
+<span class="sd">            ``batch_size``, ``num_workers``, ``cache_dir``,</span>
+<span class="sd">            ``data_source``, and tokenizer backend.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;total_examples&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_examples</span><span class="p">,</span>
+            <span class="s2">&quot;completed_batches&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;completed_batches&quot;</span><span class="p">,</span> <span class="p">[])),</span>
+            <span class="s2">&quot;total_samples_processed&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;total_samples_processed&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+            <span class="s2">&quot;batch_size&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
+            <span class="s2">&quot;num_workers&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_workers</span><span class="p">,</span>
+            <span class="s2">&quot;cache_dir&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cache_dir</span><span class="p">),</span>
+            <span class="s2">&quot;data_source&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_source</span><span class="p">,</span>
+            <span class="s2">&quot;prefer_local_cache&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">prefer_local_cache</span><span class="p">,</span>
+            <span class="s2">&quot;local_parquet_dir&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">local_parquet_dir</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">local_parquet_dir</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">&quot;stream_local_parquet&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">stream_local_parquet</span><span class="p">,</span>
+            <span class="s2">&quot;join_temp_data_context_window&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">join_temp_data_context_window</span><span class="p">,</span>
+            <span class="s2">&quot;join_temp_data_min_remainder_tokens&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">join_temp_data_min_remainder_tokens</span><span class="p">,</span>
+            <span class="s2">&quot;tokenizer_backend&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokenizer_spec</span><span class="p">[</span><span class="s2">&quot;backend&quot;</span><span class="p">],</span>
+        <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="StreamingMLMDataset.cleanup_cache">
+<a class="viewcode-back" href="../../../api/training/streaming_mlm_dataset.html#src.training.streaming_mlm_dataset.StreamingMLMDataset.cleanup_cache">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">cleanup_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">shutil</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache_dir</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cache_dir</span><span class="p">)</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Cleaned up cache directory: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache_dir</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Error cleaning up cache: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_examples</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">idx</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">idx</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_examples</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">IndexError</span><span class="p">(</span><span class="s2">&quot;Index out of range&quot;</span><span class="p">)</span>
+
+        <span class="n">batch_pos</span> <span class="o">=</span> <span class="n">bisect_right</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cumulative_sizes</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span>
+        <span class="n">batch_meta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_meta</span><span class="p">[</span><span class="n">batch_pos</span><span class="p">]</span>
+        <span class="n">batch_id</span> <span class="o">=</span> <span class="n">batch_meta</span><span class="p">[</span><span class="s2">&quot;batch_id&quot;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_batch_cache_id</span> <span class="o">!=</span> <span class="n">batch_id</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_batch_cache</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_batch</span><span class="p">(</span><span class="n">batch_id</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_batch_cache_id</span> <span class="o">=</span> <span class="n">batch_id</span>
+
+        <span class="n">batch_start</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">batch_pos</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">cumulative_sizes</span><span class="p">[</span><span class="n">batch_pos</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="n">local_idx</span> <span class="o">=</span> <span class="n">idx</span> <span class="o">-</span> <span class="n">batch_start</span>
+        <span class="n">example</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_batch_cache</span><span class="p">[</span><span class="n">local_idx</span><span class="p">]</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;input_ids&quot;</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">example</span><span class="p">[</span><span class="s2">&quot;input_ids&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">),</span>
+            <span class="s2">&quot;attention_mask&quot;</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">example</span><span class="p">[</span><span class="s2">&quot;attention_mask&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">),</span>
+            <span class="s2">&quot;labels&quot;</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">example</span><span class="p">[</span><span class="s2">&quot;labels&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">),</span>
+        <span class="p">}</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Erick F. Merino M..</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

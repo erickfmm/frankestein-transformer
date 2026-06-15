@@ -1,0 +1,1362 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>src.model.tormented_bert_frankestein &mdash; Frankestein Transformer 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Frankestein Transformer
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../index.html">Frankestein Transformer Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/index.html">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/cli.html">CLI Module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/cli.html#src.cli.build_parser"><code class="docutils literal notranslate"><span class="pre">build_parser()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/cli.html#src.cli.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/model/index.html">Model Package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/model/tormented_bert_frankestein.html">Tormented BERT Frankestein</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.FactorizedEmbedding"><code class="docutils literal notranslate"><span class="pre">FactorizedEmbedding</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.FrankensteinDecoder"><code class="docutils literal notranslate"><span class="pre">FrankensteinDecoder</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.HybridLayer"><code class="docutils literal notranslate"><span class="pre">HybridLayer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.TormentedBertFrankenstein"><code class="docutils literal notranslate"><span class="pre">TormentedBertFrankenstein</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.TormentedBertMini"><code class="docutils literal notranslate"><span class="pre">TormentedBertMini</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.UltraConfig"><code class="docutils literal notranslate"><span class="pre">UltraConfig</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/model/attention/index.html">Attention Package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/common.html">Common Attention Utilities</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/standard.html">Standard Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/sigmoid.html">Sigmoid Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/retnet.html">RetNet Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/ode.html">ODE Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/titan.html">Titan Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/engram.html">Engram Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/hope.html">HoPE Positional Encoding</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/rope.html">RoPE Positional Encoding</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/gated/index.html">Gated Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/attention/sparse/index.html">Sparse Attention</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/model/optimizer/index.html">Optimizer Package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/base.html">Optimizer Base</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/factory.html">Optimizer Factory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/sgd_momentum.html">SGD Momentum</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/adamw.html">AdamW</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/adafactor.html">Adafactor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/galore_adamw.html">GaLore AdamW</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/prodigy.html">Prodigy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/lion.html">Lion</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/sophia.html">Sophia</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/muon.html">Muon</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/turbo_muon.html">Turbo-Muon</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/radam.html">RAdam</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/adan.html">Adan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/adopt.html">ADOPT</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/ademamix.html">AdEMAMix</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/mars_adamw.html">MARS AdamW</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/cautious_adamw.html">Cautious AdamW</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/lamb.html">LAMB</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/schedulefree_adamw.html">Schedule-Free AdamW</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/shampoo.html">Shampoo</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/soap.html">SOAP</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/anon.html">Anon</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/apollo.html">Apollo</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/apollo_mini.html">Apollo-Mini</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/model/optimizer/q_apollo.html">Q-Apollo</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/training/index.html">Training Package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/training/config_loader.html">Config Loader</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/training/config_loader.html#src.training.config_loader.LoadedTrainingConfig"><code class="docutils literal notranslate"><span class="pre">LoadedTrainingConfig</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/training/config_loader.html#src.training.config_loader.list_config_paths"><code class="docutils literal notranslate"><span class="pre">list_config_paths()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/training/config_loader.html#src.training.config_loader.load_training_config"><code class="docutils literal notranslate"><span class="pre">load_training_config()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/training/main.html">Training Main</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/training/main.html#src.training.main.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/training/streaming_mlm_dataset.html">Streaming MLM Dataset</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/training/streaming_mlm_dataset.html#src.training.streaming_mlm_dataset.StreamingMLMDataset"><code class="docutils literal notranslate"><span class="pre">StreamingMLMDataset</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/training/trainer.html">Trainer</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/training/trainer.html#src.training.trainer.TitanTrainer"><code class="docutils literal notranslate"><span class="pre">TitanTrainer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/training/trainer.html#src.training.trainer.TrainingConfig"><code class="docutils literal notranslate"><span class="pre">TrainingConfig</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/sbert/index.html">SBERT Package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/sbert/train_sbert.html">SBERT Training</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/train_sbert.html#src.sbert.train_sbert.SBERTTrainer"><code class="docutils literal notranslate"><span class="pre">SBERTTrainer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/train_sbert.html#src.sbert.train_sbert.TormentedBertSentenceTransformer"><code class="docutils literal notranslate"><span class="pre">TormentedBertSentenceTransformer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/train_sbert.html#src.sbert.train_sbert.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/sbert/inference_sbert.html">SBERT Inference</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/inference_sbert.html#src.sbert.inference_sbert.SBERTInference"><code class="docutils literal notranslate"><span class="pre">SBERTInference</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/inference_sbert.html#src.sbert.inference_sbert.SimilarityResult"><code class="docutils literal notranslate"><span class="pre">SimilarityResult</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/inference_sbert.html#src.sbert.inference_sbert.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/sbert/example_usage.html">SBERT Example Usage</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/example_usage.html#src.sbert.example_usage.example_basic_similarity"><code class="docutils literal notranslate"><span class="pre">example_basic_similarity()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/example_usage.html#src.sbert.example_usage.example_batch_comparison"><code class="docutils literal notranslate"><span class="pre">example_batch_comparison()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/example_usage.html#src.sbert.example_usage.example_batch_encoding"><code class="docutils literal notranslate"><span class="pre">example_batch_encoding()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/example_usage.html#src.sbert.example_usage.example_clustering"><code class="docutils literal notranslate"><span class="pre">example_clustering()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/example_usage.html#src.sbert.example_usage.example_save_load_embeddings"><code class="docutils literal notranslate"><span class="pre">example_save_load_embeddings()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/example_usage.html#src.sbert.example_usage.example_semantic_search"><code class="docutils literal notranslate"><span class="pre">example_semantic_search()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/sbert/example_usage.html#src.sbert.example_usage.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/deploy/index.html">Deploy Package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/deploy/deploy.html">Deploy</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/deploy.html#src.deploy.deploy.ModelDeployer"><code class="docutils literal notranslate"><span class="pre">ModelDeployer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/deploy.html#src.deploy.deploy.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/deploy/inference.html">Deploy Inference</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/inference.html#src.deploy.inference.TormentedBertInference"><code class="docutils literal notranslate"><span class="pre">TormentedBertInference</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/inference.html#src.deploy.inference.interactive_mode"><code class="docutils literal notranslate"><span class="pre">interactive_mode()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/inference.html#src.deploy.inference.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/deploy/quantization.html">Quantization</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/quantization.html#src.deploy.quantization.ActivationQuantizer"><code class="docutils literal notranslate"><span class="pre">ActivationQuantizer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/quantization.html#src.deploy.quantization.BitNetQuantizer"><code class="docutils literal notranslate"><span class="pre">BitNetQuantizer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/quantization.html#src.deploy.quantization.estimate_model_size"><code class="docutils literal notranslate"><span class="pre">estimate_model_size()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/quantization.html#src.deploy.quantization.load_quantized_checkpoint"><code class="docutils literal notranslate"><span class="pre">load_quantized_checkpoint()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/quantization.html#src.deploy.quantization.save_quantized_checkpoint"><code class="docutils literal notranslate"><span class="pre">save_quantized_checkpoint()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/deploy/transformers_export.html">Transformers Export</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/transformers_export.html#src.deploy.transformers_export.check_yaml_export_compatibility"><code class="docutils literal notranslate"><span class="pre">check_yaml_export_compatibility()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/transformers_export.html#src.deploy.transformers_export.export_transformers_model"><code class="docutils literal notranslate"><span class="pre">export_transformers_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/transformers_export.html#src.deploy.transformers_export.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/deploy/example.html">Deploy Example</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/deploy/example.html#src.deploy.example.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/tokenizer/index.html">Tokenizer Package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/tokenizer/spm_spa_redpajama35.html">SPM Spa RedPajama35 Tokenizer</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/tokenizer/spm_spa_redpajama35.html#src.tokenizer.spm_spa_redpajama35.SpanishSPMTokenizer"><code class="docutils literal notranslate"><span class="pre">SpanishSPMTokenizer</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/streamlit_gui.html">Streamlit GUI</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.build_cli_command"><code class="docutils literal notranslate"><span class="pre">build_cli_command()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.build_config_from_schema"><code class="docutils literal notranslate"><span class="pre">build_config_from_schema()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.get_current_language"><code class="docutils literal notranslate"><span class="pre">get_current_language()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.get_field_description"><code class="docutils literal notranslate"><span class="pre">get_field_description()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.get_field_title"><code class="docutils literal notranslate"><span class="pre">get_field_title()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.get_localized_schema_value"><code class="docutils literal notranslate"><span class="pre">get_localized_schema_value()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.get_ui_text"><code class="docutils literal notranslate"><span class="pre">get_ui_text()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.load_schema"><code class="docutils literal notranslate"><span class="pre">load_schema()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.render_field"><code class="docutils literal notranslate"><span class="pre">render_field()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.render_object"><code class="docutils literal notranslate"><span class="pre">render_object()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.render_optimizer_section"><code class="docutils literal notranslate"><span class="pre">render_optimizer_section()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/streamlit_gui.html#src.streamlit_gui.app.run_command_with_nohup"><code class="docutils literal notranslate"><span class="pre">run_command_with_nohup()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/utils/index.html">Utils Package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/utils/device.html">Device Utilities</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/utils/device.html#src.utils.device.is_mps_available"><code class="docutils literal notranslate"><span class="pre">is_mps_available()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/utils/device.html#src.utils.device.resolve_torch_device"><code class="docutils literal notranslate"><span class="pre">resolve_torch_device()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/utils/gpu_temp_guard.html">GPU Temperature Guard</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/utils/gpu_temp_guard.html#src.utils.gpu_temp_guard.GPUTelemetryError"><code class="docutils literal notranslate"><span class="pre">GPUTelemetryError</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/utils/gpu_temp_guard.html#src.utils.gpu_temp_guard.GPUTempCheckResult"><code class="docutils literal notranslate"><span class="pre">GPUTempCheckResult</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/utils/gpu_temp_guard.html#src.utils.gpu_temp_guard.GPUTemperatureGuard"><code class="docutils literal notranslate"><span class="pre">GPUTemperatureGuard</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/utils/storage_manager.html">Storage Manager</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/utils/storage_manager.html#src.utils.storage_manager.StorageManager"><code class="docutils literal notranslate"><span class="pre">StorageManager</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../specs/index.html">Specifications</a><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../bibliography/index.html">Bibliography</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../bibliography/attention_types.html">Attention Types Bibliography</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../bibliography/optimizers.html">Optimizers Bibliography</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../bibliography/other.html">Other Bibliography</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../paper-en.html">Technical Report (English)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../paper-en.html#abstract">Abstract</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../paper-es.html">Informe Tecnico (Espanol)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../paper-es.html#resumen">Resumen</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Quick Links:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/erickfmm/frankestein-transformer">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Frankestein Transformer</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">src.model.tormented_bert_frankestein</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for src.model.tormented_bert_frankestein</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="sd">&quot;&quot;&quot;TORMENTED-BERT-Frankenstein: The Ultimate Hybrid Transformer (SOTA 2026).</span>
+
+<span class="sd">**TORMENTED** = **T**ernary **O**DE **R**etention **M**amba **E**xperts **N**eural **T**anh **E**ncoder **D**epth.</span>
+
+<span class="sd">This module implements a mixed-architecture Transformer encoder/decoder that</span>
+<span class="sd">integrates 17+ attention mixer families, Mixture-of-Experts (MoE) FFN routing,</span>
+<span class="sd">BitNet b1.58 ternary weight quantization, factorized embeddings, looped depth</span>
+<span class="sd">for parameter-efficient recursion, Mixture-of-Depths token routing, and Engram</span>
+<span class="sd">conditional memory layers.</span>
+
+<span class="sd">Core components:</span>
+
+<span class="sd">* :class:`UltraConfig` — single-source-of-truth dataclass for all model</span>
+<span class="sd">  hyperparameters.</span>
+<span class="sd">* :class:`TormentedBertFrankenstein` — full hybrid encoder with looped depth,</span>
+<span class="sd">  MoE, BitNet, factorized embeddings, and Mixture-of-Depths.</span>
+<span class="sd">* :class:`TormentedBertMini` — simplified encoder variant preset for</span>
+<span class="sd">  constrained GPU training.</span>
+<span class="sd">* :class:`FrankensteinDecoder` — autoregressive causal decoder for LLM-style</span>
+<span class="sd">  text generation.</span>
+<span class="sd">* :class:`HybridLayer` — per-layer dispatcher that routes to the configured</span>
+<span class="sd">  attention mixer and FFN (dense or MoE).</span>
+<span class="sd">* :class:`FactorizedEmbedding` — reduced-dimension embedding with optional</span>
+<span class="sd">  Conv1d pre-projection.</span>
+
+<span class="sd">Supported attention mixer families (17+):</span>
+
+<span class="sd">* ``standard_attn`` — scaled dot-product self-attention.</span>
+<span class="sd">* ``sigmoid_attn`` — sigmoid-based linear attention.</span>
+<span class="sd">* ``retnet`` / ``retnet_attn`` — multi-scale retention.</span>
+<span class="sd">* ``ode`` — Neural ODE attention block (RK4 / Euler solvers).</span>
+<span class="sd">* ``titan_attn`` — Titan memory-augmented attention.</span>
+<span class="sd">* ``mamba`` — state-space model placeholder.</span>
+<span class="sd">* Sparse family (7 variants): ``sparse_transformer_attn``, ``longformer_attn``,</span>
+<span class="sd">  ``bigbird_attn``, ``sparsek_attn``, ``nsa_attn``, ``sparge_attn``,</span>
+<span class="sd">  ``fasa_attn``.</span>
+<span class="sd">* Gated family (7 variants): ``gla_attn``, ``deltanet_attn``,</span>
+<span class="sd">  ``gated_deltanet_attn``, ``hgrn2_attn``, ``fox_attn``,</span>
+<span class="sd">  ``gated_softmax_attn``.</span>
+<span class="sd">* ``engram_attn`` — Engram conditional memory via scalable lookup.</span>
+
+<span class="sd">Training-free policy: ``fasa_attn`` and ``sparge_attn`` raise a RuntimeError</span>
+<span class="sd">when called in training mode; they are eval/inference-only blocks.</span>
+
+<span class="sd">Hardware Target: Dual Xeon E5-2680v4 + Nvidia Tesla P40 (24GB).</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nn</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn.functional</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">F</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.attention.common</span><span class="w"> </span><span class="kn">import</span> <span class="n">BitLinear</span><span class="p">,</span> <span class="n">get_norm</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.attention.engram</span><span class="w"> </span><span class="kn">import</span> <span class="n">EngramLayer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.attention.gated</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">DeltaNetAttention</span><span class="p">,</span>
+    <span class="n">ForgettingAttention</span><span class="p">,</span>
+    <span class="n">GatedDeltaNetAttention</span><span class="p">,</span>
+    <span class="n">GatedLinearAttention</span><span class="p">,</span>
+    <span class="n">GatedSoftmaxAttention</span><span class="p">,</span>
+    <span class="n">HGRN2Attention</span><span class="p">,</span>
+    <span class="n">RetNetAttention</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.attention.ode</span><span class="w"> </span><span class="kn">import</span> <span class="n">ODEAttentionBlock</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.attention.retnet</span><span class="w"> </span><span class="kn">import</span> <span class="n">MultiScaleRetention</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.attention.sigmoid</span><span class="w"> </span><span class="kn">import</span> <span class="n">SigmoidAttention</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.attention.sparse</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">BigBirdAttention</span><span class="p">,</span>
+    <span class="n">FASAAttention</span><span class="p">,</span>
+    <span class="n">LongformerAttention</span><span class="p">,</span>
+    <span class="n">NSAAttention</span><span class="p">,</span>
+    <span class="n">SparseKAttention</span><span class="p">,</span>
+    <span class="n">SparseTransformerAttention</span><span class="p">,</span>
+    <span class="n">SpargeAttention</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.attention.standard</span><span class="w"> </span><span class="kn">import</span> <span class="n">StandardAttention</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.attention.titan</span><span class="w"> </span><span class="kn">import</span> <span class="n">TitanAttention</span>
+
+
+<div class="viewcode-block" id="UltraConfig">
+<a class="viewcode-back" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.UltraConfig">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">UltraConfig</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Single-source-of-truth configuration for all Frankenstein model variants.</span>
+
+<span class="sd">    Every hyperparameter lives here. The schema is validated in</span>
+<span class="sd">    ``__post_init__`` and enforced by ``configs/schema.yaml`` for YAML-based</span>
+<span class="sd">    training configs.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        vocab_size: Vocabulary size for token embeddings. Default: 50000.</span>
+<span class="sd">        hidden_size: Dimensionality of hidden states throughout the model.</span>
+<span class="sd">            Must be divisible by ``num_heads``. Default: 2048.</span>
+<span class="sd">        num_layers: Number of physical :class:`HybridLayer` blocks in the</span>
+<span class="sd">            stack. Default: 12.</span>
+<span class="sd">        num_loops: Number of times the layer stack is repeated (looped depth).</span>
+<span class="sd">            Logical depth = ``num_layers * num_loops``. Default: 2.</span>
+<span class="sd">        layer_pattern: Ordered list of mixer types assigned to each physical</span>
+<span class="sd">            layer. The pattern is cycled modulo its length when</span>
+<span class="sd">            ``num_layers`` exceeds the pattern length. Supported values:</span>
+<span class="sd">            ``&quot;ode&quot;``, ``&quot;retnet&quot;``, ``&quot;retnet_attn&quot;``, ``&quot;titan_attn&quot;``,</span>
+<span class="sd">            ``&quot;standard_attn&quot;``, ``&quot;sigmoid_attn&quot;``, ``&quot;mamba&quot;``,</span>
+<span class="sd">            ``&quot;sparse_transformer_attn&quot;``, ``&quot;longformer_attn&quot;``,</span>
+<span class="sd">            ``&quot;bigbird_attn&quot;``, ``&quot;sparsek_attn&quot;``, ``&quot;nsa_attn&quot;``,</span>
+<span class="sd">            ``&quot;sparge_attn&quot;``, ``&quot;fasa_attn&quot;``, ``&quot;gla_attn&quot;``,</span>
+<span class="sd">            ``&quot;deltanet_attn&quot;``, ``&quot;gated_deltanet_attn&quot;``,</span>
+<span class="sd">            ``&quot;hgrn2_attn&quot;``, ``&quot;fox_attn&quot;``, ``&quot;gated_softmax_attn&quot;``,</span>
+<span class="sd">            ``&quot;engram_attn&quot;``. Default: ``[&quot;retnet&quot;, &quot;ode&quot;, &quot;mamba&quot;,</span>
+<span class="sd">            &quot;titan_attn&quot;] * 3``.</span>
+<span class="sd">        ode_solver: ODE solver for ``ode`` mixer layers. One of ``&quot;rk4&quot;``</span>
+<span class="sd">            (Runge-Kutta 4th order) or ``&quot;euler&quot;``. Default: ``&quot;rk4&quot;``.</span>
+<span class="sd">        ode_steps: Number of ODE integration steps per ``ode`` layer.</span>
+<span class="sd">            Default: 2.</span>
+<span class="sd">        retention_heads: Number of retention heads for ``retnet`` /</span>
+<span class="sd">            ``retnet_attn`` layers. Default: 8.</span>
+<span class="sd">        num_heads: Number of attention heads for standard / sparse / gated</span>
+<span class="sd">            attention mixers. Default: 16.</span>
+<span class="sd">        num_experts: Total number of FFN experts when ``use_moe`` is True.</span>
+<span class="sd">            Default: 8.</span>
+<span class="sd">        top_k_experts: Number of experts activated per token in MoE routing.</span>
+<span class="sd">            Default: 2.</span>
+<span class="sd">        dropout: Dropout probability applied after embeddings and within</span>
+<span class="sd">            attention layers. Default: 0.1.</span>
+<span class="sd">        use_bitnet: If True, replace all ``nn.Linear`` layers with</span>
+<span class="sd">            :class:`BitLinear` (ternary weight quantization, BitNet b1.58).</span>
+<span class="sd">            Default: True.</span>
+<span class="sd">        norm_type: Normalization layer type. One of ``&quot;layer_norm&quot;``,</span>
+<span class="sd">            ``&quot;dynamic_tanh&quot;`` (DyT), or ``&quot;derf&quot;`` (Dynamic Erf).</span>
+<span class="sd">            ``&quot;rms_norm&quot;`` is NOT valid. Default: ``&quot;dynamic_tanh&quot;``.</span>
+<span class="sd">        use_factorized_embedding: If True, use :class:`FactorizedEmbedding`</span>
+<span class="sd">            with reduced embedding dimension + projection. Default: False.</span>
+<span class="sd">        factorized_embedding_dim: Embedding dimension when factorization is</span>
+<span class="sd">            enabled. Default: 128.</span>
+<span class="sd">        use_embedding_conv: If True, apply a Conv1d over the factorized</span>
+<span class="sd">            embedding stream before projection. Default: True.</span>
+<span class="sd">        hope_base: Base frequency for HoPE (Hybrid Positional Encoding).</span>
+<span class="sd">            Default: 10000.0.</span>
+<span class="sd">        hope_damping: Damping factor for HoPE high-frequency components.</span>
+<span class="sd">            Default: 0.01.</span>
+<span class="sd">        rope_base: Base frequency for RoPE (Rotary Position Embedding).</span>
+<span class="sd">            Default: 10000.0.</span>
+<span class="sd">        rope_scaling: Scaling factor applied to RoPE frequencies.</span>
+<span class="sd">            Default: 1.0.</span>
+<span class="sd">        use_hope: Legacy toggle for HoPE. Automatically aligned with</span>
+<span class="sd">            ``positional_encoding`` in ``__post_init__``. Default: True.</span>
+<span class="sd">        positional_encoding: Explicit positional encoding scheme. One of</span>
+<span class="sd">            ``&quot;hope&quot;`` or ``&quot;rope&quot;``. If None, inferred from ``use_hope``.</span>
+<span class="sd">            Default: None.</span>
+<span class="sd">        use_moe: If True, replace the dense FFN with a Mixture-of-Experts</span>
+<span class="sd">            FFN block. Default: True.</span>
+<span class="sd">        use_mixture_of_depths: If True, apply per-layer token routing where</span>
+<span class="sd">            only the top-capacity tokens are updated; remaining tokens are</span>
+<span class="sd">            passed through unchanged. Default: False.</span>
+<span class="sd">        mixture_of_depths_capacity_ratio: Fraction of tokens selected per</span>
+<span class="sd">            layer when Mixture-of-Depths is active. Must be in (0, 1].</span>
+<span class="sd">            Default: 0.5.</span>
+<span class="sd">        mixture_of_depths_router_aux_loss_weight: Weight for the auxiliary</span>
+<span class="sd">            load-balancing loss in Mixture-of-Depths routing. Must be &gt;= 0.</span>
+<span class="sd">            Default: 0.0.</span>
+<span class="sd">        ffn_hidden_size: Hidden size of the FFN intermediate layer. If None,</span>
+<span class="sd">            defaults to ``hidden_size * 2``. Default: None.</span>
+<span class="sd">        ffn_activation: FFN activation function. One of ``&quot;silu&quot;`` (SiLU /</span>
+<span class="sd">            Swish) or ``&quot;gelu&quot;`` (GELU). Default: ``&quot;silu&quot;``.</span>
+<span class="sd">        embedding_conv_kernel: Kernel size for the embedding Conv1d when</span>
+<span class="sd">            ``use_embedding_conv`` is True. Default: 3.</span>
+<span class="sd">        mode: Model mode. ``&quot;encoder&quot;`` for bidirectional (MLM) or</span>
+<span class="sd">            ``&quot;decoder&quot;`` for autoregressive causal generation. The</span>
+<span class="sd">            ``model_class=frankesteindecoder`` preset forces ``mode=decoder``</span>
+<span class="sd">            at runtime. Default: ``&quot;encoder&quot;``.</span>
+<span class="sd">        engram_max_ngram_size: Highest N-gram order for Engram memory layers</span>
+<span class="sd">            (range 2..max). Default: 3.</span>
+<span class="sd">        engram_n_heads_per_ngram: Number of hash heads per N-gram order in</span>
+<span class="sd">            Engram layers. Default: 4.</span>
+<span class="sd">        engram_embed_dim_per_head: Embedding dimension per Engram hash head.</span>
+<span class="sd">            Default: 32.</span>
+<span class="sd">        engram_kernel_size: ShortConv kernel width for Engram layers.</span>
+<span class="sd">            Default: 4.</span>
+<span class="sd">        engram_seed: RNG seed for Engram hash multipliers. Default: 42.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If ``positional_encoding`` is not ``&quot;hope&quot;`` or</span>
+<span class="sd">            ``&quot;rope&quot;``.</span>
+<span class="sd">        ValueError: If ``mode`` is not ``&quot;encoder&quot;`` or ``&quot;decoder&quot;``.</span>
+<span class="sd">        ValueError: If ``mixture_of_depths_capacity_ratio`` is not in (0, 1].</span>
+<span class="sd">        ValueError: If ``mixture_of_depths_router_aux_loss_weight`` is &lt; 0.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">vocab_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50000</span>
+    <span class="n">hidden_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2048</span>
+    <span class="n">num_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span>
+    <span class="n">num_loops</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span>
+
+    <span class="n">layer_pattern</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;retnet&quot;</span><span class="p">,</span> <span class="s2">&quot;ode&quot;</span><span class="p">,</span> <span class="s2">&quot;mamba&quot;</span><span class="p">,</span> <span class="s2">&quot;titan_attn&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mi">3</span><span class="p">)</span>
+
+    <span class="n">ode_solver</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;rk4&quot;</span>
+    <span class="n">ode_steps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span>
+
+    <span class="n">retention_heads</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8</span>
+
+    <span class="n">num_heads</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">16</span>
+    <span class="n">num_experts</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8</span>
+    <span class="n">top_k_experts</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span>
+
+    <span class="n">use_bitnet</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">norm_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;dynamic_tanh&quot;</span>
+
+    <span class="n">use_factorized_embedding</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">factorized_embedding_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">128</span>
+    <span class="n">use_embedding_conv</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="n">hope_base</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">10_000.0</span>
+    <span class="n">hope_damping</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.01</span>
+    <span class="n">rope_base</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">10_000.0</span>
+    <span class="n">rope_scaling</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+    <span class="n">use_hope</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">positional_encoding</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">use_moe</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">use_mixture_of_depths</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">mixture_of_depths_capacity_ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span>
+    <span class="n">mixture_of_depths_router_aux_loss_weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">ffn_hidden_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">ffn_activation</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;silu&quot;</span>
+    <span class="n">embedding_conv_kernel</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;encoder&quot;</span>
+
+    <span class="n">engram_max_ngram_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">engram_n_heads_per_ngram</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="n">engram_embed_dim_per_head</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span>
+    <span class="n">engram_kernel_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="n">engram_seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">42</span>
+
+<div class="viewcode-block" id="UltraConfig.__post_init__">
+<a class="viewcode-back" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.UltraConfig.__post_init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate and derive dependent configuration fields after dataclass init.</span>
+
+<span class="sd">        Derives ``ffn_hidden_size``, ``positional_encoding``, and aligns the</span>
+<span class="sd">        legacy ``use_hope`` flag. Validates ``mode``, ``positional_encoding``,</span>
+<span class="sd">        and Mixture-of-Depths parameter ranges.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If any field fails validation constraints.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ffn_hidden_size</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ffn_hidden_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span> <span class="o">*</span> <span class="mi">2</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">positional_encoding</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">positional_encoding</span> <span class="o">=</span> <span class="s2">&quot;hope&quot;</span> <span class="k">if</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">use_hope</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;rope&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">positional_encoding</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">positional_encoding</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">positional_encoding</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;hope&quot;</span><span class="p">,</span> <span class="s2">&quot;rope&quot;</span><span class="p">}:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;positional_encoding must be one of {&#39;hope&#39;, &#39;rope&#39;}&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_hope</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">positional_encoding</span> <span class="o">==</span> <span class="s2">&quot;hope&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;encoder&quot;</span><span class="p">,</span> <span class="s2">&quot;decoder&quot;</span><span class="p">}:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;mode must be one of {&#39;encoder&#39;, &#39;decoder&#39;}&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="mf">0.0</span> <span class="o">&lt;</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mixture_of_depths_capacity_ratio</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mf">1.0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;mixture_of_depths_capacity_ratio must be in the range (0, 1]&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mixture_of_depths_router_aux_loss_weight</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;mixture_of_depths_router_aux_loss_weight must be &gt;= 0&quot;</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="FactorizedEmbedding">
+<a class="viewcode-back" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.FactorizedEmbedding">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FactorizedEmbedding</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Factorized token embedding with optional Conv1d pre-projection.</span>
+
+<span class="sd">    Reduces the embedding lookup dimension to ``factorized_embedding_dim``,</span>
+<span class="sd">    then projects up to ``hidden_size`` via a linear (or BitLinear) layer.</span>
+<span class="sd">    Optionally applies a 1D convolution over the embedding stream for local</span>
+<span class="sd">    context smoothing before projection.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        low_dim: Reduced embedding dimension.</span>
+<span class="sd">        use_conv: Whether the Conv1d pre-projection is active.</span>
+<span class="sd">        embedding: Token embedding lookup table.</span>
+<span class="sd">        conv: Optional Conv1d layer for local context smoothing.</span>
+<span class="sd">        proj: Linear (or BitLinear) projection from ``low_dim`` to</span>
+<span class="sd">            ``hidden_size``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="FactorizedEmbedding.__init__">
+<a class="viewcode-back" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.FactorizedEmbedding.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">UltraConfig</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize factorized embedding from an UltraConfig.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            config: Model configuration. Reads ``factorized_embedding_dim``,</span>
+<span class="sd">                ``vocab_size``, ``use_embedding_conv``,</span>
+<span class="sd">                ``embedding_conv_kernel``, ``use_bitnet``, and</span>
+<span class="sd">                ``hidden_size``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">low_dim</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">factorized_embedding_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_conv</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">use_embedding_conv</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">embedding</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Embedding</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">vocab_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">low_dim</span><span class="p">)</span>
+        <span class="n">kernel</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">embedding_conv_kernel</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">padding</span> <span class="o">=</span> <span class="n">kernel</span> <span class="o">//</span> <span class="mi">2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conv</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Conv1d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">low_dim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">low_dim</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="n">kernel</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="n">padding</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_conv</span>
+            <span class="k">else</span> <span class="kc">None</span>
+        <span class="p">)</span>
+        <span class="n">proj_cls</span> <span class="o">=</span> <span class="n">BitLinear</span> <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">use_bitnet</span> <span class="k">else</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">proj</span> <span class="o">=</span> <span class="n">proj_cls</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">low_dim</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FactorizedEmbedding.forward">
+<a class="viewcode-back" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.FactorizedEmbedding.forward">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_ids</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Embed token IDs and optionally apply Conv1d + projection.</span>
+
+<span class="sd">        Sequence length is forced to match ``input_ids`` after convolution</span>
+<span class="sd">        to keep MLM labels aligned (even-kernel symmetric padding can shift</span>
+<span class="sd">        length by +1).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            input_ids: Integer token indices of shape ``(B, S)``.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Tensor of shape ``(B, S, hidden_size)``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">embedding</span><span class="p">(</span><span class="n">input_ids</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">conv</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conv</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">!=</span> <span class="n">input_ids</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">):</span>
+                <span class="n">target_len</span> <span class="o">=</span> <span class="n">input_ids</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">target_len</span><span class="p">:</span>
+                    <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:,</span> <span class="p">:</span><span class="n">target_len</span><span class="p">,</span> <span class="p">:]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">pad_len</span> <span class="o">=</span> <span class="n">target_len</span> <span class="o">-</span> <span class="n">x</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="n">x</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">pad_len</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="HybridLayer">
+<a class="viewcode-back" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.HybridLayer">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">HybridLayer</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Per-layer dispatcher: attention mixer + FFN (dense or MoE) + optional Mixture-of-Depths.</span>
+
+<span class="sd">    Each :class:`HybridLayer` instantiates the attention mixer specified by</span>
+<span class="sd">    ``layer_type``, a normalization layer, and a feed-forward block. The FFN</span>
+<span class="sd">    can be a standard dense MLP or a Mixture-of-Experts (MoE) block with</span>
+<span class="sd">    top-k expert routing. When ``use_mixture_of_depths`` is enabled, only the</span>
+<span class="sd">    top-capacity tokens are passed through the full layer; remaining tokens</span>
+<span class="sd">    are scattered back unchanged.</span>
+
+<span class="sd">    Training-free layers (``fasa_attn``, ``sparge_attn``) raise a</span>
+<span class="sd">    RuntimeError if called in training mode.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        layer_type: The mixer type string (e.g. ``&quot;retnet&quot;``, ``&quot;ode&quot;``).</span>
+<span class="sd">        norm1: Pre-attention normalization layer.</span>
+<span class="sd">        norm2: Pre-FFN normalization layer.</span>
+<span class="sd">        mixer: The instantiated attention mixer module.</span>
+<span class="sd">        router: MoE router linear layer (None if dense FFN).</span>
+<span class="sd">        experts: ModuleList of MoE expert FFNs (None if dense FFN).</span>
+<span class="sd">        top_k: Number of experts activated per token in MoE mode.</span>
+<span class="sd">        ffn: Dense FFN sequential block (None if MoE mode).</span>
+<span class="sd">        depth_router: Mixture-of-Depths token router (None if disabled).</span>
+<span class="sd">        use_moe: Whether MoE FFN is active.</span>
+<span class="sd">        use_mixture_of_depths: Whether Mixture-of-Depths routing is active.</span>
+<span class="sd">        mixture_of_depths_capacity_ratio: Fraction of tokens selected.</span>
+<span class="sd">        mixture_of_depths_router_aux_loss_weight: Aux loss weight.</span>
+<span class="sd">        last_mixture_of_depths_aux_loss: Aux loss from the most recent</span>
+<span class="sd">            forward pass (None if MoD disabled).</span>
+<span class="sd">        last_mixture_of_depths_selected_fraction: Fraction of tokens</span>
+<span class="sd">            selected in the most recent forward pass.</span>
+<span class="sd">        last_mixture_of_depths_capacity: Token capacity used in the most</span>
+<span class="sd">            recent forward pass.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">TRAINING_FREE_LAYERS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;fasa_attn&quot;</span><span class="p">,</span> <span class="s2">&quot;sparge_attn&quot;</span><span class="p">}</span>
+
+<div class="viewcode-block" id="HybridLayer.__init__">
+<a class="viewcode-back" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.HybridLayer.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">layer_type</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize a hybrid layer for the given mixer type.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            config: :class:`UltraConfig` instance with model hyperparameters.</span>
+<span class="sd">            layer_type: String identifying the attention mixer. Must be one</span>
+<span class="sd">                of the keys in the internal mixer registry or ``&quot;mamba&quot;``.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If ``layer_type`` is not recognized.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layer_type</span> <span class="o">=</span> <span class="n">layer_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">norm1</span> <span class="o">=</span> <span class="n">get_norm</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_moe</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">use_moe</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_mixture_of_depths</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="s2">&quot;use_mixture_of_depths&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mixture_of_depths_capacity_ratio</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span>
+            <span class="nb">getattr</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="s2">&quot;mixture_of_depths_capacity_ratio&quot;</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mixture_of_depths_router_aux_loss_weight</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span>
+            <span class="nb">getattr</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="s2">&quot;mixture_of_depths_router_aux_loss_weight&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_mixture_of_depths_aux_loss</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_mixture_of_depths_selected_fraction</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_mixture_of_depths_capacity</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="n">proj_cls</span> <span class="o">=</span> <span class="n">BitLinear</span> <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">use_bitnet</span> <span class="k">else</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span>
+
+        <span class="n">mixer_registry</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;ode&quot;</span><span class="p">:</span> <span class="n">ODEAttentionBlock</span><span class="p">,</span>
+            <span class="s2">&quot;retnet&quot;</span><span class="p">:</span> <span class="n">MultiScaleRetention</span><span class="p">,</span>
+            <span class="s2">&quot;retnet_attn&quot;</span><span class="p">:</span> <span class="n">RetNetAttention</span><span class="p">,</span>
+            <span class="s2">&quot;titan_attn&quot;</span><span class="p">:</span> <span class="n">TitanAttention</span><span class="p">,</span>
+            <span class="s2">&quot;standard_attn&quot;</span><span class="p">:</span> <span class="n">StandardAttention</span><span class="p">,</span>
+            <span class="s2">&quot;sigmoid_attn&quot;</span><span class="p">:</span> <span class="n">SigmoidAttention</span><span class="p">,</span>
+            <span class="s2">&quot;sparse_transformer_attn&quot;</span><span class="p">:</span> <span class="n">SparseTransformerAttention</span><span class="p">,</span>
+            <span class="s2">&quot;longformer_attn&quot;</span><span class="p">:</span> <span class="n">LongformerAttention</span><span class="p">,</span>
+            <span class="s2">&quot;bigbird_attn&quot;</span><span class="p">:</span> <span class="n">BigBirdAttention</span><span class="p">,</span>
+            <span class="s2">&quot;sparsek_attn&quot;</span><span class="p">:</span> <span class="n">SparseKAttention</span><span class="p">,</span>
+            <span class="s2">&quot;nsa_attn&quot;</span><span class="p">:</span> <span class="n">NSAAttention</span><span class="p">,</span>
+            <span class="s2">&quot;sparge_attn&quot;</span><span class="p">:</span> <span class="n">SpargeAttention</span><span class="p">,</span>
+            <span class="s2">&quot;fasa_attn&quot;</span><span class="p">:</span> <span class="n">FASAAttention</span><span class="p">,</span>
+            <span class="s2">&quot;gla_attn&quot;</span><span class="p">:</span> <span class="n">GatedLinearAttention</span><span class="p">,</span>
+            <span class="s2">&quot;deltanet_attn&quot;</span><span class="p">:</span> <span class="n">DeltaNetAttention</span><span class="p">,</span>
+            <span class="s2">&quot;gated_deltanet_attn&quot;</span><span class="p">:</span> <span class="n">GatedDeltaNetAttention</span><span class="p">,</span>
+            <span class="s2">&quot;hgrn2_attn&quot;</span><span class="p">:</span> <span class="n">HGRN2Attention</span><span class="p">,</span>
+            <span class="s2">&quot;fox_attn&quot;</span><span class="p">:</span> <span class="n">ForgettingAttention</span><span class="p">,</span>
+            <span class="s2">&quot;gated_softmax_attn&quot;</span><span class="p">:</span> <span class="n">GatedSoftmaxAttention</span><span class="p">,</span>
+            <span class="s2">&quot;engram_attn&quot;</span><span class="p">:</span> <span class="n">EngramLayer</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="k">if</span> <span class="n">layer_type</span> <span class="o">==</span> <span class="s2">&quot;mamba&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mixer</span> <span class="o">=</span> <span class="n">proj_cls</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">layer_type</span> <span class="ow">in</span> <span class="n">mixer_registry</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mixer</span> <span class="o">=</span> <span class="n">mixer_registry</span><span class="p">[</span><span class="n">layer_type</span><span class="p">](</span><span class="n">config</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">supported_layers</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">mixer_registry</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;mamba&quot;</span><span class="p">])</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Unknown layer_type &#39;</span><span class="si">{</span><span class="n">layer_type</span><span class="si">}</span><span class="s2">&#39;. Supported values: </span><span class="si">{</span><span class="n">supported_layers</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">norm2</span> <span class="o">=</span> <span class="n">get_norm</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+        <span class="n">activation</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">SiLU</span><span class="p">()</span> <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">ffn_activation</span> <span class="o">==</span> <span class="s2">&quot;silu&quot;</span> <span class="k">else</span> <span class="n">nn</span><span class="o">.</span><span class="n">GELU</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_moe</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">router</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">num_experts</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">experts</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">(</span>
+                <span class="p">[</span>
+                    <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+                        <span class="n">proj_cls</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">ffn_hidden_size</span><span class="p">),</span>
+                        <span class="n">activation</span><span class="p">,</span>
+                        <span class="n">proj_cls</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">ffn_hidden_size</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">),</span>
+                    <span class="p">)</span>
+                    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">num_experts</span><span class="p">)</span>
+                <span class="p">]</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">top_k</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">top_k_experts</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">router</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">experts</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">top_k</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ffn</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+                <span class="n">proj_cls</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">ffn_hidden_size</span><span class="p">),</span>
+                <span class="n">activation</span><span class="p">,</span>
+                <span class="n">proj_cls</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">ffn_hidden_size</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">),</span>
+            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">depth_router</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_mixture_of_depths</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_forward_dense</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">x</span><span class="p">,</span>
+        <span class="n">logical_layer_idx</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">input_ids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run the full attention + FFN path for all tokens (no MoD routing).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x: Input tensor of shape ``(B, S, hidden_size)``.</span>
+<span class="sd">            logical_layer_idx: Global logical layer index (0-based across</span>
+<span class="sd">                loops). Passed to mixers that need positional awareness.</span>
+<span class="sd">            input_ids: Original token IDs, required by Engram layers.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Output tensor of shape ``(B, S, hidden_size)``.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If the layer is training-free and called in training</span>
+<span class="sd">                mode.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">residual</span> <span class="o">=</span> <span class="n">x</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">norm1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">training</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">layer_type</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">TRAINING_FREE_LAYERS</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Layer &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">layer_type</span><span class="si">}</span><span class="s2">&#39; is training-free and only supported in eval/inference mode.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">layer_type</span> <span class="o">==</span> <span class="s2">&quot;mamba&quot;</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">mixer</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">layer_type</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;ode&quot;</span><span class="p">,</span> <span class="s2">&quot;retnet&quot;</span><span class="p">}:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mixer</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">layer_type</span> <span class="o">==</span> <span class="s2">&quot;engram_attn&quot;</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mixer</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">input_ids</span><span class="o">=</span><span class="n">input_ids</span><span class="p">,</span> <span class="n">logical_layer_idx</span><span class="o">=</span><span class="n">logical_layer_idx</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mixer</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">logical_layer_idx</span><span class="o">=</span><span class="n">logical_layer_idx</span><span class="p">)</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="n">residual</span> <span class="o">+</span> <span class="n">x</span>
+
+        <span class="n">residual</span> <span class="o">=</span> <span class="n">x</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">norm2</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_moe</span><span class="p">:</span>
+            <span class="n">logits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">router</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+            <span class="n">weights</span><span class="p">,</span> <span class="n">indices</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">topk</span><span class="p">(</span><span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">top_k</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+            <span class="n">batch_size</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">dim</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span>
+            <span class="n">flat_x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">dim</span><span class="p">)</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">flat_x</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">top_k</span><span class="p">):</span>
+                <span class="n">expert_indices</span> <span class="o">=</span> <span class="n">indices</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+                <span class="n">expert_weights</span> <span class="o">=</span> <span class="n">weights</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">expert</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">experts</span><span class="p">):</span>
+                    <span class="n">mask</span> <span class="o">=</span> <span class="n">expert_indices</span> <span class="o">==</span> <span class="n">i</span>
+                    <span class="k">if</span> <span class="n">mask</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+                        <span class="n">selected_x</span> <span class="o">=</span> <span class="n">flat_x</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+                        <span class="n">expert_out</span> <span class="o">=</span> <span class="n">expert</span><span class="p">(</span><span class="n">selected_x</span><span class="p">)</span>
+                        <span class="n">out</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">+=</span> <span class="n">expert_out</span> <span class="o">*</span> <span class="n">expert_weights</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+
+            <span class="n">x</span> <span class="o">=</span> <span class="n">residual</span> <span class="o">+</span> <span class="n">out</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">dim</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">x</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="n">residual</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">ffn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">x</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_mixture_of_depths_capacity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute the token capacity for Mixture-of-Depths routing.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            seq_len: Sequence length of the current batch.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Integer token capacity, at least 1.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">seq_len</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">mixture_of_depths_capacity_ratio</span><span class="p">)))</span>
+
+<div class="viewcode-block" id="HybridLayer.forward">
+<a class="viewcode-back" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.HybridLayer.forward">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">x</span><span class="p">,</span>
+        <span class="n">logical_layer_idx</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">input_ids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Forward pass with optional Mixture-of-Depths token routing.</span>
+
+<span class="sd">        When MoD is disabled, delegates directly to :meth:`_forward_dense`.</span>
+<span class="sd">        When MoD is enabled, computes per-token router scores, selects the</span>
+<span class="sd">        top-capacity tokens, runs the dense path on those tokens only, and</span>
+<span class="sd">        scatters the updated tokens back into the original sequence. An</span>
+<span class="sd">        auxiliary load-balancing loss is computed and stored in</span>
+<span class="sd">        ``last_mixture_of_depths_aux_loss``.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x: Input tensor of shape ``(B, S, hidden_size)``.</span>
+<span class="sd">            logical_layer_idx: Global logical layer index (0-based across</span>
+<span class="sd">                loops).</span>
+<span class="sd">            input_ids: Original token IDs, required by Engram layers.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Output tensor of shape ``(B, S, hidden_size)``.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If MoD is active and the sequence length is 0.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_mixture_of_depths</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">last_mixture_of_depths_aux_loss</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">last_mixture_of_depths_selected_fraction</span> <span class="o">=</span> <span class="mf">1.0</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">last_mixture_of_depths_capacity</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forward_dense</span><span class="p">(</span>
+                <span class="n">x</span><span class="p">,</span>
+                <span class="n">logical_layer_idx</span><span class="o">=</span><span class="n">logical_layer_idx</span><span class="p">,</span>
+                <span class="n">input_ids</span><span class="o">=</span><span class="n">input_ids</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="n">batch_size</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">hidden_size</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span>
+        <span class="k">if</span> <span class="n">seq_len</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Mixture-of-Depths requires a non-empty token sequence&quot;</span><span class="p">)</span>
+        <span class="n">capacity</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mixture_of_depths_capacity</span><span class="p">(</span><span class="n">seq_len</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_mixture_of_depths_capacity</span> <span class="o">=</span> <span class="n">capacity</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_mixture_of_depths_selected_fraction</span> <span class="o">=</span> <span class="n">capacity</span> <span class="o">/</span> <span class="n">seq_len</span>
+
+        <span class="n">router_logits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">depth_router</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">router_probs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">router_logits</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_mixture_of_depths_aux_loss</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="p">(</span><span class="n">router_probs</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">mixture_of_depths_capacity_ratio</span><span class="p">)</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">capacity</span> <span class="o">&gt;=</span> <span class="n">seq_len</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forward_dense</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">logical_layer_idx</span><span class="o">=</span><span class="n">logical_layer_idx</span><span class="p">)</span>
+
+        <span class="n">selected_indices</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">topk</span><span class="p">(</span><span class="n">router_logits</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">capacity</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">indices</span>
+        <span class="n">selected_indices</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">selected_indices</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">gather_index</span> <span class="o">=</span> <span class="n">selected_indices</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">capacity</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">)</span>
+        <span class="n">selected_tokens</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">gather_index</span><span class="p">)</span>
+        <span class="n">selected_input_ids</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">input_ids</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">selected_input_ids</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="n">input_ids</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">selected_indices</span><span class="p">)</span>
+        <span class="n">updated_tokens</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forward_dense</span><span class="p">(</span>
+            <span class="n">selected_tokens</span><span class="p">,</span>
+            <span class="n">logical_layer_idx</span><span class="o">=</span><span class="n">logical_layer_idx</span><span class="p">,</span>
+            <span class="n">input_ids</span><span class="o">=</span><span class="n">selected_input_ids</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">gather_index</span><span class="p">,</span> <span class="n">src</span><span class="o">=</span><span class="n">updated_tokens</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="TormentedBertFrankenstein">
+<a class="viewcode-back" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.TormentedBertFrankenstein">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">TormentedBertFrankenstein</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;TORMENTED-BERT-Frankenstein: Hybrid mixed-architecture Transformer encoder.</span>
+
+<span class="sd">    This is the flagship model. It stacks ``num_layers`` :class:`HybridLayer`</span>
+<span class="sd">    blocks, each configured by ``layer_pattern``, and repeats the entire</span>
+<span class="sd">    stack ``num_loops`` times (looped depth). The logical depth is</span>
+<span class="sd">    ``num_layers * num_loops``.</span>
+
+<span class="sd">    Key architectural features:</span>
+
+<span class="sd">    * **17+ attention mixer families** dispatched per-layer via</span>
+<span class="sd">      :class:`HybridLayer`.</span>
+<span class="sd">    * **Looped depth**: the physical layer stack is iterated ``num_loops``</span>
+<span class="sd">      times, sharing parameters across loops for parameter-efficient deep</span>
+<span class="sd">      computation.</span>
+<span class="sd">    * **Mixture-of-Experts (MoE) FFN**: per-token top-k expert routing with</span>
+<span class="sd">      weighted expert outputs.</span>
+<span class="sd">    * **BitNet b1.58**: ternary weight quantization via :class:`BitLinear`</span>
+<span class="sd">      when ``use_bitnet`` is True.</span>
+<span class="sd">    * **Factorized embeddings**: reduced-dimension embedding lookup +</span>
+<span class="sd">      projection via :class:`FactorizedEmbedding`.</span>
+<span class="sd">    * **Mixture-of-Depths**: per-layer token routing where only the</span>
+<span class="sd">      top-capacity tokens are updated; auxiliary load-balancing loss is</span>
+<span class="sd">      accumulated and exposed via ``last_auxiliary_losses``.</span>
+<span class="sd">    * **Normalization**: ``layer_norm``, ``dynamic_tanh`` (DyT), or</span>
+<span class="sd">      ``derf`` (Dynamic Erf).</span>
+<span class="sd">    * **Positional encoding**: RoPE or HoPE, applied inside attention</span>
+<span class="sd">      mixers.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        config: The :class:`UltraConfig` used to build the model.</span>
+<span class="sd">        emb: Token embedding layer (:class:`FactorizedEmbedding` or</span>
+<span class="sd">            ``nn.Embedding``).</span>
+<span class="sd">        dropout: Embedding dropout layer.</span>
+<span class="sd">        layers: ModuleList of ``num_layers`` :class:`HybridLayer` blocks.</span>
+<span class="sd">        final_norm: Final normalization before the output head.</span>
+<span class="sd">        head: Output projection to vocabulary logits (Linear or BitLinear).</span>
+<span class="sd">        last_auxiliary_losses: Dict of auxiliary losses from the most recent</span>
+<span class="sd">            forward pass (e.g. ``&quot;mixture_of_depths_router_loss&quot;``).</span>
+<span class="sd">        last_mixture_of_depths_stats: Dict of MoD statistics from the most</span>
+<span class="sd">            recent forward pass (``&quot;average_selected_fraction&quot;``,</span>
+<span class="sd">            ``&quot;raw_router_aux_loss&quot;``).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="TormentedBertFrankenstein.__init__">
+<a class="viewcode-back" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.TormentedBertFrankenstein.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build the Frankenstein encoder from an UltraConfig.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            config: :class:`UltraConfig` instance with all model</span>
+<span class="sd">                hyperparameters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_auxiliary_losses</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_mixture_of_depths_stats</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">use_factorized_embedding</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">emb</span> <span class="o">=</span> <span class="n">FactorizedEmbedding</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">emb</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Embedding</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">vocab_size</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Dropout</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">dropout</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">layers</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="n">HybridLayer</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">layer_type</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">layer_pattern</span><span class="p">[</span><span class="n">i</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">layer_pattern</span><span class="p">)])</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">num_layers</span><span class="p">)</span>
+            <span class="p">]</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">final_norm</span> <span class="o">=</span> <span class="n">get_norm</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+        <span class="n">proj_cls</span> <span class="o">=</span> <span class="n">BitLinear</span> <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">use_bitnet</span> <span class="k">else</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">head</span> <span class="o">=</span> <span class="n">proj_cls</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">vocab_size</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TormentedBertFrankenstein.forward">
+<a class="viewcode-back" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.TormentedBertFrankenstein.forward">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_ids</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run the full looped-depth encoder forward pass.</span>
+
+<span class="sd">        Iterates the physical layer stack ``num_loops`` times, tracking a</span>
+<span class="sd">        global ``logical_layer_idx``. Accumulates Mixture-of-Depths auxiliary</span>
+<span class="sd">        losses across all layers and stores them in</span>
+<span class="sd">        ``last_auxiliary_losses``.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            input_ids: Integer token indices of shape ``(B, S)``.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Logits tensor of shape ``(B, S, vocab_size)``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">emb</span><span class="p">(</span><span class="n">input_ids</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="n">logical_layer_idx</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">mixture_of_depths_aux_losses</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">mixture_of_depths_selected_fractions</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">num_loops</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">:</span>
+                <span class="n">x</span> <span class="o">=</span> <span class="n">layer</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">logical_layer_idx</span><span class="o">=</span><span class="n">logical_layer_idx</span><span class="p">,</span> <span class="n">input_ids</span><span class="o">=</span><span class="n">input_ids</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">layer</span><span class="o">.</span><span class="n">use_mixture_of_depths</span> <span class="ow">and</span> <span class="n">layer</span><span class="o">.</span><span class="n">last_mixture_of_depths_aux_loss</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">mixture_of_depths_aux_losses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">layer</span><span class="o">.</span><span class="n">last_mixture_of_depths_aux_loss</span><span class="p">)</span>
+                    <span class="n">mixture_of_depths_selected_fractions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                        <span class="n">layer</span><span class="o">.</span><span class="n">last_mixture_of_depths_selected_fraction</span>
+                    <span class="p">)</span>
+                <span class="n">logical_layer_idx</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">final_norm</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">mixture_of_depths_aux_losses</span><span class="p">:</span>
+            <span class="n">raw_aux_loss</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">mixture_of_depths_aux_losses</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+            <span class="n">weighted_aux_loss</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">raw_aux_loss</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">mixture_of_depths_router_aux_loss_weight</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">last_auxiliary_losses</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;mixture_of_depths_router_loss&quot;</span><span class="p">:</span> <span class="n">weighted_aux_loss</span><span class="p">,</span>
+            <span class="p">}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">last_mixture_of_depths_stats</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;average_selected_fraction&quot;</span><span class="p">:</span> <span class="nb">sum</span><span class="p">(</span><span class="n">mixture_of_depths_selected_fractions</span><span class="p">)</span>
+                <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">mixture_of_depths_selected_fractions</span><span class="p">),</span>
+                <span class="s2">&quot;raw_router_aux_loss&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">raw_aux_loss</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()),</span>
+            <span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">last_auxiliary_losses</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">last_mixture_of_depths_stats</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="TormentedBertMini">
+<a class="viewcode-back" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.TormentedBertMini">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">TormentedBertMini</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Simplified encoder variant preset for stable training on constrained GPUs.</span>
+
+<span class="sd">    Wraps a :class:`TormentedBertFrankenstein` backbone with a compact preset</span>
+<span class="sd">    configuration: ``hidden_size=384``, ``num_layers=6``, ``num_loops=2``,</span>
+<span class="sd">    ``num_heads=6``, ``num_experts=4``, ``norm_type=&quot;derf&quot;``,</span>
+<span class="sd">    ``use_factorized_embedding=True``, and a stable layer pattern of</span>
+<span class="sd">    ``[&quot;retnet&quot;, &quot;titan_attn&quot;, &quot;retnet&quot;, &quot;mamba&quot;, &quot;titan_attn&quot;, &quot;ode&quot;]``.</span>
+
+<span class="sd">    Factorized embeddings are forced on even if the provided config disables</span>
+<span class="sd">    them.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        config: The :class:`UltraConfig` (built from preset or user-provided).</span>
+<span class="sd">        backbone: The underlying :class:`TormentedBertFrankenstein` model.</span>
+<span class="sd">        last_auxiliary_losses: Mirrored from the backbone after each forward</span>
+<span class="sd">            pass.</span>
+<span class="sd">        last_mixture_of_depths_stats: Mirrored from the backbone after each</span>
+<span class="sd">            forward pass.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="TormentedBertMini.build_mini_config">
+<a class="viewcode-back" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.TormentedBertMini.build_mini_config">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">build_mini_config</span><span class="p">(</span><span class="n">vocab_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50_000</span><span class="p">,</span> <span class="n">use_bitnet</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UltraConfig</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build the default Mini preset configuration.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            vocab_size: Vocabulary size. Default: 50000.</span>
+<span class="sd">            use_bitnet: Whether to use BitNet ternary quantization.</span>
+<span class="sd">                Default: True.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A pre-configured :class:`UltraConfig` with compact dimensions.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">stable_layer_pattern</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;retnet&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;titan_attn&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;retnet&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;mamba&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;titan_attn&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;ode&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+        <span class="k">return</span> <span class="n">UltraConfig</span><span class="p">(</span>
+            <span class="n">vocab_size</span><span class="o">=</span><span class="n">vocab_size</span><span class="p">,</span>
+            <span class="n">hidden_size</span><span class="o">=</span><span class="mi">384</span><span class="p">,</span>
+            <span class="n">num_layers</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span>
+            <span class="n">num_loops</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+            <span class="n">num_heads</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span>
+            <span class="n">retention_heads</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span>
+            <span class="n">num_experts</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+            <span class="n">top_k_experts</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+            <span class="n">dropout</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+            <span class="n">ode_solver</span><span class="o">=</span><span class="s2">&quot;rk4&quot;</span><span class="p">,</span>
+            <span class="n">ode_steps</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+            <span class="n">use_bitnet</span><span class="o">=</span><span class="n">use_bitnet</span><span class="p">,</span>
+            <span class="n">norm_type</span><span class="o">=</span><span class="s2">&quot;derf&quot;</span><span class="p">,</span>
+            <span class="n">layer_pattern</span><span class="o">=</span><span class="n">stable_layer_pattern</span><span class="p">,</span>
+            <span class="n">use_factorized_embedding</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">factorized_embedding_dim</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span>
+            <span class="n">use_embedding_conv</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TormentedBertMini.__init__">
+<a class="viewcode-back" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.TormentedBertMini.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UltraConfig</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the Mini model.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            config: Optional :class:`UltraConfig`. If None, the default Mini</span>
+<span class="sd">                preset is used. Factorized embeddings are forced on.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_mini_config</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_auxiliary_losses</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_mixture_of_depths_stats</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">use_factorized_embedding</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">use_factorized_embedding</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">backbone</span> <span class="o">=</span> <span class="n">TormentedBertFrankenstein</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TormentedBertMini.forward">
+<a class="viewcode-back" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.TormentedBertMini.forward">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_ids</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Forward pass through the Mini backbone.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            input_ids: Integer token indices of shape ``(B, S)``.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Logits tensor of shape ``(B, S, vocab_size)``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">backbone</span><span class="p">(</span><span class="n">input_ids</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_auxiliary_losses</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">backbone</span><span class="p">,</span> <span class="s2">&quot;last_auxiliary_losses&quot;</span><span class="p">,</span> <span class="p">{}))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_mixture_of_depths_stats</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">backbone</span><span class="p">,</span> <span class="s2">&quot;last_mixture_of_depths_stats&quot;</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">output</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="FrankensteinDecoder">
+<a class="viewcode-back" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.FrankensteinDecoder">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FrankensteinDecoder</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Autoregressive causal decoder variant for LLM-style text generation.</span>
+
+<span class="sd">    Wraps a :class:`TormentedBertFrankenstein` backbone with ``mode=&#39;decoder&#39;``</span>
+<span class="sd">    so every attention layer applies causal (autoregressive) masking. Supports</span>
+<span class="sd">    the same hybrid architecture features as the encoder: 17+ mixer families,</span>
+<span class="sd">    MoE, BitNet, factorized embeddings, looped depth, Mixture-of-Depths, and</span>
+<span class="sd">    Engram memory.</span>
+
+<span class="sd">    The ``model_class=frankesteindecoder`` preset forces ``mode=decoder`` at</span>
+<span class="sd">    runtime, overriding any user-provided mode.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        config: The :class:`UltraConfig` (built from preset or user-provided).</span>
+<span class="sd">        backbone: The underlying :class:`TormentedBertFrankenstein` model.</span>
+<span class="sd">        last_auxiliary_losses: Mirrored from the backbone after each forward</span>
+<span class="sd">            pass.</span>
+<span class="sd">        last_mixture_of_depths_stats: Mirrored from the backbone after each</span>
+<span class="sd">            forward pass.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="FrankensteinDecoder.build_decoder_config">
+<a class="viewcode-back" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.FrankensteinDecoder.build_decoder_config">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">build_decoder_config</span><span class="p">(</span>
+        <span class="n">vocab_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50_000</span><span class="p">,</span>
+        <span class="n">hidden_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2048</span><span class="p">,</span>
+        <span class="n">num_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
+        <span class="n">num_loops</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">use_bitnet</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">layer_pattern</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UltraConfig</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build the default decoder preset configuration.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            vocab_size: Vocabulary size. Default: 50000.</span>
+<span class="sd">            hidden_size: Hidden state dimensionality. Default: 2048.</span>
+<span class="sd">            num_layers: Number of physical HybridLayer blocks. Default: 12.</span>
+<span class="sd">            num_loops: Number of loop iterations. Default: 1.</span>
+<span class="sd">            use_bitnet: Whether to use BitNet ternary quantization.</span>
+<span class="sd">                Default: True.</span>
+<span class="sd">            layer_pattern: Optional custom layer pattern. If None, defaults</span>
+<span class="sd">                to ``[&quot;titan_attn&quot;, &quot;retnet&quot;, &quot;titan_attn&quot;, &quot;mamba&quot;] * 3``.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A pre-configured :class:`UltraConfig` with ``mode=&#39;decoder&#39;``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">layer_pattern</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">layer_pattern</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="s2">&quot;titan_attn&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;retnet&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;titan_attn&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;mamba&quot;</span><span class="p">,</span>
+            <span class="p">]</span> <span class="o">*</span> <span class="mi">3</span>
+        <span class="k">return</span> <span class="n">UltraConfig</span><span class="p">(</span>
+            <span class="n">vocab_size</span><span class="o">=</span><span class="n">vocab_size</span><span class="p">,</span>
+            <span class="n">hidden_size</span><span class="o">=</span><span class="n">hidden_size</span><span class="p">,</span>
+            <span class="n">num_layers</span><span class="o">=</span><span class="n">num_layers</span><span class="p">,</span>
+            <span class="n">num_loops</span><span class="o">=</span><span class="n">num_loops</span><span class="p">,</span>
+            <span class="n">num_heads</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>
+            <span class="n">retention_heads</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+            <span class="n">num_experts</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+            <span class="n">top_k_experts</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+            <span class="n">dropout</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+            <span class="n">ode_solver</span><span class="o">=</span><span class="s2">&quot;rk4&quot;</span><span class="p">,</span>
+            <span class="n">ode_steps</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+            <span class="n">use_bitnet</span><span class="o">=</span><span class="n">use_bitnet</span><span class="p">,</span>
+            <span class="n">norm_type</span><span class="o">=</span><span class="s2">&quot;dynamic_tanh&quot;</span><span class="p">,</span>
+            <span class="n">layer_pattern</span><span class="o">=</span><span class="n">layer_pattern</span><span class="p">,</span>
+            <span class="n">use_factorized_embedding</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;decoder&quot;</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FrankensteinDecoder.__init__">
+<a class="viewcode-back" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.FrankensteinDecoder.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UltraConfig</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the decoder model.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            config: Optional :class:`UltraConfig`. If None, the default</span>
+<span class="sd">                decoder preset is used. ``mode`` is forced to ``&quot;decoder&quot;``</span>
+<span class="sd">                if not already set.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_decoder_config</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_auxiliary_losses</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_mixture_of_depths_stats</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">mode</span> <span class="o">!=</span> <span class="s2">&quot;decoder&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">mode</span> <span class="o">=</span> <span class="s2">&quot;decoder&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">backbone</span> <span class="o">=</span> <span class="n">TormentedBertFrankenstein</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FrankensteinDecoder.forward">
+<a class="viewcode-back" href="../../../api/model/tormented_bert_frankestein.html#src.model.tormented_bert_frankestein.FrankensteinDecoder.forward">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_ids</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Forward pass through the decoder backbone (causal masking).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            input_ids: Integer token indices of shape ``(B, S)``.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Logits tensor of shape ``(B, S, vocab_size)``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">backbone</span><span class="p">(</span><span class="n">input_ids</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_auxiliary_losses</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">backbone</span><span class="p">,</span> <span class="s2">&quot;last_auxiliary_losses&quot;</span><span class="p">,</span> <span class="p">{}))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_mixture_of_depths_stats</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">backbone</span><span class="p">,</span> <span class="s2">&quot;last_mixture_of_depths_stats&quot;</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">output</span></div>
+
+
+    <span class="nd">@torch</span><span class="o">.</span><span class="n">inference_mode</span><span class="p">()</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">input_ids</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+        <span class="n">max_new_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">128</span><span class="p">,</span>
+        <span class="n">temperature</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">top_k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Autoregressive token generation with top-k sampling.</span>
+
+<span class="sd">        Runs the decoder forward pass repeatedly, sampling one token at a</span>
+<span class="sd">        time from the top-k filtered softmax distribution. Runs under</span>
+<span class="sd">        ``torch.inference_mode()`` for efficiency.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            input_ids: Prompt token indices of shape ``(B, S_prompt)``.</span>
+<span class="sd">            max_new_tokens: Maximum number of tokens to generate.</span>
+<span class="sd">                Default: 128.</span>
+<span class="sd">            temperature: Softmax temperature for sampling. Lower values</span>
+<span class="sd">                make output more deterministic. Default: 1.0.</span>
+<span class="sd">            top_k: Number of highest-probability tokens to keep for</span>
+<span class="sd">                sampling. Set to 0 to disable top-k filtering.</span>
+<span class="sd">                Default: 50.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Tensor of shape ``(B, S_prompt + max_new_tokens)`` containing</span>
+<span class="sd">            the prompt followed by generated tokens.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max_new_tokens</span><span class="p">):</span>
+            <span class="n">logits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span><span class="n">input_ids</span><span class="p">)</span>
+            <span class="n">next_logits</span> <span class="o">=</span> <span class="n">logits</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="n">temperature</span><span class="p">,</span> <span class="mf">1e-8</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">top_k</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">v</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">topk</span><span class="p">(</span><span class="n">next_logits</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="n">top_k</span><span class="p">,</span> <span class="n">next_logits</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)))</span>
+                <span class="n">next_logits</span><span class="p">[</span><span class="n">next_logits</span> <span class="o">&lt;</span> <span class="n">v</span><span class="p">[:,</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;-inf&quot;</span><span class="p">)</span>
+            <span class="n">probs</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">next_logits</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">next_token</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">multinomial</span><span class="p">(</span><span class="n">probs</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">input_ids</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">input_ids</span><span class="p">,</span> <span class="n">next_token</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">input_ids</span></div>
+
+
+
+<span class="c1"># ==================== PRUEBA DE ESTRES ====================</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">UltraConfig</span><span class="p">(</span>
+        <span class="n">hidden_size</span><span class="o">=</span><span class="mi">1536</span><span class="p">,</span>
+        <span class="n">num_layers</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>
+        <span class="n">num_loops</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+        <span class="n">ode_solver</span><span class="o">=</span><span class="s2">&quot;rk4&quot;</span><span class="p">,</span>
+        <span class="n">ode_steps</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">device</span> <span class="o">=</span> <span class="s2">&quot;cuda&quot;</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">&quot;cpu&quot;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">⚡ TORMENTED-BERT-Frankenstein INITIALIZING ⚡&quot;</span><span class="p">)</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">TormentedBertFrankenstein</span><span class="p">(</span><span class="n">config</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+
+    <span class="n">params</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">())</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Model Params: </span><span class="si">{</span><span class="n">params</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mf">1e6</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">M&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Architecture Pattern: </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">layer_pattern</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Weights: Ternary (BitNet b1.58)&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Dynamics: Neural ODE (RK4)&quot;</span><span class="p">)</span>
+
+    <span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">50000</span><span class="p">,</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">512</span><span class="p">),</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">[...] Running Forward Pass with ODE Dynamics &amp; RetNet...&quot;</span><span class="p">)</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Output Shape: </span><span class="si">{</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Memory Allocated: </span><span class="si">{</span><span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">memory_allocated</span><span class="p">()</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1024</span><span class="o">**</span><span class="mi">3</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> GB&quot;</span><span class="p">)</span>
+
+    <span class="n">loss</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[...] Running Backward Pass (Training ODE through time)...&quot;</span><span class="p">)</span>
+    <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Gradients computed successfully.&quot;</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Erick F. Merino M..</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
