@@ -4,6 +4,7 @@
 [![PyTorch 2.0+](https://img.shields.io/badge/PyTorch-2.0+-ee4c2c.svg)](https://pytorch.org/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-green.svg)](https://opensource.org/licenses/Apache-2.0)
 [![CI](https://img.shields.io/badge/CI-passing-brightgreen.svg)](https://github.com/erickfmm/frankestein-transformer/actions)
+[![Docs](https://img.shields.io/badge/docs-readthedocs-blue.svg)](https://frankestein-transformer.readthedocs.io/en/latest/)
 
 Config-driven transformer experimentation toolkit with 17+ mixer architectures and 23 optimizer families.
 
@@ -93,6 +94,7 @@ Parameters use prefixed keys: `<optimizer_class>-<group>_<param>` (e.g. `adamw-l
 | [docs/paper-es.pdf](docs/paper-es.pdf) | Technical report (Spanish) |
 | [docs/specs/](docs/specs/) | Architecture and feature specifications |
 | [docs/pdoc/](docs/pdoc/) | API documentation |
+| [frankestein-transformer.readthedocs.io](https://frankestein-transformer.readthedocs.io/en/latest/) | Full hosted documentation |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Development roadmap |
 | [docs/transformers_compatibility.md](docs/transformers_compatibility.md) | HuggingFace export compatibility guide |
 
