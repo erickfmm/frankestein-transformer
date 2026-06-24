@@ -8,6 +8,7 @@ from src.model.attention import (
     EngramLayer,
     FASAAttention,
     ForgettingAttention,
+    GatedDeltaNet2Attention,
     GatedDeltaNetAttention,
     GatedLinearAttention,
     GatedSoftmaxAttention,
@@ -78,6 +79,7 @@ class AttentionRefactorTests(unittest.TestCase):
         self.assertTrue(callable(GatedLinearAttention))
         self.assertTrue(callable(DeltaNetAttention))
         self.assertTrue(callable(GatedDeltaNetAttention))
+        self.assertTrue(callable(GatedDeltaNet2Attention))
         self.assertTrue(callable(RetNetAttention))
         self.assertTrue(callable(HGRN2Attention))
         self.assertTrue(callable(ForgettingAttention))
@@ -126,6 +128,7 @@ class AttentionRefactorTests(unittest.TestCase):
             "gla_attn",
             "deltanet_attn",
             "gated_deltanet_attn",
+            "gated_deltanet2_attn",
             "hgrn2_attn",
             "fox_attn",
             "gated_softmax_attn",

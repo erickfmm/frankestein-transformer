@@ -63,7 +63,7 @@ La consecuencia práctica es un ecosistema de investigación fragmentado donde l
 Este trabajo aborda estos desafíos mediante un conjunto de herramientas de experimentación unificado y basado en configuración, disponible en \url{https://github.com/erickfmm/frankestein-transformer}, que proporciona:
 \begin{enumerate}[leftmargin=*]
     \item \textbf{Diseño Basado en Esquemas}: Un contrato de configuración estricto y validado que garantiza la reproducibilidad mientras admite diecisiete arquitecturas de mezcladores de secuencia distintas y veintitrés familias de optimizadores.
-    \item \textbf{Entrenamiento Agnóstico a la Arquitectura}: Infraestructura de entrenamiento común que soporta líneas base de atención densa (estándar, sigmoide), alternativas recurrentes (RetNet, Mamba, bloques tipo EDO), enrutamiento adaptativo de profundidad (Mixture-of-Depths) \citep{zhu2026mixtureofdepthsattention}, bloques de memoria condicional (Engram) \citep{cheng2026conditionalmemoryscalablelookup}, patrones de atención dispersa (Sparse Transformer, Longformer, BigBird, SparseK, NSA, SpargeAttn, FASA) y mecanismos con compuerta (GLA, DeltaNet, Gated DeltaNet, HGRN2, FoX, Gated Softmax).
+    \item \textbf{Entrenamiento Agnóstico a la Arquitectura}: Infraestructura de entrenamiento común que soporta líneas base de atención densa (estándar, sigmoide), alternativas recurrentes (RetNet, Mamba, bloques tipo EDO), enrutamiento adaptativo de profundidad (Mixture-of-Depths) \citep{zhu2026mixtureofdepthsattention}, bloques de memoria condicional (Engram) \citep{cheng2026conditionalmemoryscalablelookup}, patrones de atención dispersa (Sparse Transformer, Longformer, BigBird, SparseK, NSA, SpargeAttn, FASA) y mecanismos con compuerta (GLA, DeltaNet, Gated DeltaNet, Gated DeltaNet-2, HGRN2, FoX, Gated Softmax).
     \item \textbf{Marco de Enrutamiento de Optimizadores}: Grupos de hiperparámetros con prefijos que permiten un control detallado sobre incrustaciones, capas de normalización, bloques recurrentes, bloques de atención y otros subconjuntos de parámetros a través de diversos optimizadores, incluyendo la familia APOLLO (Apollo, Apollo-Mini, Q-Apollo) \citep{zhu2025apollosgdlikememoryadamwlevel}.
     \item \textbf{Flujos de Trabajo de Extremo a Extremo}: Despliegue integrado mediante cuantización (empaquetado ternario de pesos, activaciones INT8) y capacidades de incrustación de oraciones inspiradas en SBERT \citep{reimers_sentence-bert_2019}.
     \item \textbf{Configuración Interactiva}: Interfaz basada en web que proporciona renderizado de formularios impulsado por esquemas, validación en tiempo real y generación de comandos CLI.
@@ -92,7 +92,7 @@ Esta interfaz interactiva sirve como alternativa a la edición manual de YAML, m
 Este trabajo realiza las siguientes contribuciones principales:
 \begin{enumerate}[leftmargin=*]
     \item \textbf{Esquema de Configuración Unificado}: Un contrato de esquema basado en YAML con validación estricta que soporta diecisiete arquitecturas de mezcladores de secuencia distintas en cuatro categorías (líneas base densas, bloques recurrentes/retentivos, patrones de atención dispersa y mecanismos con compuerta), junto con controles de profundidad adaptativa y memoria condicional, mientras garantiza la reproducibilidad mediante restricciones \texttt{additionalProperties: false}.
-    \item \textbf{Soporte Integral de Arquitecturas}: Implementación de variantes modernas de transformers incluyendo atención softmax estándar \citep{vaswani_attention_2017}, atención sigmoide \citep{ramapuram_theory_2024}, RetNet \citep{sun_retentive_2023}, Mamba \citep{gu_mamba_2023}, transformers continuos tipo EDO \citep{zhang_continuous_2021}, atención con aumento de memoria Titans \citep{behrouz_titans_2025}, capas de memoria condicional Engram \citep{cheng2026conditionalmemoryscalablelookup}, enrutamiento de tokens Mixture-of-Depths \citep{zhu2026mixtureofdepthsattention}, mecanismos de atención dispersa \citep{child_sparse_transformer_2019,beltagy_longformer_2020,zaheer_bigbird_2020,lou_sparsek_2024,yuan_nsa_2025,zhang_spargeattn_2025,wang_fasa_2026} y arquitecturas de atención con compuerta \citep{yang_gla_2023,yang_deltanet_2024,yang_gated_deltanet_2024,qin_hgrn2_2024,lin_forgetting_transformer_2025,qiu_gated_attention_2025}. El sistema soporta tanto entrenamiento en modo codificador con atención bidireccional para modelado de lenguaje enmascarado (MLM) como entrenamiento en modo decodificador con enmascaramiento causal para predicción autorregresiva del siguiente token.
+    \item \textbf{Soporte Integral de Arquitecturas}: Implementación de variantes modernas de transformers incluyendo atención softmax estándar \citep{vaswani_attention_2017}, atención sigmoide \citep{ramapuram_theory_2024}, RetNet \citep{sun_retentive_2023}, Mamba \citep{gu_mamba_2023}, transformers continuos tipo EDO \citep{zhang_continuous_2021}, atención con aumento de memoria Titans \citep{behrouz_titans_2025}, capas de memoria condicional Engram \citep{cheng2026conditionalmemoryscalablelookup}, enrutamiento de tokens Mixture-of-Depths \citep{zhu2026mixtureofdepthsattention}, mecanismos de atención dispersa \citep{child_sparse_transformer_2019,beltagy_longformer_2020,zaheer_bigbird_2020,lou_sparsek_2024,yuan_nsa_2025,zhang_spargeattn_2025,wang_fasa_2026} y arquitecturas de atención con compuerta \citep{yang_gla_2023,yang_deltanet_2024,yang_gated_deltanet_2024,hatamizadeh_gated_deltanet2_2026,qin_hgrn2_2024,lin_forgetting_transformer_2025,qiu_gated_attention_2025}. El sistema soporta tanto entrenamiento en modo codificador con atención bidireccional para modelado de lenguaje enmascarado (MLM) como entrenamiento en modo decodificador con enmascaramiento causal para predicción autorregresiva del siguiente token.
     \item \textbf{Marco de Enrutamiento de Optimizadores}: Sistema de hiperparámetros con prefijos que permite control por grupo de parámetros a través de veintitrés optimizadores, incluyendo Anon con adaptabilidad ajustable \citep{anon2026anon}, métodos de reducción de varianza (MARS, Adan, AdEMAMix, Cautious AdamW), variantes eficientes en memoria (Adafactor, GaLore, Lion), enfoques sin programación de tasa de aprendizaje (Schedule-Free AdamW), métodos conscientes de curvatura (Sophia), precondicionadores de segundo orden (Shampoo, SOAP), optimizadores orientados a ortogonalidad (Muon, Turbo-Muon), escalado de lotes grandes (LAMB) y la familia APOLLO (Apollo, Apollo-Mini, Q-Apollo) \citep{zhu2025apollosgdlikememoryadamwlevel}.
     \item \textbf{Cuantización y Despliegue}: Tubería de despliegue integrada que soporta empaquetado ternario de pesos y cuantización de activaciones INT8 con estimaciones de tamaño siguiendo la aproximación de almacenamiento de $1.58$ bits.
     \item \textbf{Flujos de Trabajo de Incrustación de Oraciones}: Tuberías de entrenamiento e inferencia inspiradas en SBERT que soportan puntuación de similitud, recuperación, agrupamiento y exportación persistente de incrustaciones.
@@ -167,7 +167,7 @@ RetNet \citep{sun_retentive_2023} resuelve el ``triángulo imposible'' de entren
 Los métodos de atención dispersa reducen el cuello de botella cuadrático restringiendo las interacciones entre tokens: Sparse Transformer \citep{child_sparse_transformer_2019} utiliza patrones factorizados con paso y fijos ($\mathcal{O}(n\sqrt{n})$); Longformer \citep{beltagy_longformer_2020} emplea ventanas deslizantes con tokens globales ($\mathcal{O}(n \cdot w)$); BigBird \citep{zaheer_bigbird_2020} combina caminos locales, aleatorios y globales; SparseK \citep{lou_sparsek_2024} aplica selección diferenciable top-$k$; NSA \citep{yuan_nsa_2025} utiliza un diseño jerárquico de tres ramas; SpargeAttn \citep{zhang_spargeattn_2025} realiza poda a nivel de bloques en dos etapas; y FASA \citep{wang_fasa_2026} aprovecha características de frecuencia de RoPE para la selección de tokens. Las descripciones completas se encuentran en el Apéndice~\ref{sec:annex-sparse}.
 
 \subsubsection{Mecanismos de Atención con Compuerta}
-Las arquitecturas con compuerta controlan el flujo de información mediante compuertas aprendibles: GLA \citep{yang_gla_2023} agrega compuertas diagonales dependientes de datos a la atención lineal; DeltaNet \citep{yang_deltanet_2024} aplica la regla de aprendizaje delta a las actualizaciones de estado recurrente; Gated DeltaNet \citep{yang_gated_deltanet_2024} sintetiza ambos mecanismos; HGRN2 \citep{qin_hgrn2_2024} introduce compuertas de olvido jerárquicas con expansión de estado mediante producto exterior; FoX \citep{lin_forgetting_transformer_2025} incrusta compuertas de olvido directamente en la atención softmax; y Gated Softmax \citep{qiu_gated_attention_2025} aplica compuertas de canal posteriores a SDPA. Las derivaciones matemáticas completas aparecen en el Apéndice~\ref{sec:annex-gated}.
+Las arquitecturas con compuerta controlan el flujo de información mediante compuertas aprendibles: GLA \citep{yang_gla_2023} agrega compuertas diagonales dependientes de datos a la atención lineal; DeltaNet \citep{yang_deltanet_2024} aplica la regla de aprendizaje delta a las actualizaciones de estado recurrente; Gated DeltaNet \citep{yang_gated_deltanet_2024} sintetiza ambos mecanismos; Gated DeltaNet-2 \citep{hatamizadeh_gated_deltanet2_2026} desacopla la compuerta delta escalar en compuertas de borrado canalizadas (eje de claves) y escritura canalizada (eje de valores); HGRN2 \citep{qin_hgrn2_2024} introduce compuertas de olvido jerárquicas con expansión de estado mediante producto exterior; FoX \citep{lin_forgetting_transformer_2025} incrusta compuertas de olvido directamente en la atención softmax; y Gated Softmax \citep{qiu_gated_attention_2025} aplica compuertas de canal posteriores a SDPA. Las derivaciones matemáticas completas aparecen en el Apéndice~\ref{sec:annex-gated}.
 
 \subsection{Algoritmos de Optimización}
 
@@ -233,12 +233,13 @@ El \texttt{model.layer\_pattern} soporta bloques heredados, dispersos y con comp
     \item \textbf{Atención Lineal con Compuerta (GLA)} --- referencia interna: \texttt{yang\_gla\_2023} --- nombre de código: \texttt{gla\_attn}
     \item \textbf{DeltaNet} --- referencia interna: \texttt{yang\_deltanet\_2024} --- nombre de código: \texttt{deltanet\_attn}
     \item \textbf{DeltaNet con Compuerta} --- referencia interna: \texttt{yang\_gated\_deltanet\_2024} --- nombre de código: \texttt{gated\_deltanet\_attn}
+    \item \textbf{Gated DeltaNet-2} --- referencia interna: \texttt{hatamizadeh\_gated\_deltanet2\_2026} --- nombre de código: \texttt{gated\_deltanet2\_attn}
     \item \textbf{HGRN2} --- referencia interna: \texttt{qin\_hgrn2\_2024} --- nombre de código: \texttt{hgrn2\_attn}
     \item \textbf{Forgetting Transformer (FoX)} --- referencia interna: \texttt{lin\_forgetting\_transformer\_2025} --- nombre de código: \texttt{fox\_attn}
     \item \textbf{Atención Softmax con Compuerta} --- referencia interna: \texttt{qiu\_gated\_attention\_2025} --- nombre de código: \texttt{gated\_softmax\_attn}
 \end{itemize}
 
-que corresponde a la literatura actual de atención y mezcladores de secuencias \citep{sun_retentive_2023,gu_mamba_2023,zhang_continuous_2021,behrouz_titans_2025,ramapuram_theory_2024,vaswani_attention_2017,child_sparse_transformer_2019,beltagy_longformer_2020,zaheer_bigbird_2020,lou_sparsek_2024,yuan_nsa_2025,zhang_spargeattn_2025,wang_fasa_2026,yang_gla_2023,yang_deltanet_2024,yang_gated_deltanet_2024,qin_hgrn2_2024,lin_forgetting_transformer_2025,qiu_gated_attention_2025}
+que corresponde a la literatura actual de atención y mezcladores de secuencias \citep{sun_retentive_2023,gu_mamba_2023,zhang_continuous_2021,behrouz_titans_2025,ramapuram_theory_2024,vaswani_attention_2017,child_sparse_transformer_2019,beltagy_longformer_2020,zaheer_bigbird_2020,lou_sparsek_2024,yuan_nsa_2025,zhang_spargeattn_2025,wang_fasa_2026,yang_gla_2023,yang_deltanet_2024,yang_gated_deltanet_2024,hatamizadeh_gated_deltanet2_2026,qin_hgrn2_2024,lin_forgetting_transformer_2025,qiu_gated_attention_2025}
 
 El \texttt{training.optimizer.optimizer\_class} soporta una amplia familia de optimizadores:
 \texttt{sgd\_momentum}, \texttt{adamw}, \texttt{adafactor}, \texttt{galore\_adamw}, \texttt{prodigy}, \texttt{lion}, \texttt{sophia}, \texttt{muon}, \texttt{turbo\_muon}, \texttt{radam}, \texttt{adan}, \texttt{adopt}, \texttt{ademamix}, \texttt{mars\_adamw}, \texttt{cautious\_adamw}, \texttt{lamb}, \texttt{schedulefree\_adamw}, \texttt{shampoo}, \texttt{soap}, \texttt{anon}, \texttt{apollo}, \texttt{apollo\_mini}, y \texttt{q\_apollo}.
@@ -314,7 +315,7 @@ Por lo tanto, \texttt{rms\_norm} \textbf{no} es un valor de esquema válido en e
 \texttt{num\_experts} & int $\ge 1$ & Número de expertos en MoE. \\
 \texttt{top\_k\_experts} & int $\ge 1$ & Enrutamiento top-$k$ de expertos en MoE. \\
 \texttt{dropout} & float $[0,1]$ & Dropout global. \\
-\texttt{layer\_pattern} & array enum & Lista ordenada de bloques: heredados (\texttt{retnet}, \texttt{retnet\_attn}, \texttt{mamba}, \texttt{ode}, \texttt{titan\_attn}, \texttt{standard\_attn}, \texttt{sigmoid\_attn}), dispersos (\texttt{sparse\_transformer\_attn}, \texttt{longformer\_attn}, \texttt{bigbird\_attn}, \texttt{sparsek\_attn}, \texttt{nsa\_attn}, \texttt{sparge\_attn}, \texttt{fasa\_attn}), y con compuerta (\texttt{gla\_attn}, \texttt{deltanet\_attn}, \texttt{gated\_deltanet\_attn}, \texttt{hgrn2\_attn}, \texttt{fox\_attn}, \texttt{gated\_softmax\_attn}). \\
+\texttt{layer\_pattern} & array enum & Lista ordenada de bloques: heredados (\texttt{retnet}, \texttt{retnet\_attn}, \texttt{mamba}, \texttt{ode}, \texttt{titan\_attn}, \texttt{standard\_attn}, \texttt{sigmoid\_attn}), dispersos (\texttt{sparse\_transformer\_attn}, \texttt{longformer\_attn}, \texttt{bigbird\_attn}, \texttt{sparsek\_attn}, \texttt{nsa\_attn}, \texttt{sparge\_attn}, \texttt{fasa\_attn}), y con compuerta (\texttt{gla\_attn}, \texttt{deltanet\_attn}, \texttt{gated\_deltanet\_attn}, \texttt{gated\_deltanet2\_attn}, \texttt{hgrn2\_attn}, \texttt{fox\_attn}, \texttt{gated\_softmax\_attn}). \\
 \texttt{ode\_solver} & enum & \texttt{rk4} o \texttt{euler}. \\
 \texttt{ode\_steps} & int $\ge 1$ & Pasos de integración ODE. \\
 \texttt{use\_bitnet} & bool & Habilitar ruta BitLinear de bajo bit. \\
@@ -538,7 +539,7 @@ Este sistema implementa diecisiete arquitecturas de mezcladores de secuencias di
     \item \textbf{Líneas Base de Atención Densas}: La atención softmax estándar y la atención sigmoide proporcionan contextualización global completa a costo computacional cuadrático, sirviendo como líneas base de referencia para comparación con alternativas más eficientes.
     \item \textbf{Arquitecturas Recurrentes y Retentivas}: RetNet, Mamba, bloques estilo ODE y Titans mantienen representaciones de estado que permiten un costo de inferencia $\mathcal{O}(1)$ mientras preservan la expresividad mediante dinámicas recurrentes, parámetros selectivos o adaptación de memoria en tiempo de prueba.
     \item \textbf{Patrones de Atención Dispersa}: Siete variantes dispersas (Sparse Transformer, Longformer, BigBird, SparseK, NSA, SpargeAttn, FASA) reducen la complejidad cuadrática mediante dispersión estructurada, selección de tokens o estrategias de poda sin entrenamiento.
-    \item \textbf{Mecanismos de Memoria con Compuerta}: Seis arquitecturas con compuerta (GLA, DeltaNet, Gated DeltaNet, HGRN2, FoX, Gated Softmax) introducen control dependiente de datos sobre la retención de memoria, el olvido y la fuerza de actualización.
+    \item \textbf{Mecanismos de Memoria con Compuerta}: Siete arquitecturas con compuerta (GLA, DeltaNet, Gated DeltaNet, Gated DeltaNet-2, HGRN2, FoX, Gated Softmax) introducen control dependiente de datos sobre la retención de memoria, el olvido y la fuerza de actualización.
 \end{enumerate}
 
 \begin{figure}[t]
@@ -555,7 +556,7 @@ Este sistema implementa diecisiete arquitecturas de mezcladores de secuencias di
 \node[box, fill=red!10, below left=1.0cm and 5.4cm of root, minimum width=2.2cm] (dense) {\textbf{Dense (2)}};
 \node[box, fill=green!10, below left=1.0cm and 1.8cm of root, minimum width=2.2cm] (recur) {\textbf{Recurrent (4)}};
 \node[box, fill=yellow!12, below right=1.0cm and 1.8cm of root, minimum width=2.2cm] (sparse) {\textbf{Sparse (7)}};
-\node[box, fill=purple!12, below right=1.0cm and 5.4cm of root, minimum width=2.2cm] (gated) {\textbf{Gated (6)}};
+\node[box, fill=purple!12, below right=1.0cm and 5.4cm of root, minimum width=2.2cm] (gated) {\textbf{Gated (7)}};
 
 % Dense column
 \node[box, fill=red!5, below=of dense] (d1) {\texttt{standard\_attn}};
@@ -580,9 +581,10 @@ Este sistema implementa diecisiete arquitecturas de mezcladores de secuencias di
 \node[box, fill=purple!6, below=of gated] (g1) {\texttt{gla\_attn}};
 \node[box, fill=purple!6, below=of g1] (g2) {\texttt{deltanet\_attn}};
 \node[box, fill=purple!6, below=of g2] (g3) {\texttt{gated\_deltanet\_attn}};
-\node[box, fill=purple!6, below=of g3] (g4) {\texttt{hgrn2\_attn}};
-\node[box, fill=purple!6, below=of g4] (g5) {\texttt{fox\_attn}};
-\node[box, fill=purple!6, below=of g5] (g6) {\texttt{gated\_softmax\_attn}};
+\node[box, fill=purple!6, below=of g3] (g4) {\texttt{gated\_deltanet2\_attn}};
+\node[box, fill=purple!6, below=of g4] (g5) {\texttt{hgrn2\_attn}};
+\node[box, fill=purple!6, below=of g5] (g6) {\texttt{fox\_attn}};
+\node[box, fill=purple!6, below=of g6] (g7) {\texttt{gated\_softmax\_attn}};
 
 % Root-to-category links
 \draw[line] (root) -- (dense);
@@ -613,6 +615,7 @@ Este sistema implementa diecisiete arquitecturas de mezcladores de secuencias di
 \draw[line] (g3) -- (g4);
 \draw[line] (g4) -- (g5);
 \draw[line] (g5) -- (g6);
+\draw[line] (g6) -- (g7);
 \end{tikzpicture}}
 \caption{Taxonomía completa de las diecisiete arquitecturas de mezcladores de secuencias soportadas. Las líneas base densas proporcionan enrutamiento global completo a costo cuadrático. Las arquitecturas recurrentes permiten inferencia en tiempo constante mediante compresión de estado. Las variantes dispersas reducen la complejidad mediante patrones estructurados o selección de tokens. Los mecanismos con compuerta introducen control dependiente de datos sobre la retención y el olvido de memoria.}
 \label{fig:comprehensive-taxonomy}
@@ -671,7 +674,7 @@ El registro de mezcladores ahora incluye bloques dispersos:
 \texttt{sparsek\_attn}, \texttt{nsa\_attn}, \texttt{sparge\_attn}, y \texttt{fasa\_attn};
 y bloques con compuerta:
 \texttt{gla\_attn}, \texttt{deltanet\_attn}, \texttt{gated\_deltanet\_attn},
-\texttt{hgrn2\_attn}, \texttt{fox\_attn}, y \texttt{gated\_softmax\_attn}.
+\texttt{gated\_deltanet2\_attn}, \texttt{hgrn2\_attn}, \texttt{fox\_attn}, y \texttt{gated\_softmax\_attn}.
 
 La implementación impone una política de ejecución explícita para métodos dispersos sin entrenamiento:
 \texttt{fasa\_attn} y \texttt{sparge\_attn} son solo para evaluación/inferencia y generan errores en tiempo de ejecución si se usan mientras el modelo está en modo de entrenamiento.
@@ -756,7 +759,7 @@ FASA & No (sin entrenamiento) & dependiente del token seleccionado & fragmentos 
 \normalsize
 
 \subsection{Bloques de Atención con Compuerta Implementados (Detallado)}
-Este código base incluye siete bloques con compuerta \citep{yang_gla_2023,yang_deltanet_2024,yang_gated_deltanet_2024,sun_retentive_2023,qin_hgrn2_2024,lin_forgetting_transformer_2025,qiu_gated_attention_2025}.
+Este código base incluye ocho bloques con compuerta \citep{yang_gla_2023,yang_deltanet_2024,yang_gated_deltanet_2024,hatamizadeh_gated_deltanet2_2026,sun_retentive_2023,qin_hgrn2_2024,lin_forgetting_transformer_2025,qiu_gated_attention_2025}.
 
 La idea unificadora es que las compuertas controlan \emph{qué información sobrevive}. Algunas compuertas actúan sobre actualizaciones de estado recurrente (GLA, variantes de DeltaNet, HGRN2), mientras que otras modifican la ruta de atención completa (FoX y Gated Softmax). Esto hace que las compuertas sean especialmente útiles cuando el modelo debe equilibrar recuerdo, actualidad y memoria limitada.
 
@@ -800,6 +803,14 @@ S_t=\alpha_t S_{t-1}(I-\beta_tk_tk_t^\top)+\beta_tv_tk_t^\top
 tanto para olvido global como para actualizaciones correctivas locales.
 \citep{yang_gated_deltanet_2024}
 
+\paragraph{Gated DeltaNet-2 (\texttt{gated\_deltanet2\_attn}).}
+Desacopla la compuerta delta escalar $\beta_t$ en una compuerta de borrado canalizada $\mathbf{b}_t$ (eje de claves) y una compuerta de escritura canalizada $\mathbf{w}_t$ (eje de valores), con decaimiento canalizado $\boldsymbol{\alpha}_t$ (estilo KDA):
+\[
+S_t=(I-k_t(\mathbf{b}_t\odot k_t)^\top)\,\mathrm{Diag}(\boldsymbol{\alpha}_t)\,S_{t-1}+k_t(\mathbf{w}_t\odot v_t)^\top
+\]
+para control de memoria más fino; se reduce a KDA y Gated DeltaNet como casos especiales.
+\citep{hatamizadeh_gated_deltanet2_2026}
+
 \paragraph{Alias RetNet Attn (\texttt{retnet\_attn}).}
 Proporciona un alias explícito con compuerta que envuelve el comportamiento de retención multiescala para consistencia de nomenclatura en los registros de capas.
 \citep{sun_retentive_2023}
@@ -837,6 +848,7 @@ lo que añade compuerta de canal multiplicativa sin reemplazar la atención soft
 GLA & estado recurrente matricial & decaimiento multiplicativo dependiente de datos & No (recurrente lineal) & Actualización recurrente con proyección de compuerta de bajo rango. & \citep{yang_gla_2023} \\
 DeltaNet & estado recurrente matricial & compuerta de escritura ($\beta$) & No (recurrente lineal) & Corrección delta-regla con Q/K normalizados. & \citep{yang_deltanet_2024} \\
 Gated DeltaNet & estado recurrente matricial & compuertas de decaimiento + escritura ($\alpha,\beta$) & No (recurrente lineal) & Olvido combinado y escritura dirigida. & \citep{yang_gated_deltanet_2024} \\
+Gated DeltaNet-2 & estado recurrente matricial & compuertas de borrado + escritura decoupladas (canalizadas) & No (recurrente lineal) & Borrado canalizado (claves) + escritura (valores); decaimiento estilo KDA. & \citep{hatamizadeh_gated_deltanet2_2026} \\
 RetNet Attn & estado recurrente matricial & decaimiento multiescala fijo & No (retención) & Envoltorio alias sobre el mezclador RetNet existente. & \citep{sun_retentive_2023} \\
 HGRN2 & estado recurrente matricial & compuerta de olvido con cota inferior & No (recurrente lineal) & Compuerta recurrente jerárquica con productos exteriores. & \citep{qin_hgrn2_2024} \\
 FoX & matriz de atención completa & compuerta de olvido en espacio de logits & Sí & Sesgo de olvido añadido antes de softmax. & \citep{lin_forgetting_transformer_2025} \\
@@ -1062,7 +1074,7 @@ Las diecisiete arquitecturas de mezclador implementadas abarcan las principales 
 
 La cobertura de atención dispersa es completa, pero la implementación de métodos sin entrenamiento (FASA, SpargeAttn) genera errores en tiempo de ejecución durante el entrenamiento, reflejando restricciones arquitectónicas: estos métodos requieren checkpoints preentrenados de modelos de atención completa o procedimientos específicos de ajuste fino que actualmente no están automatizados.
 
-La cobertura de mecanismos de compuerta es sólida en todas las categorías principales (GLA, DeltaNet, Gated DeltaNet, HGRN2, FoX, Gated Softmax).
+La cobertura de mecanismos de compuerta es sólida en todas las categorías principales (GLA, DeltaNet, Gated DeltaNet, Gated DeltaNet-2, HGRN2, FoX, Gated Softmax).
 
 \subsection{Fragmentación del Panorama de Optimizadores}
 
@@ -2570,12 +2582,12 @@ El campo emergente de los \emph{mecanismos de atención con compuerta} aborda un
 El principio unificador entre las arquitecturas con compuerta es que las compuertas controlan \textit{qué información sobrevive}. Las compuertas operan en tres niveles distintos:
 \begin{enumerate}[leftmargin=*]
     \item \textbf{Decaimiento del estado recurrente} (GLA, HGRN2): Compuertas multiplicativas sobre la matriz de memoria $S_t$ controlan cuánto del estado anterior persiste en el siguiente paso.
-    \item \textbf{Intensidad de escritura en actualizaciones recurrentes} (DeltaNet, Gated DeltaNet): Las compuertas controlan la magnitud de la nueva información escrita en la memoria.
+    \item \textbf{Intensidad de escritura en actualizaciones recurrentes} (DeltaNet, Gated DeltaNet, Gated DeltaNet-2): Las compuertas controlan la magnitud y la dirección canalizada de la nueva información escrita en la memoria.
     \item \textbf{Sesgo de logits softmax} (FoX): Las compuertas inyectan sesgo de actualidad a nivel de token en el cálculo de logits de atención.
     \item \textbf{Dispersidad post-atención} (Gated Softmax): Las compuertas escalan selectivamente los canales de salida de SDPA.
 \end{enumerate}
 
-Este apéndice sintetiza siete arquitecturas principales de atención con compuerta publicadas entre 2023 y 2025, analizando sus fundamentos matemáticos, características de eficiencia en hardware y compensaciones empíricas.
+Este apéndice sintetiza ocho arquitecturas principales de atención con compuerta publicadas entre 2023 y 2026, analizando sus fundamentos matemáticos, características de eficiencia en hardware y compensaciones empíricas.
 
 \subsection{1. Atención Lineal con Compuerta (GLA)}
 
@@ -2932,6 +2944,81 @@ donde el puntaje de compuerta $\sigma(\mathbf{X} \mathbf{W}_\theta)$ puede tener
 
 \normalsize
 
+\subsection{7. Gated DeltaNet-2: Borrado y Escritura Canalizados Decouplados}
+
+\subsubsection{Fundamento Matemático}
+
+Gated DeltaNet-2 \citep{hatamizadeh_gated_deltanet2_2026} aborda una limitación compartida de Gated DeltaNet y Kimi Delta Attention (KDA): ambos usan una única \emph{compuerta delta escalar} $\beta_t$ para controlar simultáneamente (i) cuánto contenido antiguo se borra en la dirección de lectura del eje de claves y (ii) cuánto valor nuevo se escribe en el eje de valores. Gated DeltaNet-2 \textbf{desacopla} estos dos roles en una compuerta de borrado canalizada $\mathbf{b}_t$ (eje de claves) y una compuerta de escritura canalizada $\mathbf{w}_t$ (eje de valores), heredando además el decaimiento canalizado $\boldsymbol{\alpha}_t$ de KDA. Con estado $\mathbf{S}_t \in \mathbb{R}^{d_k \times d_v}$, decaimiento $\mathbf{D}_t = \mathrm{Diag}(\boldsymbol{\alpha}_t)$, dirección de borrado $\mathbf{e}_t = \mathbf{b}_t \odot \mathbf{k}_t$ y objetivo de escritura $\mathbf{z}_t = \mathbf{w}_t \odot \mathbf{v}_t$, la actualización de estado es:
+\[
+\mathbf{S}_t = \left(\mathbf{I} - \mathbf{k}_t \mathbf{e}_t^\top\right) \mathbf{D}_t \, \mathbf{S}_{t-1} + \mathbf{k}_t \mathbf{z}_t^\top, \qquad \mathbf{o}_t = \mathbf{S}_t^\top \mathbf{q}_t
+\]
+o, expandiendo los productos de las compuertas:
+\[
+\mathbf{S}_t = \left(\mathbf{I} - \mathbf{k}_t (\mathbf{b}_t \odot \mathbf{k}_t)^\top\right) \mathbf{D}_t \, \mathbf{S}_{t-1} + \mathbf{k}_t (\mathbf{w}_t \odot \mathbf{v}_t)^\top
+\]
+Las dos compuertas se producen mediante proyecciones lineales independientes seguidas de sigmoide:
+\[
+\mathbf{b}_t = \sigma(\mathbf{W}_b \mathbf{x}_t), \qquad \mathbf{w}_t = \sigma(\mathbf{W}_w \mathbf{x}_t)
+\]
+y el decaimiento canalizado sigue una parametrización de log-decaimiento (calculada en fp32 para evitar pérdida de precisión en productos acumulativos largos):
+\[
+\mathbf{g}_t = \mathbf{a} - \mathrm{softplus}(\boldsymbol{\delta}), \qquad \boldsymbol{\alpha}_t = \exp(\mathbf{g}_t)
+\]
+Los roles estructurales de las dos compuertas son complementarios:
+\begin{itemize}[leftmargin=*]
+    \item $\mathbf{b}_t$ (eje de claves) hace que la \textbf{dirección de lectura} sea selectiva por canal: determina qué canales de clave se eliminan antes de escribir.
+    \item $\mathbf{w}_t$ (eje de valores) hace que el \textbf{objetivo de escritura} sea selectivo por canal: determina qué canales de valor se depositan en memoria.
+    \item $\boldsymbol{\alpha}_t$ (por canal de clave) proporciona decaimiento global, como en KDA.
+\end{itemize}
+\textbf{Reducciones.} Fijar $\mathbf{b}_t = \beta_t \mathbf{1}_{d_k}$ y $\mathbf{w}_t = \beta_t \mathbf{1}_{d_v}$ recupera KDA; colapsar además $\boldsymbol{\alpha}_t$ a un escalar recupera Gated DeltaNet. Desde la perspectiva de aprendizaje en línea/pesos rápidos, la actualización es el minimizador de:
+\[
+\mathcal{L}_t(\mathbf{S}) = \tfrac{1}{2}\|\mathbf{S} - \mathbf{D}_t \mathbf{S}_{t-1}\|_F^2 - 2\left\langle \mathbf{S}^\top \mathbf{k}_t,\; \mathbf{z}_t - (\mathbf{D}_t \mathbf{S}_{t-1})^\top \mathbf{e}_t \right\rangle
+\]
+
+\begin{algorithm}[H]
+\caption{Avance Recurrente de Gated DeltaNet-2 (Forma de Referencia)}
+\begin{algorithmic}[1]
+\Require Entrada $\mathbf{x}_t$; estado previo $\mathbf{S}_{t-1} \in \mathbb{R}^{d_k \times d_v}$
+\Require Proyecciones: $W_q, W_k, W_v, W_b, W_w$; parámetros de log-decaimiento $\mathbf{a}, \boldsymbol{\delta}$
+\Ensure Salida $\mathbf{o}_t$ y estado $\mathbf{S}_t$
+\State $\mathbf{q}_t \gets \mathrm{normalize}(W_q \mathbf{x}_t)$, $\mathbf{k}_t \gets \mathrm{normalize}(W_k \mathbf{x}_t)$, $\mathbf{v}_t \gets \mathrm{silu}(W_v \mathbf{x}_t)$
+\State $\mathbf{b}_t \gets \sigma(W_b \mathbf{x}_t)$ \Comment{compuerta de borrado eje-clave, $\mathbb{R}^{d_k}$}
+\State $\mathbf{w}_t \gets \sigma(W_w \mathbf{x}_t)$ \Comment{compuerta de escritura eje-valor, $\mathbb{R}^{d_v}$}
+\State $\boldsymbol{\alpha}_t \gets \exp(\mathbf{a} - \mathrm{softplus}(\boldsymbol{\delta}))$ \Comment{decaimiento canalizado, fp32}
+\State Dirección de borrado: $\mathbf{e}_t \gets \mathbf{b}_t \odot \mathbf{k}_t$; objetivo de escritura: $\mathbf{z}_t \gets \mathbf{w}_t \odot \mathbf{v}_t$
+\State Decaer estado: $\mathbf{S}_t \gets \mathrm{Diag}(\boldsymbol{\alpha}_t)\, \mathbf{S}_{t-1}$
+\State Lectura: $\mathbf{r}_t \gets \mathbf{S}_t^\top \mathbf{e}_t$ \Comment{suma sobre eje de claves}
+\State Actualización delta: $\mathbf{S}_t \gets \mathbf{S}_t - \mathbf{k}_t \mathbf{r}_t^\top + \mathbf{k}_t \mathbf{z}_t^\top$
+\State Recuperar: $\mathbf{o}_t \gets \mathbf{S}_t^\top \mathbf{q}_t$
+\State Compuerta de salida: $\mathbf{o}_t \gets \mathrm{GroupNorm}(\mathbf{o}_t) \odot \mathrm{silu}(W_g \mathbf{x}_t)$
+\State \Return $\mathbf{o}_t$, $\mathbf{S}_t$
+\end{algorithmic}
+\end{algorithm}
+
+El algoritmo de entrenamiento por fragmentos extiende la representación WY de KDA absorbiendo el decaimiento canalizado en una recurrencia delta asimétrica sobre un estado normalizado por decaimiento, permitiendo paralelismo rico en matmuls en tensor cores. Como $\mathbf{b}_t$ y $\mathbf{w}_t$ son operadores diagonales por canal que varían por fila, el atajo de post-escalado escalar de KDA se rompe: el paso hacia atrás requiere una \textbf{inversión WY consciente de las compuertas} que incorpora las compuertas en cada producto escalar que acumula el gradiente.
+
+\subsubsection{Rendimiento Empírico y Compromisos}
+
+A 1.3B parámetros entrenados con 100B tokens FineWeb-Edu, Gated DeltaNet-2 supera a Mamba-2, Mamba-3, Gated DeltaNet y KDA en modelado de lenguaje, razonamiento de sentido común y---más notablemente---recuperación de contexto largo del mundo real y RULER (especialmente multi-key needle-in-a-haystack). Su rendimiento en H100 se mantiene casi plano ($38.0 \to 36.1$ Kt/s) al crecer la longitud de secuencia de 2K a 16K, donde el de un Transformer cae bruscamente. Los estudios de ablación muestran que la compuerta de borrado $\mathbf{b}_t$ explica la mayor parte de la ganancia; la compuerta de escritura $\mathbf{w}_t$ aporta una mejora adicional menor. La variante híbrida (Gated DeltaNet-2 recurrente + atención de ventana deslizante) reduce aún más la brecha con los modelos de atención pura en tareas que requieren agregación de evidencia local.
+
+\begin{table}[H]
+\centering
+\footnotesize
+\begin{tabularx}{\linewidth}{lXX}
+\toprule
+\textbf{Aspecto} & \textbf{Fortaleza} & \textbf{Limitación} \\
+\midrule
+Recuperación & La mejor entre modelos delta recurrentes en multi-key NIAH. & La variante recurrente aún supera al Transformer en NQ/DROP. \\
+Rendimiento & Escalado casi plano 2K$\to$16K; pequeña sobrecarga vs KDA. & Requiere un nuevo kernel Triton WY consciente de las compuertas. \\
+Memoria & Estado de inferencia constante $\mathcal{O}(d^2)$. & Rango de borrado de autovalores negativos $[0,2]$ no da ganancia consistente a 1.3B. \\
+\bottomrule
+\end{tabularx}
+\caption{Compromisos de Gated DeltaNet-2 a escala 1.3B / 100B tokens \citep{hatamizadeh_gated_deltanet2_2026}.}
+\label{tab:gated-deltanet2-tradeoffs-es}
+\end{table}
+
+\normalsize
+
 \subsection{Análisis Comparativo: Taxonomía de Mecanismos con Compuerta}
 
 \footnotesize
@@ -2947,6 +3034,7 @@ RetNet & 2023 & Matriz (recurrente) & Exponencial fija & $\mathcal{O}(Ld^2)$ & $
 HGRN2 & 2024 & Matriz (recurrente) & Diagonal (acotada) & $\mathcal{O}(Ld^2)$ & $\mathcal{O}(d^2)$ memoria & \citep{qin_hgrn2_2024} \\
 FoX & 2025 & Atención completa & Sesgo en espacio de logits & $\mathcal{O}(L^2d)$ & $\mathcal{O}(L)$ caché KV & \citep{lin_forgetting_transformer_2025} \\
 Gated Softmax & 2025 & Atención completa & Sigmoide post-SDPA & $\mathcal{O}(L^2d)$ & $\mathcal{O}(L)$ caché KV & \citep{qiu_gated_attention_2025} \\
+Gated DeltaNet-2 & 2026 & Matriz (recurrente) & Borrado + escritura decouplados (canalizado) & $\mathcal{O}(Ld^2)$ & $\mathcal{O}(d^2)$ memoria & \citep{hatamizadeh_gated_deltanet2_2026} \\
 \bottomrule
 \end{longtable}
 \normalsize
@@ -2966,6 +3054,7 @@ RetNet & Sí & Débil & Débil & Buena & Simplicidad; no necesita caché KV \\
 HGRN2 & Sí & Moderada & Débil & Moderada & Modelado temporal multi-escala \\
 FoX & Sí & Muy fuerte & Muy fuerte (casi perfecta) & Excelente & Preserva softmax; sobrecarga mínima \\
 Gated Softmax & Sí & Fuerte & Buena & Buena & Simplicidad; no reemplaza SDPA \\
+Gated DeltaNet-2 & Sí & Muy fuerte & Muy fuerte & Excelente & Borrado/escritura canalizados decouplados; mejor RULER multi-key \\
 \bottomrule
 \end{longtable}
 \normalsize
@@ -2985,19 +3074,20 @@ RetNet & Alto & $O(d)$ por paso & Inferencia extremadamente rápida; modelos sim
 HGRN2 & Medio-Alto & $O(d^2)$ constante & Patrones temporales multi-escala \\
 FoX & Moderado (cuadrático) & $O(Ld)$ caché KV & Extrapolación de longitud; generación de contexto largo \\
 Gated Softmax & Alto (sobrecarga mínima) & $O(Ld)$ caché KV & Mejora directa para modelos existentes \\
+Gated DeltaNet-2 & Alto (escalado casi plano) & $O(d^2)$ constante & Recuperación de contexto largo; multi-key NIAH \\
 \bottomrule
 \end{longtable}
 \normalsize
 
 \subsection{Principio Unificado de Compuerta}
 
-Las siete arquitecturas comparten un principio común: \textbf{la compuerta es un mecanismo para controlar el flujo de información y la retención selectiva de memoria}. Las decisiones de diseño específicas divergen a lo largo de varias dimensiones:
+Las ocho arquitecturas comparten un principio común: \textbf{la compuerta es un mecanismo para controlar el flujo de información y la retención selectiva de memoria}. Las decisiones de diseño específicas divergen a lo largo de varias dimensiones:
 
 \begin{enumerate}[leftmargin=*]
-    \item \textbf{Ubicación de la compuerta}: Actualizaciones de estado recurrente (GLA, DeltaNet, Gated DeltaNet, HGRN2) versus espacio de logits/salida softmax (FoX, Gated Softmax, RetNet).
-    \item \textbf{Granularidad de control}: Por dimensión (GLA, HGRN2 diagonal), por clave (DeltaNet), por token (FoX) o por cabeza (Gated Softmax).
-    \item \textbf{Dependencia de datos}: Completamente dependiente de datos (GLA, DeltaNet, Gated DeltaNet, FoX, Gated Softmax) versus esquemas fijos (RetNet con decaimiento exponencial).
-    \item \textbf{Compensación de expresividad}: Eficiencia recurrente lineal (GLA, DeltaNet, Gated DeltaNet, HGRN2, RetNet) versus expresividad completa de softmax (FoX, Gated Softmax).
+    \item \textbf{Ubicación de la compuerta}: Actualizaciones de estado recurrente (GLA, DeltaNet, Gated DeltaNet, Gated DeltaNet-2, HGRN2) versus espacio de logits/salida softmax (FoX, Gated Softmax, RetNet).
+    \item \textbf{Granularidad de control}: Por dimensión (GLA, HGRN2 diagonal), por clave (DeltaNet), por token (FoX), por cabeza (Gated Softmax) o borrado/escritura canalizados decouplados (Gated DeltaNet-2).
+    \item \textbf{Dependencia de datos}: Completamente dependiente de datos (GLA, DeltaNet, Gated DeltaNet, Gated DeltaNet-2, FoX, Gated Softmax) versus esquemas fijos (RetNet con decaimiento exponencial).
+    \item \textbf{Compensación de expresividad}: Eficiencia recurrente lineal (GLA, DeltaNet, Gated DeltaNet, Gated DeltaNet-2, HGRN2, RetNet) versus expresividad completa de softmax (FoX, Gated Softmax).
 \end{enumerate}
 
 \subsection{Implementación y Orientación Práctica}
@@ -3008,6 +3098,7 @@ Las siete arquitecturas comparten un principio común: \textbf{la compuerta es u
     \item \textbf{GLA}: Inferencia rápida con contextos moderados a largos (2K--20K tokens), cuando los kernels CUDA personalizados son aceptables y el rendimiento de recuperación no es crítico.
     \item \textbf{DeltaNet}: Fuerte recuperación asociativa y tareas de aprendizaje en contexto; bueno para tareas sintéticas (MQAR) y pruebas de asociación clave-valor.
     \item \textbf{Gated DeltaNet}: Modelos de producción que requieren el mejor equilibrio de recuperación, olvido y rendimiento (probado en Qwen3-Next; ICLR 2025).
+    \item \textbf{Gated DeltaNet-2}: Cargas de recuperación de contexto largo (multi-key NIAH) donde el borrado/escritura canalizado decouplado da el recuerdo más fuerte; cuando se dispone de un kernel WY consciente de las compuertas.
     \item \textbf{RetNet}: Inferencia extremadamente eficiente sin almacenamiento en caché KV; adecuado para despliegues en dispositivos móviles/de borde o modelos de juguete.
     \item \textbf{HGRN2}: Jerarquías temporales multi-escala; cuando los límites de olvido específicos por capa son deseables.
     \item \textbf{FoX}: Extrapolación de longitud y comprensión de contexto largo; cuando el entrenamiento cuadrático es aceptable y no se desea reemplazar softmax.
@@ -3023,8 +3114,8 @@ Las siete arquitecturas comparten un principio común: \textbf{la compuerta es u
 \toprule
 \textbf{Objetivo de Hardware} & \textbf{Arquitecturas Recomendadas} & \textbf{Notas} \\
 \midrule
-GPU (H100/A100) & Gated Softmax, FoX, Gated DeltaNet & Implementaciones maduras de softmax/lineal. GLA/DeltaNet requieren kernels personalizados. \\
-TPU (alta memoria) & GLA, DeltaNet, Gated DeltaNet, HGRN2 & Hardware soporta matmuls eficientes; los métodos recurrentes lineales brillan. \\
+GPU (H100/A100) & Gated Softmax, FoX, Gated DeltaNet, Gated DeltaNet-2 & Implementaciones maduras de softmax/lineal. GLA/DeltaNet requieren kernels personalizados. \\
+TPU (alta memoria) & GLA, DeltaNet, Gated DeltaNet, Gated DeltaNet-2, HGRN2 & Hardware soporta matmuls eficientes; los métodos recurrentes lineales brillan. \\
 Móvil/Borde & RetNet, Gated Softmax ligero & Inferencia con memoria constante es crítica. \\
 \bottomrule
 \end{tabularx}

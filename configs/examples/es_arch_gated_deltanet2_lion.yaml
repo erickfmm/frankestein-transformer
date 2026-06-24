@@ -2,41 +2,39 @@ model_class: frankenstein
 model:
   vocab_size: 50000
   hidden_size: 768
-  num_layers: 12
+  num_layers: 8
   num_loops: 1
   num_heads: 12
   retention_heads: 12
   num_experts: 4
   top_k_experts: 2
   dropout: 0.1
-  # All seven gated attention types in one rotating pattern
-  layer_pattern:
-    - gla_attn
-    - deltanet_attn
-    - gated_deltanet_attn
-    - gated_deltanet2_attn
-    - hgrn2_attn
-    - fox_attn
-    - gated_softmax_attn
+  # Gated DeltaNet-2 (arXiv:2605.22791) alternating with standard attention.
+  # Gated DeltaNet-2 decouples the scalar delta gate of Gated DeltaNet/KDA
+  # into a channel-wise erase gate (key axis) and a channel-wise write gate
+  # (value axis), while inheriting the channel-wise decay from KDA. This
+  # gives finer-grained memory control and stronger long-context retrieval
+  # than Gated DeltaNet. Pairing it with standard_attn preserves some
+  # high-precision local interactions (a lightweight hybrid pattern).
+  layer_pattern: [gated_deltanet2_attn, standard_attn, gated_deltanet2_attn, standard_attn, gated_deltanet2_attn, standard_attn, gated_deltanet2_attn, standard_attn]
   ode_solver: rk4
   ode_steps: 2
-  use_bitnet: true
-  norm_type: derf
+  use_bitnet: false
+  norm_type: layer_norm
   use_factorized_embedding: false
   factorized_embedding_dim: 128
   use_embedding_conv: false
   embedding_conv_kernel: 3
-  use_hope: false
-  positional_encoding: rope
-  rope_base: 10000.0
-  rope_scaling: 1.0
-  use_moe: true
+  use_hope: true
+  hope_base: 10000.0
+  hope_damping: 0.01
+  use_moe: false
   ffn_hidden_size: 3072
   ffn_activation: silu
 training:
   task: mlm
   num_epochs: 4
-  batch_size: 2
+  batch_size: 4
   dataloader_workers: 2
   max_length: 512
   mlm_probability: 0.15
@@ -50,26 +48,24 @@ training:
   join_temp_data_context_window: 0
   join_temp_data_min_remainder_tokens: 128
   use_amp: false
-  gradient_accumulation_steps: 16
+  gradient_accumulation_steps: 8
   optimizer:
-    optimizer_class: muon
+    optimizer_class: lion
     parameters:
-      muon-lr_embeddings: 1e-6
-      muon-lr_norms: 3e-6
-      muon-lr_attention: 2e-4
-      muon-lr_other: 1e-4
-      muon-wd_embeddings: 0.01
-      muon-wd_norms: 0.001
-      muon-wd_attention: 0.01
-      muon-wd_other: 0.01
-      muon-betas_attention: [0.9, 0.95]
-      muon-betas_other: [0.9, 0.95]
-      muon-eps_attention: 1e-8
-      muon-eps_other: 1e-8
+      lion-lr_embeddings: 1e-6
+      lion-lr_norms: 3e-6
+      lion-lr_attention: 2e-4
+      lion-lr_other: 1e-4
+      lion-wd_embeddings: 0.01
+      lion-wd_norms: 0.001
+      lion-wd_attention: 0.01
+      lion-wd_other: 0.01
+      lion-betas_attention: [0.95, 0.98]
+      lion-betas_other: [0.95, 0.98]
   scheduler_total_steps: 12000
-  scheduler_warmup_ratio: 0.08
+  scheduler_warmup_ratio: 0.10
   scheduler_type: cosine
-  grad_clip_max_norm: 1.0
+  grad_clip_max_norm: 5.0
   inf_post_clip_threshold: 100.0
   max_nan_retries: 4
   checkpoint_every_n_steps: 500
@@ -78,7 +74,7 @@ training:
   nan_check_interval: 10
   log_gradient_stats: true
   gradient_log_interval: 10
-  csv_log_path: "training_metrics_es_arch_all_gated_muon.csv"
+  csv_log_path: "training_metrics_es_arch_gated_deltanet2_lion.csv"
   csv_rotate_on_schema_change: true
   gpu_metrics_backend: nvml
   nvml_device_index: 0

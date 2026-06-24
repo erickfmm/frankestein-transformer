@@ -63,7 +63,7 @@ The practical consequence is a fragmented research ecosystem where experimental 
 This work addresses these challenges through a unified, configuration-driven experimentation toolkit available at \url{https://github.com/erickfmm/frankestein-transformer} that provides:
 \begin{enumerate}[leftmargin=*]
     \item \textbf{Schema-First Design}: A strict, validated configuration contract that enforces reproducibility while supporting seventeen distinct sequence mixer architectures and twenty-three optimizer families.
-    \item \textbf{Architecture Agnostic Training}: Common training infrastructure supporting dense attention baselines (standard, sigmoid), recurrent alternatives (RetNet, Mamba, ODE-style blocks), adaptive depth routing (Mixture-of-Depths) \citep{zhu2026mixtureofdepthsattention}, conditional memory blocks (Engram) \citep{cheng2026conditionalmemoryscalablelookup}, sparse attention patterns (Sparse Transformer, Longformer, BigBird, SparseK, NSA, SpargeAttn, FASA), and gated mechanisms (GLA, DeltaNet, Gated DeltaNet, HGRN2, FoX, Gated Softmax).
+    \item \textbf{Architecture Agnostic Training}: Common training infrastructure supporting dense attention baselines (standard, sigmoid), recurrent alternatives (RetNet, Mamba, ODE-style blocks), adaptive depth routing (Mixture-of-Depths) \citep{zhu2026mixtureofdepthsattention}, conditional memory blocks (Engram) \citep{cheng2026conditionalmemoryscalablelookup}, sparse attention patterns (Sparse Transformer, Longformer, BigBird, SparseK, NSA, SpargeAttn, FASA), and gated mechanisms (GLA, DeltaNet, Gated DeltaNet, Gated DeltaNet-2, HGRN2, FoX, Gated Softmax).
     \item \textbf{Optimizer Routing Framework}: Prefixed hyperparameter groups enabling fine-grained control over embeddings, normalization layers, recurrent blocks, attention blocks, and other parameter subsets across diverse optimizers, including the APOLLO family (Apollo, Apollo-Mini, Q-Apollo) \citep{zhu2025apollosgdlikememoryadamwlevel}.
     \item \textbf{End-to-End Workflows}: Integrated deployment via quantization (ternary weight packing, INT8 activations) and sentence-embedding capabilities inspired by SBERT \citep{reimers_sentence-bert_2019}.
     \item \textbf{Interactive Configuration}: Web-based interface providing schema-driven form rendering, real-time validation, and CLI command generation.
@@ -92,7 +92,7 @@ This interactive interface serves as an alternative to manual YAML editing, impr
 This work makes the following primary contributions:
 \begin{enumerate}[leftmargin=*]
     \item \textbf{Unified Configuration Schema}: A YAML-based schema contract with strict validation that supports seventeen distinct sequence mixer architectures across four categories (dense baselines, recurrent/retentive blocks, sparse attention patterns, and gated mechanisms), alongside adaptive depth and conditional memory controls, while enforcing reproducibility through \texttt{additionalProperties: false} constraints.
-    \item \textbf{Comprehensive Architecture Support}: Implementation of modern transformer variants including standard softmax attention \citep{vaswani_attention_2017}, sigmoid attention \citep{ramapuram_theory_2024}, RetNet \citep{sun_retentive_2023}, Mamba \citep{gu_mamba_2023}, ODE-style continuous transformers \citep{zhang_continuous_2021}, Titans memory-augmented attention \citep{behrouz_titans_2025}, Engram conditional memory layers \citep{cheng2026conditionalmemoryscalablelookup}, Mixture-of-Depths token routing \citep{zhu2026mixtureofdepthsattention}, sparse attention mechanisms \citep{child_sparse_transformer_2019,beltagy_longformer_2020,zaheer_bigbird_2020,lou_sparsek_2024,yuan_nsa_2025,zhang_spargeattn_2025,wang_fasa_2026}, and gated attention architectures \citep{yang_gla_2023,yang_deltanet_2024,yang_gated_deltanet_2024,qin_hgrn2_2024,lin_forgetting_transformer_2025,qiu_gated_attention_2025}. System supports both encoder-mode training with bidirectional attention for masked language modeling (MLM) and decoder-mode training with causal masking for autoregressive next-token prediction.
+    \item \textbf{Comprehensive Architecture Support}: Implementation of modern transformer variants including standard softmax attention \citep{vaswani_attention_2017}, sigmoid attention \citep{ramapuram_theory_2024}, RetNet \citep{sun_retentive_2023}, Mamba \citep{gu_mamba_2023}, ODE-style continuous transformers \citep{zhang_continuous_2021}, Titans memory-augmented attention \citep{behrouz_titans_2025}, Engram conditional memory layers \citep{cheng2026conditionalmemoryscalablelookup}, Mixture-of-Depths token routing \citep{zhu2026mixtureofdepthsattention}, sparse attention mechanisms \citep{child_sparse_transformer_2019,beltagy_longformer_2020,zaheer_bigbird_2020,lou_sparsek_2024,yuan_nsa_2025,zhang_spargeattn_2025,wang_fasa_2026}, and gated attention architectures \citep{yang_gla_2023,yang_deltanet_2024,yang_gated_deltanet_2024,hatamizadeh_gated_deltanet2_2026,qin_hgrn2_2024,lin_forgetting_transformer_2025,qiu_gated_attention_2025}. System supports both encoder-mode training with bidirectional attention for masked language modeling (MLM) and decoder-mode training with causal masking for autoregressive next-token prediction.
     \item \textbf{Optimizer Routing Framework}: Prefixed hyperparameter system enabling per-parameter-group control across twenty-three optimizers, including the adaptivity-tunable Anon \citep{anon2026anon}, variance-reduction methods (MARS, Adan, AdEMAMix, Cautious AdamW), memory-efficient variants (Adafactor, GaLore, Lion), schedule-free approaches (Schedule-Free AdamW), curvature-aware methods (Sophia), second-order preconditioners (Shampoo, SOAP), orthogonality-oriented optimizers (Muon, Turbo-Muon), large-batch scaling (LAMB), and the APOLLO family (Apollo, Apollo-Mini, Q-Apollo) \citep{zhu2025apollosgdlikememoryadamwlevel}.
     \item \textbf{Quantization and Deployment}: Integrated deployment pipeline supporting ternary weight packing and INT8 activation quantization with size estimates following $1.58$-bit storage approximation.
     \item \textbf{Sentence-Embedding Workflows}: SBERT-inspired training and inference pipelines supporting similarity scoring, retrieval, clustering, and persistent embedding export.
@@ -167,7 +167,7 @@ RetNet \citep{sun_retentive_2023} resolves the ``impossible triangle'' of parall
 Sparse attention methods reduce the quadratic bottleneck by restricting token interactions: Sparse Transformer \citep{child_sparse_transformer_2019} uses factorized strided and fixed patterns ($\mathcal{O}(n\sqrt{n})$); Longformer \citep{beltagy_longformer_2020} employs sliding windows with global tokens ($\mathcal{O}(n \cdot w)$); BigBird \citep{zaheer_bigbird_2020} combines local, random, and global paths; SparseK \citep{lou_sparsek_2024} applies differentiable top-$k$ selection; NSA \citep{yuan_nsa_2025} uses a three-branch hierarchical design; SpargeAttn \citep{zhang_spargeattn_2025} performs two-stage block-level pruning; and FASA \citep{wang_fasa_2026} leverages RoPE frequency features for token selection. Complete descriptions are in Appendix~\ref{sec:annex-sparse}.
 
 \subsubsection{Gated Attention Mechanisms}
-Gated architectures control information flow through learnable gates: GLA \citep{yang_gla_2023} adds data-dependent diagonal gating to linear attention; DeltaNet \citep{yang_deltanet_2024} applies the delta learning rule to recurrent state updates; Gated DeltaNet \citep{yang_gated_deltanet_2024} synthesizes both mechanisms; HGRN2 \citep{qin_hgrn2_2024} introduces hierarchical forget gates with outer-product state expansion; FoX \citep{lin_forgetting_transformer_2025} embeds forget gates directly into softmax attention; and Gated Softmax \citep{qiu_gated_attention_2025} applies post-SDPA channel gating. Full mathematical derivations appear in Appendix~\ref{sec:annex-gated}.
+Gated architectures control information flow through learnable gates: GLA \citep{yang_gla_2023} adds data-dependent diagonal gating to linear attention; DeltaNet \citep{yang_deltanet_2024} applies the delta learning rule to recurrent state updates; Gated DeltaNet \citep{yang_gated_deltanet_2024} synthesizes both mechanisms; Gated DeltaNet-2 \citep{hatamizadeh_gated_deltanet2_2026} decouples the scalar delta gate into channel-wise erase (key axis) and write (value axis) gates; HGRN2 \citep{qin_hgrn2_2024} introduces hierarchical forget gates with outer-product state expansion; FoX \citep{lin_forgetting_transformer_2025} embeds forget gates directly into softmax attention; and Gated Softmax \citep{qiu_gated_attention_2025} applies post-SDPA channel gating. Full mathematical derivations appear in Appendix~\ref{sec:annex-gated}.
 
 \subsection{Optimization Algorithms}
 
@@ -233,12 +233,13 @@ The \texttt{model.layer\_pattern} supports legacy, sparse, and gated blocks:
     \item \textbf{Gated Linear Attention (GLA)} --- internal reference: \texttt{yang\_gla\_2023} --- code name: \texttt{gla\_attn}
     \item \textbf{DeltaNet} --- internal reference: \texttt{yang\_deltanet\_2024} --- code name: \texttt{deltanet\_attn}
     \item \textbf{Gated DeltaNet} --- internal reference: \texttt{yang\_gated\_deltanet\_2024} --- code name: \texttt{gated\_deltanet\_attn}
+    \item \textbf{Gated DeltaNet-2} --- internal reference: \texttt{hatamizadeh\_gated\_deltanet2\_2026} --- code name: \texttt{gated\_deltanet2\_attn}
     \item \textbf{HGRN2} --- internal reference: \texttt{qin\_hgrn2\_2024} --- code name: \texttt{hgrn2\_attn}
     \item \textbf{Forgetting Transformer (FoX)} --- internal reference: \texttt{lin\_forgetting\_transformer\_2025} --- code name: \texttt{fox\_attn}
     \item \textbf{Gated Softmax Attention} --- internal reference: \texttt{qiu\_gated\_attention\_2025} --- code name: \texttt{gated\_softmax\_attn}
 \end{itemize}
 
-which corresponds to current attention and sequence-mixer literature \citep{sun_retentive_2023,gu_mamba_2023,zhang_continuous_2021,behrouz_titans_2025,ramapuram_theory_2024,vaswani_attention_2017,child_sparse_transformer_2019,beltagy_longformer_2020,zaheer_bigbird_2020,lou_sparsek_2024,yuan_nsa_2025,zhang_spargeattn_2025,wang_fasa_2026,yang_gla_2023,yang_deltanet_2024,yang_gated_deltanet_2024,qin_hgrn2_2024,lin_forgetting_transformer_2025,qiu_gated_attention_2025}
+which corresponds to current attention and sequence-mixer literature \citep{sun_retentive_2023,gu_mamba_2023,zhang_continuous_2021,behrouz_titans_2025,ramapuram_theory_2024,vaswani_attention_2017,child_sparse_transformer_2019,beltagy_longformer_2020,zaheer_bigbird_2020,lou_sparsek_2024,yuan_nsa_2025,zhang_spargeattn_2025,wang_fasa_2026,yang_gla_2023,yang_deltanet_2024,yang_gated_deltanet_2024,hatamizadeh_gated_deltanet2_2026,qin_hgrn2_2024,lin_forgetting_transformer_2025,qiu_gated_attention_2025}
 
 The \texttt{training.optimizer.optimizer\_class} supports a broad optimizer family:
 \texttt{sgd\_momentum}, \texttt{adamw}, \texttt{adafactor}, \texttt{galore\_adamw}, \texttt{prodigy}, \texttt{lion}, \texttt{sophia}, \texttt{muon}, \texttt{turbo\_muon}, \texttt{radam}, \texttt{adan}, \texttt{adopt}, \texttt{ademamix}, \texttt{mars\_adamw}, \texttt{cautious\_adamw}, \texttt{lamb}, \texttt{schedulefree\_adamw}, \texttt{shampoo}, \texttt{soap}, \texttt{anon}, \texttt{apollo}, \texttt{apollo\_mini}, and \texttt{q\_apollo}.
@@ -314,7 +315,7 @@ Thus, \texttt{rms\_norm} is \textbf{not} a valid schema value in the current con
 \texttt{num\_experts} & int $\ge 1$ & MoE expert count. \\
 \texttt{top\_k\_experts} & int $\ge 1$ & Top-$k$ expert routing in MoE. \\
 \texttt{dropout} & float $[0,1]$ & Global dropout. \\
-\texttt{layer\_pattern} & array enum & Ordered block list: legacy (\texttt{retnet}, \texttt{retnet\_attn}, \texttt{mamba}, \texttt{ode}, \texttt{titan\_attn}, \texttt{standard\_attn}, \texttt{sigmoid\_attn}), sparse (\texttt{sparse\_transformer\_attn}, \texttt{longformer\_attn}, \texttt{bigbird\_attn}, \texttt{sparsek\_attn}, \texttt{nsa\_attn}, \texttt{sparge\_attn}, \texttt{fasa\_attn}), and gated (\texttt{gla\_attn}, \texttt{deltanet\_attn}, \texttt{gated\_deltanet\_attn}, \texttt{hgrn2\_attn}, \texttt{fox\_attn}, \texttt{gated\_softmax\_attn}). \\
+\texttt{layer\_pattern} & array enum & Ordered block list: legacy (\texttt{retnet}, \texttt{retnet\_attn}, \texttt{mamba}, \texttt{ode}, \texttt{titan\_attn}, \texttt{standard\_attn}, \texttt{sigmoid\_attn}), sparse (\texttt{sparse\_transformer\_attn}, \texttt{longformer\_attn}, \texttt{bigbird\_attn}, \texttt{sparsek\_attn}, \texttt{nsa\_attn}, \texttt{sparge\_attn}, \texttt{fasa\_attn}), and gated (\texttt{gla\_attn}, \texttt{deltanet\_attn}, \texttt{gated\_deltanet\_attn}, \texttt{gated\_deltanet2\_attn}, \texttt{hgrn2\_attn}, \texttt{fox\_attn}, \texttt{gated\_softmax\_attn}). \\
 \texttt{ode\_solver} & enum & \texttt{rk4} or \texttt{euler}. \\
 \texttt{ode\_steps} & int $\ge 1$ & ODE integration steps. \\
 \texttt{use\_bitnet} & bool & Enable low-bit BitLinear path. \\
@@ -538,7 +539,7 @@ This system implements seventeen distinct sequence mixer architectures organized
     \item \textbf{Dense Attention Baselines}: Standard softmax attention and sigmoid attention provide full global contextualization at quadratic computational cost, serving as reference baselines for comparison with more efficient alternatives.
     \item \textbf{Recurrent and Retentive Architectures}: RetNet, Mamba, ODE-style blocks, and Titans maintain state representations enabling $\mathcal{O}(1)$ inference cost while preserving expressivity through recurrent dynamics, selective parameters, or test-time memory adaptation.
     \item \textbf{Sparse Attention Patterns}: Seven sparse variants (Sparse Transformer, Longformer, BigBird, SparseK, NSA, SpargeAttn, FASA) reduce quadratic complexity through structured sparsity, token selection, or training-free pruning strategies.
-    \item \textbf{Gated Memory Mechanisms}: Six gated architectures (GLA, DeltaNet, Gated DeltaNet, HGRN2, FoX, Gated Softmax) introduce data-dependent control over memory retention, forgetting, and update strength.
+    \item \textbf{Gated Memory Mechanisms}: Seven gated architectures (GLA, DeltaNet, Gated DeltaNet, Gated DeltaNet-2, HGRN2, FoX, Gated Softmax) introduce data-dependent control over memory retention, forgetting, and update strength.
 \end{enumerate}
 
 \begin{figure}[t]
@@ -555,7 +556,7 @@ This system implements seventeen distinct sequence mixer architectures organized
 \node[box, fill=red!10, below left=1.0cm and 5.4cm of root, minimum width=2.2cm] (dense) {\textbf{Dense (2)}};
 \node[box, fill=green!10, below left=1.0cm and 1.8cm of root, minimum width=2.2cm] (recur) {\textbf{Recurrent (4)}};
 \node[box, fill=yellow!12, below right=1.0cm and 1.8cm of root, minimum width=2.2cm] (sparse) {\textbf{Sparse (7)}};
-\node[box, fill=purple!12, below right=1.0cm and 5.4cm of root, minimum width=2.2cm] (gated) {\textbf{Gated (6)}};
+\node[box, fill=purple!12, below right=1.0cm and 5.4cm of root, minimum width=2.2cm] (gated) {\textbf{Gated (7)}};
 
 % Dense column
 \node[box, fill=red!5, below=of dense] (d1) {\texttt{standard\_attn}};
@@ -580,9 +581,10 @@ This system implements seventeen distinct sequence mixer architectures organized
 \node[box, fill=purple!6, below=of gated] (g1) {\texttt{gla\_attn}};
 \node[box, fill=purple!6, below=of g1] (g2) {\texttt{deltanet\_attn}};
 \node[box, fill=purple!6, below=of g2] (g3) {\texttt{gated\_deltanet\_attn}};
-\node[box, fill=purple!6, below=of g3] (g4) {\texttt{hgrn2\_attn}};
-\node[box, fill=purple!6, below=of g4] (g5) {\texttt{fox\_attn}};
-\node[box, fill=purple!6, below=of g5] (g6) {\texttt{gated\_softmax\_attn}};
+\node[box, fill=purple!6, below=of g3] (g4) {\texttt{gated\_deltanet2\_attn}};
+\node[box, fill=purple!6, below=of g4] (g5) {\texttt{hgrn2\_attn}};
+\node[box, fill=purple!6, below=of g5] (g6) {\texttt{fox\_attn}};
+\node[box, fill=purple!6, below=of g6] (g7) {\texttt{gated\_softmax\_attn}};
 
 % Root-to-category links
 \draw[line] (root) -- (dense);
@@ -613,6 +615,7 @@ This system implements seventeen distinct sequence mixer architectures organized
 \draw[line] (g3) -- (g4);
 \draw[line] (g4) -- (g5);
 \draw[line] (g5) -- (g6);
+\draw[line] (g6) -- (g7);
 \end{tikzpicture}}
 \caption{Comprehensive taxonomy of seventeen supported sequence mixer architectures. Dense baselines provide full global routing at quadratic cost. Recurrent architectures enable constant-time inference through state compression. Sparse variants reduce complexity through structured patterns or token selection. Gated mechanisms introduce data-dependent control over memory retention and forgetting.}
 \label{fig:comprehensive-taxonomy}
@@ -671,7 +674,7 @@ The mixer registry now includes sparse blocks:
 \texttt{sparsek\_attn}, \texttt{nsa\_attn}, \texttt{sparge\_attn}, and \texttt{fasa\_attn};
 and gated blocks:
 \texttt{gla\_attn}, \texttt{deltanet\_attn}, \texttt{gated\_deltanet\_attn},
-\texttt{hgrn2\_attn}, \texttt{fox\_attn}, and \texttt{gated\_softmax\_attn}.
+\texttt{gated\_deltanet2\_attn}, \texttt{hgrn2\_attn}, \texttt{fox\_attn}, and \texttt{gated\_softmax\_attn}.
 
 The implementation enforces an explicit execution policy for training-free sparse methods:
 \texttt{fasa\_attn} and \texttt{sparge\_attn} are eval/inference-only and raise runtime errors if used while the model is in training mode.
@@ -756,7 +759,7 @@ FASA & No (training-free) & selected-token dependent & dominant frequency chunks
 \normalsize
 
 \subsection{Implemented Gated Attention Blocks (Detailed)}
-This codebase includes seven gated blocks \citep{yang_gla_2023,yang_deltanet_2024,yang_gated_deltanet_2024,sun_retentive_2023,qin_hgrn2_2024,lin_forgetting_transformer_2025,qiu_gated_attention_2025}.
+This codebase includes eight gated blocks \citep{yang_gla_2023,yang_deltanet_2024,yang_gated_deltanet_2024,hatamizadeh_gated_deltanet2_2026,sun_retentive_2023,qin_hgrn2_2024,lin_forgetting_transformer_2025,qiu_gated_attention_2025}.
 
 The unifying idea is that gating controls \emph{what information survives}. Some gates act on recurrent state updates (GLA, DeltaNet variants, HGRN2), while others modify the full attention path itself (FoX and Gated Softmax). This makes gating especially useful when the model must trade off recall, recency, and bounded memory.
 
@@ -800,6 +803,14 @@ S_t=\alpha_t S_{t-1}(I-\beta_tk_tk_t^\top)+\beta_tv_tk_t^\top
 for both global forgetting and local corrective updates.
 \citep{yang_gated_deltanet_2024}
 
+\paragraph{Gated DeltaNet-2 (\texttt{gated\_deltanet2\_attn}).}
+Decouples the scalar delta gate $\beta_t$ into a channel-wise erase gate $\mathbf{b}_t$ (key axis) and a channel-wise write gate $\mathbf{w}_t$ (value axis), with channel-wise decay $\boldsymbol{\alpha}_t$ (KDA-style):
+\[
+S_t=(I-k_t(\mathbf{b}_t\odot k_t)^\top)\,\mathrm{Diag}(\boldsymbol{\alpha}_t)\,S_{t-1}+k_t(\mathbf{w}_t\odot v_t)^\top
+\]
+for finer-grained memory control; reduces to KDA and Gated DeltaNet as special cases.
+\citep{hatamizadeh_gated_deltanet2_2026}
+
 \paragraph{RetNet Attn Alias (\texttt{retnet\_attn}).}
 Provides an explicit gated-package alias wrapping multi-scale retention behavior for naming consistency in layer registries.
 \citep{sun_retentive_2023}
@@ -837,6 +848,7 @@ which adds multiplicative channel gating without replacing softmax attention.
 GLA & matrix recurrent state & data-dependent multiplicative decay & No (linear recurrent) & Recurrent update with low-rank gate projection. & \citep{yang_gla_2023} \\
 DeltaNet & matrix recurrent state & write gate ($\beta$) & No (linear recurrent) & Delta-rule correction with normalized Q/K. & \citep{yang_deltanet_2024} \\
 Gated DeltaNet & matrix recurrent state & decay + write gates ($\alpha,\beta$) & No (linear recurrent) & Combined forgetting and targeted writing. & \citep{yang_gated_deltanet_2024} \\
+Gated DeltaNet-2 & matrix recurrent state & decoupled erase + write gates (channel-wise) & No (linear recurrent) & Channel-wise erase (key) + write (value); KDA-style decay. & \citep{hatamizadeh_gated_deltanet2_2026} \\
 RetNet Attn & matrix recurrent state & fixed multi-scale decay & No (retention) & Alias wrapper over existing RetNet mixer. & \citep{sun_retentive_2023} \\
 HGRN2 & matrix recurrent state & lower-bounded forget gate & No (linear recurrent) & Hierarchical recurrent gating with outer products. & \citep{qin_hgrn2_2024} \\
 FoX & full attention matrix & logit-space forget gate & Yes & Forget bias added before softmax. & \citep{lin_forgetting_transformer_2025} \\
@@ -1062,7 +1074,7 @@ The seventeen implemented mixer architectures span major research directions in 
 
 The sparse attention coverage is comprehensive, but implementation of training-free methods (FASA, SpargeAttn) raises runtime errors during training, reflecting architectural constraints: these methods require pretrained checkpoints from full-attention models or specific fine-tuning procedures that are not currently automated.
 
-The gated mechanism coverage is strong across major categories (GLA, DeltaNet, Gated DeltaNet, HGRN2, FoX, Gated Softmax).
+The gated mechanism coverage is strong across major categories (GLA, DeltaNet, Gated DeltaNet, Gated DeltaNet-2, HGRN2, FoX, Gated Softmax).
 
 \subsection{Optimizer Landscape Fragmentation}
 
@@ -1090,7 +1102,7 @@ Transformer Encoder Frankenstein presents a unified, configuration-driven experi
 The system's primary contributions are:
 \begin{enumerate}[leftmargin=*]
     \item \textbf{Schema-First Design}: A strict YAML-based configuration contract with validation and prefixed hyperparameter routing enabling reproducible experiments across seventeen mixer architectures and twenty-three optimizer families.
-    \item \textbf{Comprehensive Architecture Support}: Implementation spanning major research categories including dense baselines (standard, sigmoid attention), recurrent alternatives (RetNet, Mamba, ODE-style, Titans), sparse attention (Sparse Transformer, Longformer, BigBird, SparseK, NSA, SpargeAttn, FASA), and gated mechanisms (GLA, DeltaNet, Gated DeltaNet, HGRN2, FoX, Gated Softmax).
+    \item \textbf{Comprehensive Architecture Support}: Implementation spanning major research categories including dense baselines (standard, sigmoid attention), recurrent alternatives (RetNet, Mamba, ODE-style, Titans), sparse attention (Sparse Transformer, Longformer, BigBird, SparseK, NSA, SpargeAttn, FASA), and gated mechanisms (GLA, DeltaNet, Gated DeltaNet, Gated DeltaNet-2, HGRN2, FoX, Gated Softmax).
     \item \textbf{Unified Optimizer Framework}: Prefixed hyperparameter groups enabling fine-grained control over embeddings, normalization layers, recurrent blocks, attention weights, and FFN parameters across classical baselines (SGD+Momentum, AdamW), variance-reduction (Adan, ADOPT, AdEMAMix, MARS, Cautious), memory-efficient (Adafactor, GaLore, Lion, APOLLO, APOLLO-Mini, Q-APOLLO), large-batch and schedule simplification (LAMB, Schedule-Free AdamW, Prodigy), curvature-aware (Sophia), second-order (Shampoo, SOAP), and geometry-oriented (Muon, Turbo-Muon) optimizers.
     \item \textbf{End-to-End Workflows}: Integrated deployment pipeline supporting ternary weight packing and INT8 activation quantization; SBERT-inspired training and inference for semantic similarity, retrieval, and clustering tasks.
     \item \textbf{Interactive Configuration}: Streamlit-based web interface providing schema-driven form generation, real-time validation, inline documentation, and CLI command synthesis.
@@ -2571,12 +2583,12 @@ The emerging field of \emph{gated attention mechanisms} addresses a fundamental 
 The unifying principle across gated architectures is that gating controls \textit{what information survives}. Gates operate at three distinct levels:
 \begin{enumerate}[leftmargin=*]
     \item \textbf{Recurrent state decay} (GLA, HGRN2): Multiplicative gates on the memory matrix $S_t$ control how much previous state persists into the next step.
-    \item \textbf{Write strength in recurrent updates} (DeltaNet, Gated DeltaNet): Gates control the magnitude of new information written into memory.
+    \item \textbf{Write strength in recurrent updates} (DeltaNet, Gated DeltaNet, Gated DeltaNet-2): Gates control the magnitude and channel-wise direction of new information written into memory.
     \item \textbf{Softmax logit biasing} (FoX): Gates inject token-level recency bias into attention logit computation.
     \item \textbf{Post-attention sparsity} (Gated Softmax): Gates selectively scale SDPA output channels.
 \end{enumerate}
 
-This appendix synthesizes seven major gated-attention architectures published 2023--2025, analyzing their mathematical foundations, hardware efficiency characteristics, and empirical trade-offs.
+This appendix synthesizes eight major gated-attention architectures published 2023--2026, analyzing their mathematical foundations, hardware efficiency characteristics, and empirical trade-offs.
 
 \subsection{1. Gated Linear Attention (GLA)}
 
@@ -2930,6 +2942,81 @@ where the gate score $\sigma(\mathbf{X} \mathbf{W}_\theta)$ can have shape $\mat
 
 \normalsize
 
+\subsection{7. Gated DeltaNet-2: Decoupled Channel-wise Erase and Write}
+
+\subsubsection{Mathematical Foundation}
+
+Gated DeltaNet-2 \citep{hatamizadeh_gated_deltanet2_2026} addresses a shared limitation of Gated DeltaNet and Kimi Delta Attention (KDA): both use a single \emph{scalar} delta gate $\beta_t$ to simultaneously control (i) how much old content is erased along the key-side read direction and (ii) how much new value is written along the value axis. Gated DeltaNet-2 \textbf{decouples} these two roles into a channel-wise erase gate $\mathbf{b}_t$ (key axis) and a channel-wise write gate $\mathbf{w}_t$ (value axis), while inheriting the channel-wise decay $\boldsymbol{\alpha}_t$ from KDA. With state $\mathbf{S}_t \in \mathbb{R}^{d_k \times d_v}$, decay $\mathbf{D}_t = \mathrm{Diag}(\boldsymbol{\alpha}_t)$, erase direction $\mathbf{e}_t = \mathbf{b}_t \odot \mathbf{k}_t$, and write target $\mathbf{z}_t = \mathbf{w}_t \odot \mathbf{v}_t$, the state update is:
+\[
+\mathbf{S}_t = \left(\mathbf{I} - \mathbf{k}_t \mathbf{e}_t^\top\right) \mathbf{D}_t \, \mathbf{S}_{t-1} + \mathbf{k}_t \mathbf{z}_t^\top, \qquad \mathbf{o}_t = \mathbf{S}_t^\top \mathbf{q}_t
+\]
+or, expanding the gate products:
+\[
+\mathbf{S}_t = \left(\mathbf{I} - \mathbf{k}_t (\mathbf{b}_t \odot \mathbf{k}_t)^\top\right) \mathbf{D}_t \, \mathbf{S}_{t-1} + \mathbf{k}_t (\mathbf{w}_t \odot \mathbf{v}_t)^\top
+\]
+The two gates are produced by independent linear projections followed by sigmoid:
+\[
+\mathbf{b}_t = \sigma(\mathbf{W}_b \mathbf{x}_t), \qquad \mathbf{w}_t = \sigma(\mathbf{W}_w \mathbf{x}_t)
+\]
+and the channel-wise decay follows a log-decay parameterization (computed in fp32 to avoid precision loss in long cumulative products):
+\[
+\mathbf{g}_t = \mathbf{a} - \mathrm{softplus}(\boldsymbol{\delta}), \qquad \boldsymbol{\alpha}_t = \exp(\mathbf{g}_t)
+\]
+The structural roles of the two gates are complementary:
+\begin{itemize}[leftmargin=*]
+    \item $\mathbf{b}_t$ (key axis) makes the \textbf{read direction} channel-selective: it determines which key channels are removed before writing.
+    \item $\mathbf{w}_t$ (value axis) makes the \textbf{write target} channel-selective: it determines which value channels are deposited into memory.
+    \item $\boldsymbol{\alpha}_t$ (per key channel) provides global decay, as in KDA.
+\end{itemize}
+\textbf{Reductions.} Setting $\mathbf{b}_t = \beta_t \mathbf{1}_{d_k}$ and $\mathbf{w}_t = \beta_t \mathbf{1}_{d_v}$ recovers KDA; further collapsing $\boldsymbol{\alpha}_t$ to a scalar recovers Gated DeltaNet. From the fast-weight / online-learning perspective, the update is the minimizer of:
+\[
+\mathcal{L}_t(\mathbf{S}) = \tfrac{1}{2}\|\mathbf{S} - \mathbf{D}_t \mathbf{S}_{t-1}\|_F^2 - 2\left\langle \mathbf{S}^\top \mathbf{k}_t,\; \mathbf{z}_t - (\mathbf{D}_t \mathbf{S}_{t-1})^\top \mathbf{e}_t \right\rangle
+\]
+
+\begin{algorithm}[H]
+\caption{Gated DeltaNet-2 Recurrent Forward (Reference Form)}
+\begin{algorithmic}[1]
+\Require Input $\mathbf{x}_t$; prior state $\mathbf{S}_{t-1} \in \mathbb{R}^{d_k \times d_v}$
+\Require Projections: $W_q, W_k, W_v, W_b, W_w$; log-decay parameters $\mathbf{a}, \boldsymbol{\delta}$
+\Ensure Output $\mathbf{o}_t$ and state $\mathbf{S}_t$
+\State $\mathbf{q}_t \gets \mathrm{normalize}(W_q \mathbf{x}_t)$, $\mathbf{k}_t \gets \mathrm{normalize}(W_k \mathbf{x}_t)$, $\mathbf{v}_t \gets \mathrm{silu}(W_v \mathbf{x}_t)$
+\State $\mathbf{b}_t \gets \sigma(W_b \mathbf{x}_t)$ \Comment{key-axis erase gate, $\mathbb{R}^{d_k}$}
+\State $\mathbf{w}_t \gets \sigma(W_w \mathbf{x}_t)$ \Comment{value-axis write gate, $\mathbb{R}^{d_v}$}
+\State $\boldsymbol{\alpha}_t \gets \exp(\mathbf{a} - \mathrm{softplus}(\boldsymbol{\delta}))$ \Comment{channel-wise decay, fp32}
+\State Erase direction: $\mathbf{e}_t \gets \mathbf{b}_t \odot \mathbf{k}_t$; write target: $\mathbf{z}_t \gets \mathbf{w}_t \odot \mathbf{v}_t$
+\State Decay state: $\mathbf{S}_t \gets \mathrm{Diag}(\boldsymbol{\alpha}_t)\, \mathbf{S}_{t-1}$
+\State Read: $\mathbf{r}_t \gets \mathbf{S}_t^\top \mathbf{e}_t$ \Comment{sum over key axis}
+\State Delta-rule update: $\mathbf{S}_t \gets \mathbf{S}_t - \mathbf{k}_t \mathbf{r}_t^\top + \mathbf{k}_t \mathbf{z}_t^\top$
+\State Retrieve: $\mathbf{o}_t \gets \mathbf{S}_t^\top \mathbf{q}_t$
+\State Output gating: $\mathbf{o}_t \gets \mathrm{GroupNorm}(\mathbf{o}_t) \odot \mathrm{silu}(W_g \mathbf{x}_t)$
+\State \Return $\mathbf{o}_t$, $\mathbf{S}_t$
+\end{algorithmic}
+\end{algorithm}
+
+The chunkwise training algorithm extends KDA's WY representation by absorbing the channel-wise decay into an asymmetric delta recurrence on a decay-normalized state, enabling matmul-rich parallelism on tensor cores. Because $\mathbf{b}_t$ and $\mathbf{w}_t$ are per-channel diagonal operators varying per row, the scalar post-scaling shortcut of KDA breaks: the backward pass requires a \textbf{gate-aware WY} inversion that bakes the gates into each dot product accumulating the gradient.
+
+\subsubsection{Empirical Performance and Trade-offs}
+
+At 1.3B parameters trained on 100B FineWeb-Edu tokens, Gated DeltaNet-2 outperforms Mamba-2, Mamba-3, Gated DeltaNet, and KDA on language modeling, commonsense reasoning, and---most markedly---real-world and RULER long-context retrieval (especially multi-key needle-in-a-haystack). Its throughput on H100 stays near-flat ($38.0 \to 36.1$ Kt/s) as sequence length grows from 2K to 16K, where a Transformer's drops sharply. Ablations show the erase gate $\mathbf{b}_t$ accounts for most of the gain; the write gate $\mathbf{w}_t$ contributes a smaller additional improvement. The hybrid variant (recurrent Gated DeltaNet-2 + sliding-window attention) further closes the gap with pure-attention models on tasks requiring local evidence aggregation.
+
+\begin{table}[H]
+\centering
+\footnotesize
+\begin{tabularx}{\linewidth}{lXX}
+\toprule
+\textbf{Aspect} & \textbf{Strength} & \textbf{Limitation} \\
+\midrule
+Recall & Best-in-class among recurrent delta-rule models on multi-key NIAH. & Recurrent variant still gaps Transformer on NQ/DROP. \\
+Throughput & Near-flat scaling 2K$\to$16K; small overhead vs KDA. & Requires a new gate-aware WY Triton backward kernel. \\
+Memory & Constant $\mathcal{O}(d^2)$ inference state. & Neg-eigenvalue erase range $[0,2]$ gives no consistent gain at 1.3B scale. \\
+\bottomrule
+\end{tabularx}
+\caption{Gated DeltaNet-2 trade-offs at 1.3B / 100B-token scale \citep{hatamizadeh_gated_deltanet2_2026}.}
+\label{tab:gated-deltanet2-tradeoffs}
+\end{table}
+
+\normalsize
+
 \subsection{Comparative Analysis: Taxonomy of Gated Mechanisms}
 
 \footnotesize
@@ -2945,6 +3032,7 @@ RetNet & 2023 & Matrix (recurrent) & Fixed exponential & $\mathcal{O}(Ld^2)$ & $
 HGRN2 & 2024 & Matrix (recurrent) & Diagonal (bounded) & $\mathcal{O}(Ld^2)$ & $\mathcal{O}(d^2)$ memory & \citep{qin_hgrn2_2024} \\
 FoX & 2025 & Full attention & Logit-space bias & $\mathcal{O}(L^2d)$ & $\mathcal{O}(L)$ KV cache & \citep{lin_forgetting_transformer_2025} \\
 Gated Softmax & 2025 & Full attention & Post-SDPA sigmoid & $\mathcal{O}(L^2d)$ & $\mathcal{O}(L)$ KV cache & \citep{qiu_gated_attention_2025} \\
+Gated DeltaNet-2 & 2026 & Matrix (recurrent) & Decoupled erase + write (channel-wise) & $\mathcal{O}(Ld^2)$ & $\mathcal{O}(d^2)$ memory & \citep{hatamizadeh_gated_deltanet2_2026} \\
 \bottomrule
 \end{longtable}
 \normalsize
@@ -2964,6 +3052,7 @@ RetNet & Yes & Weak & Weak & Good & Simplicity; no KV cache needed \\
 HGRN2 & Yes & Moderate & Weak & Moderate & Multi-scale temporal modeling \\
 FoX & Yes & Very strong & Very strong (near-perfect) & Excellent & Preserve softmax; minimal overhead \\
 Gated Softmax & Yes & Strong & Good & Good & Simplicity; no replacement of SDPA \\
+Gated DeltaNet-2 & Yes & Very strong & Very strong & Excellent & Decoupled channel-wise erase/write; best RULER multi-key \\
 \bottomrule
 \end{longtable}
 \normalsize
@@ -2983,19 +3072,20 @@ RetNet & High & $O(d)$ per-step & Extremely fast inference; simple models \\
 HGRN2 & Medium-High & $O(d^2)$ constant & Multi-scale temporal patterns \\
 FoX & Moderate (quadratic) & $O(Ld)$ KV cache & Length extrapolation; long-context generation \\
 Gated Softmax & High (minimal overhead) & $O(Ld)$ KV cache & Drop-in improvement for existing models \\
+Gated DeltaNet-2 & High (near-flat scaling) & $O(d^2)$ constant & Long-context retrieval; multi-key NIAH \\
 \bottomrule
 \end{longtable}
 \normalsize
 
 \subsection{Unified Gating Principle}
 
-All seven architectures share a common principle: \textbf{gating is a mechanism to control information flow and selective memory retention}. The specific design choices diverge along several dimensions:
+All eight architectures share a common principle: \textbf{gating is a mechanism to control information flow and selective memory retention}. The specific design choices diverge along several dimensions:
 
 \begin{enumerate}[leftmargin=*]
-    \item \textbf{Location of gating}: Recurrent state updates (GLA, DeltaNet, Gated DeltaNet, HGRN2) versus softmax logit/output space (FoX, Gated Softmax, RetNet).
-    \item \textbf{Granularity of control}: Dimension-wise (GLA, HGRN2 diagonal), key-specific (DeltaNet), token-wise (FoX), or head-wise (Gated Softmax).
-    \item \textbf{Data dependence}: Fully data-dependent (GLA, DeltaNet, Gated DeltaNet, FoX, Gated Softmax) versus fixed schedules (RetNet with exponential decay).
-    \item \textbf{Expressiveness trade-off}: Linear recurrent efficiency (GLA, DeltaNet, Gated DeltaNet, HGRN2, RetNet) versus full softmax expressiveness (FoX, Gated Softmax).
+    \item \textbf{Location of gating}: Recurrent state updates (GLA, DeltaNet, Gated DeltaNet, Gated DeltaNet-2, HGRN2) versus softmax logit/output space (FoX, Gated Softmax, RetNet).
+    \item \textbf{Granularity of control}: Dimension-wise (GLA, HGRN2 diagonal), key-specific (DeltaNet), token-wise (FoX), head-wise (Gated Softmax), or channel-wise decoupled erase/write (Gated DeltaNet-2).
+    \item \textbf{Data dependence}: Fully data-dependent (GLA, DeltaNet, Gated DeltaNet, Gated DeltaNet-2, FoX, Gated Softmax) versus fixed schedules (RetNet with exponential decay).
+    \item \textbf{Expressiveness trade-off}: Linear recurrent efficiency (GLA, DeltaNet, Gated DeltaNet, Gated DeltaNet-2, HGRN2, RetNet) versus full softmax expressiveness (FoX, Gated Softmax).
 \end{enumerate}
 
 \subsection{Implementation and Practical Guidance}
@@ -3006,6 +3096,7 @@ All seven architectures share a common principle: \textbf{gating is a mechanism 
     \item \textbf{GLA}: Fast inference with moderate-to-long contexts (2K--20K tokens), when custom CUDA kernels are acceptable, and retrieval performance is not critical.
     \item \textbf{DeltaNet}: Strong associative recall and in-context learning tasks; good for synthetic tasks (MQAR) and key-value association testing.
     \item \textbf{Gated DeltaNet}: Production models requiring the best balance of recall, forgetting, and throughput (proven in Qwen3-Next; ICLR 2025).
+    \item \textbf{Gated DeltaNet-2}: Long-context retrieval workloads (multi-key NIAH) where decoupled channel-wise erase/write yields the strongest recall; when a gate-aware WY kernel is available.
     \item \textbf{RetNet}: Extremely efficient inference without KV caching; suitable for edge/mobile deployments or toy models.
     \item \textbf{HGRN2}: Multi-scale temporal hierarchies; when layer-specific forget bounds are desirable.
     \item \textbf{FoX}: Length extrapolation and long-context understanding; when quadratic training is acceptable and replacing softmax is not desired.
@@ -3021,8 +3112,8 @@ All seven architectures share a common principle: \textbf{gating is a mechanism 
 \toprule
 \textbf{Hardware Target} & \textbf{Recommended Architectures} & \textbf{Notes} \\
 \midrule
-GPU (H100/A100) & Gated Softmax, FoX, Gated DeltaNet & Mature softmax/linear implementations. GLA/DeltaNet require custom kernels. \\
-TPU (high memory) & GLA, DeltaNet, Gated DeltaNet, HGRN2 & Hardware supports efficient matmuls; linear recurrent methods shine. \\
+GPU (H100/A100) & Gated Softmax, FoX, Gated DeltaNet, Gated DeltaNet-2 & Mature softmax/linear implementations. GLA/DeltaNet require custom kernels. \\
+TPU (high memory) & GLA, DeltaNet, Gated DeltaNet, Gated DeltaNet-2, HGRN2 & Hardware supports efficient matmuls; linear recurrent methods shine. \\
 Mobile/Edge & RetNet, lightweight Gated Softmax & Constant-memory inference critical. \\
 \bottomrule
 \end{tabularx}

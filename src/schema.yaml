@@ -420,6 +420,7 @@ properties:
           | `ode` | Continuous-depth ODE layer (uses `ode_solver`/`ode_steps`) | ✅ | ✅ |
           | `gla_attn` | Gated Linear Attention with multiplicative decay | ✅ | ✅ |
           | `deltanet_attn` / `gated_deltanet_attn` | DeltaNet with corrective delta rule | ✅ | ✅ |
+          | `gated_deltanet2_attn` | Gated DeltaNet-2 with decoupled channel-wise erase/write gates (arXiv:2605.22791) | ✅ | ✅ |
           | `hgrn2_attn` | HGRN2 with hierarchical forget gates | ✅ | ✅ |
           | `fox_attn` | Forgetting Transformer (FoX) with forget bias in logits | ✅ | ✅ |
           | `nsa_attn` | Native Sparse Attention (three-branch) | ✅ | ✅ |
@@ -451,6 +452,7 @@ properties:
           | `ode` | Capa ODE de profundidad continua (usa `ode_solver`/`ode_steps`) | ✅ | ✅ |
           | `gla_attn` | Gated Linear Attention con decaimiento multiplicativo | ✅ | ✅ |
           | `deltanet_attn` / `gated_deltanet_attn` | DeltaNet con regla delta correctiva | ✅ | ✅ |
+          | `gated_deltanet2_attn` | Gated DeltaNet-2 con compuertas erase/write canalizadas decoupladas (arXiv:2605.22791) | ✅ | ✅ |
           | `hgrn2_attn` | HGRN2 con compuertas de olvido jerárquicas | ✅ | ✅ |
           | `fox_attn` | Forgetting Transformer (FoX) con sesgo de olvido en logits | ✅ | ✅ |
           | `nsa_attn` | Native Sparse Attention de tres ramas | ✅ | ✅ |
@@ -487,6 +489,7 @@ properties:
             - gla_attn
             - deltanet_attn
             - gated_deltanet_attn
+            - gated_deltanet2_attn
             - hgrn2_attn
             - fox_attn
             - gated_softmax_attn

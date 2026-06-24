@@ -35,9 +35,9 @@ Supported attention mixer families (17+):
 * Sparse family (7 variants): ``sparse_transformer_attn``, ``longformer_attn``,
   ``bigbird_attn``, ``sparsek_attn``, ``nsa_attn``, ``sparge_attn``,
   ``fasa_attn``.
-* Gated family (7 variants): ``gla_attn``, ``deltanet_attn``,
-  ``gated_deltanet_attn``, ``hgrn2_attn``, ``fox_attn``,
-  ``gated_softmax_attn``.
+* Gated family (8 variants): ``gla_attn``, ``deltanet_attn``,
+  ``gated_deltanet_attn``, ``gated_deltanet2_attn``, ``hgrn2_attn``,
+  ``fox_attn``, ``gated_softmax_attn``.
 * ``engram_attn`` — Engram conditional memory via scalable lookup.
 
 Training-free policy: ``fasa_attn`` and ``sparge_attn`` raise a RuntimeError
@@ -59,6 +59,7 @@ from .attention.engram import EngramLayer
 from .attention.gated import (
     DeltaNetAttention,
     ForgettingAttention,
+    GatedDeltaNet2Attention,
     GatedDeltaNetAttention,
     GatedLinearAttention,
     GatedSoftmaxAttention,
@@ -106,6 +107,7 @@ class UltraConfig:
             ``"bigbird_attn"``, ``"sparsek_attn"``, ``"nsa_attn"``,
             ``"sparge_attn"``, ``"fasa_attn"``, ``"gla_attn"``,
             ``"deltanet_attn"``, ``"gated_deltanet_attn"``,
+            ``"gated_deltanet2_attn"``,
             ``"hgrn2_attn"``, ``"fox_attn"``, ``"gated_softmax_attn"``,
             ``"engram_attn"``. Default: ``["retnet", "ode", "mamba",
             "titan_attn"] * 3``.
@@ -413,6 +415,7 @@ class HybridLayer(nn.Module):
             "gla_attn": GatedLinearAttention,
             "deltanet_attn": DeltaNetAttention,
             "gated_deltanet_attn": GatedDeltaNetAttention,
+            "gated_deltanet2_attn": GatedDeltaNet2Attention,
             "hgrn2_attn": HGRN2Attention,
             "fox_attn": ForgettingAttention,
             "gated_softmax_attn": GatedSoftmaxAttention,
