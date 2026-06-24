@@ -1,0 +1,32 @@
+\section{Related Work}
+
+This work sits at the intersection of three active research areas: alternative attention architectures, sparse attention mechanisms, and advanced optimization algorithms. This section provides a concise survey; detailed mathematical formulations and algorithmic descriptions are deferred to the appendices.
+
+\subsection{Sequence Mixer Architectures}
+
+\subsubsection{Dense Attention Baselines}
+Standard softmax attention \citep{vaswani_attention_2017} achieves full global context through $n^2$ pairwise interactions but incurs prohibitive memory and compute costs for long sequences. Sigmoid attention \citep{ramapuram_theory_2024} replaces row-wise softmax with element-wise sigmoid, yielding faster convergence and up to 17\% kernel speedup, though requiring hybrid-norm stabilization at scale. Both serve as dense baselines in this toolkit.
+
+\subsubsection{Recurrent and Retentive Architectures}
+RetNet \citep{sun_retentive_2023} resolves the ``impossible triangle'' of parallel training, $\mathcal{O}(1)$ inference, and strong performance via a dual attention--retention formulation. Mamba \citep{gu_mamba_2023} introduces input-dependent selectivity into state-space models, achieving linear complexity with hardware-aware scan algorithms. ODE-style transformers \citep{zhang_continuous_2021} treat depth as numerical integration over a continuous dynamical system. Titans \citep{behrouz_titans_2025} augments inference with test-time neural memorization for extremely long contexts. Detailed formulations are provided in Appendix~\ref{sec:annex-transformer}.
+
+\subsubsection{Sparse Attention Mechanisms}
+Sparse attention methods reduce the quadratic bottleneck by restricting token interactions: Sparse Transformer \citep{child_sparse_transformer_2019} uses factorized strided and fixed patterns ($\mathcal{O}(n\sqrt{n})$); Longformer \citep{beltagy_longformer_2020} employs sliding windows with global tokens ($\mathcal{O}(n \cdot w)$); BigBird \citep{zaheer_bigbird_2020} combines local, random, and global paths; SparseK \citep{lou_sparsek_2024} applies differentiable top-$k$ selection; NSA \citep{yuan_nsa_2025} uses a three-branch hierarchical design; SpargeAttn \citep{zhang_spargeattn_2025} performs two-stage block-level pruning; and FASA \citep{wang_fasa_2026} leverages RoPE frequency features for token selection. Complete descriptions are in Appendix~\ref{sec:annex-sparse}.
+
+\subsubsection{Gated Attention Mechanisms}
+Gated architectures control information flow through learnable gates: GLA \citep{yang_gla_2023} adds data-dependent diagonal gating to linear attention; DeltaNet \citep{yang_deltanet_2024} applies the delta learning rule to recurrent state updates; Gated DeltaNet \citep{yang_gated_deltanet_2024} synthesizes both mechanisms; Gated DeltaNet-2 \citep{hatamizadeh_gated_deltanet2_2026} decouples the scalar delta gate into channel-wise erase (key axis) and write (value axis) gates; HGRN2 \citep{qin_hgrn2_2024} introduces hierarchical forget gates with outer-product state expansion; FoX \citep{lin_forgetting_transformer_2025} embeds forget gates directly into softmax attention; and Gated Softmax \citep{qiu_gated_attention_2025} applies post-SDPA channel gating. Full mathematical derivations appear in Appendix~\ref{sec:annex-gated}.
+
+\subsection{Optimization Algorithms}
+
+Optimization of highly parameterized transformer architectures requires navigating non-convex loss landscapes with heterogeneous Hessian spectra. The literature has diversified into several families beyond the classical AdamW baseline \citep{loshchilov_decoupled_2017}:
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Variance reduction and momentum}: RAdam \citep{liu_variance_2019}, Adan \citep{xie_adan_2022}, ADOPT \citep{taniguchi_adopt_2024}, AdEMAMix \citep{pagliardini_ademamix_2024}, MARS \citep{yuan_mars_2024}, and Cautious optimizers \citep{liang_cautious_2024} address early-step instability, convergence guarantees, and dual-EMA history mixing.
+    \item \textbf{Memory-efficient}: Adafactor \citep{shazeer_adafactor_2018}, GaLore \citep{zhao_galore_2024}, Lion \citep{chen_symbolic_2023}, and APOLLO \citep{zhu2025apollosgdlikememoryadamwlevel} reduce optimizer-state memory through factorization, low-rank projection, or sign-based updates.
+    \item \textbf{Schedule-free and parameter-free}: Schedule-Free AdamW \citep{defazio_road_2024} and Prodigy \citep{mishchenko_prodigy_2023} absorb scheduler or learning-rate tuning into the optimizer dynamics.
+    \item \textbf{Second-order and curvature-aware}: Shampoo \citep{gupta_shampoo_2018}, SOAP \citep{vyas_soap_2024}, and Sophia \citep{liu_sophia_2023} incorporate approximate second-order information.
+    \item \textbf{Geometry-oriented}: Muon \citep{shen_convergence_2025} and Turbo-Muon \citep{boissin_turbo-muon_2025} reshape update geometry through orthogonalization.
+\end{itemize}
+
+Detailed algorithmic descriptions, pseudocode, and a comprehensive complexity comparison are provided in Appendix~\ref{sec:annex-optimizers}.
+

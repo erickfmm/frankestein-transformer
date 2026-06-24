@@ -1,0 +1,42 @@
+\section{Cuantización y Despliegue}
+\label{sec:quantization}
+
+El stack de despliegue utiliza empaquetado ternario de pesos más cuantización de activaciones INT8 para producir artefactos eficientes.
+
+\begin{figure}[t]
+\centering
+\fitfigure{\begin{tikzpicture}[node distance=1.3cm and 0.9cm]
+\node[box, fill=blue!8] (ckpt) {Checkpoint entrenado};
+\node[box, fill=yellow!10, right=of ckpt] (quant) {Empaquetado de pesos\\ternario / bajo bit};
+\node[box, fill=orange!12, right=of quant] (act) {Escalado de activaciones\\ruta INT8};
+\node[box, fill=green!8, right=of act] (artifact) {Artefacto desplegable\\huella de almacenamiento reducida};
+\draw[line] (ckpt) -- (quant);
+\draw[line] (quant) -- (act);
+\draw[line] (act) -- (artifact);
+\end{tikzpicture}}
+\caption{Ruta de despliegue desde un checkpoint entrenado hasta un artefacto compacto. El código base trata la cuantización como una transformación de la etapa de despliegue en lugar de una familia de modelos separada.}
+\label{fig:deploy-flow}
+\end{figure}
+
+\subsection{Cuantización Ternaria}
+Dado el tensor de pesos $W$, un escalado práctico es:
+\[
+s=\text{mean}(|W|),\qquad
+\tilde{W}=\text{clip}\left(\text{round}\left(\frac{W}{s}\right),-1,1\right)
+\]
+que aproxima las actualizaciones de bajo bit estilo BitNet \citep{wang_bitnet_2023}. El mapeo empaquetado utiliza dos bits por símbolo de peso para eficiencia de almacenamiento.
+
+\subsection{Cuantización de Activaciones}
+Para las activaciones $x$:
+\[
+q=\text{round}\left(x\cdot\frac{127}{\max(|x|)+\epsilon}\right),\qquad q\in[-128,127]
+\]
+con des-cuantización $x\approx q/\alpha$.
+
+\subsection{Estimaciones de Tamaño}
+Para $N$ parámetros:
+\[
+\text{Tamaño FP32}\approx 4N,\quad \text{Tamaño FP16}\approx 2N,\quad \text{Tamaño 1.58-bit}\approx \frac{1.58}{8}N
+\]
+antes de metadatos y sobrecarga de empaquetado. Esto se alinea con objetivos de despliegue ligero \citep{samson_lightweight_2026,bravin_embbert_2026}.
+

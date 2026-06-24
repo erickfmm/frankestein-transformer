@@ -1,0 +1,42 @@
+\section{Quantization and Deployment}
+\label{sec:quantization}
+
+The deploy stack uses ternary weight packing plus INT8 activation quantization for efficient artifacts.
+
+\begin{figure}[t]
+\centering
+\fitfigure{\begin{tikzpicture}[node distance=1.3cm and 0.9cm]
+\node[box, fill=blue!8] (ckpt) {Trained checkpoint};
+\node[box, fill=yellow!10, right=of ckpt] (quant) {Weight packing\\ternary / low-bit};
+\node[box, fill=orange!12, right=of quant] (act) {Activation scaling\\INT8 path};
+\node[box, fill=green!8, right=of act] (artifact) {Deployable artifact\\smaller storage footprint};
+\draw[line] (ckpt) -- (quant);
+\draw[line] (quant) -- (act);
+\draw[line] (act) -- (artifact);
+\end{tikzpicture}}
+\caption{Deployment path from a trained checkpoint to a compact artifact. The codebase treats quantization as a deploy-stage transformation rather than a separate model family.}
+\label{fig:deploy-flow}
+\end{figure}
+
+\subsection{Ternary Quantization}
+Given weight tensor $W$, a practical scaling is:
+\[
+s=\text{mean}(|W|),\qquad
+\tilde{W}=\text{clip}\left(\text{round}\left(\frac{W}{s}\right),-1,1\right)
+\]
+which approximates BitNet-style low-bit updates \citep{wang_bitnet_2023}. The packed mapping uses two bits per weight symbol for storage efficiency.
+
+\subsection{Activation Quantization}
+For activations $x$:
+\[
+q=\text{round}\left(x\cdot\frac{127}{\max(|x|)+\epsilon}\right),\qquad q\in[-128,127]
+\]
+with dequantization $x\approx q/\alpha$.
+
+\subsection{Size Estimates}
+For $N$ parameters:
+\[
+\text{FP32 size}\approx 4N,\quad \text{FP16 size}\approx 2N,\quad \text{1.58-bit size}\approx \frac{1.58}{8}N
+\]
+before metadata and packing overhead. This aligns with lightweight deployment goals \citep{samson_lightweight_2026,bravin_embbert_2026}.
+

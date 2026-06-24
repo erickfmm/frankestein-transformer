@@ -1,0 +1,358 @@
+\section{Taxonomía de Arquitectura e Implementación}
+\label{sec:architecture-taxonomy}
+
+\subsection{Familias de Atención y Mezcladores de Secuencias}
+\label{sec:attention-families}
+
+Este sistema implementa diecisiete arquitecturas de mezcladores de secuencias distintas organizadas en cinco categorías funcionales que reflejan las tendencias de investigación en el diseño de modelado de secuencias. La organización taxonómica refleja la comprensión evolutiva de cómo equilibrar expresividad, eficiencia computacional y restricciones de memoria.
+
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Líneas Base de Atención Densas}: La atención softmax estándar y la atención sigmoide proporcionan contextualización global completa a costo computacional cuadrático, sirviendo como líneas base de referencia para comparación con alternativas más eficientes.
+    \item \textbf{Arquitecturas Recurrentes y Retentivas}: RetNet, Mamba, bloques estilo ODE y Titans mantienen representaciones de estado que permiten un costo de inferencia $\mathcal{O}(1)$ mientras preservan la expresividad mediante dinámicas recurrentes, parámetros selectivos o adaptación de memoria en tiempo de prueba.
+    \item \textbf{Patrones de Atención Dispersa}: Siete variantes dispersas (Sparse Transformer, Longformer, BigBird, SparseK, NSA, SpargeAttn, FASA) reducen la complejidad cuadrática mediante dispersión estructurada, selección de tokens o estrategias de poda sin entrenamiento.
+    \item \textbf{Mecanismos de Memoria con Compuerta}: Siete arquitecturas con compuerta (GLA, DeltaNet, Gated DeltaNet, Gated DeltaNet-2, HGRN2, FoX, Gated Softmax) introducen control dependiente de datos sobre la retención de memoria, el olvido y la fuerza de actualización.
+\end{enumerate}
+
+\begin{figure}[t]
+\centering
+\fitfigure{\begin{tikzpicture}[
+    font=\scriptsize,
+    node distance=0.38cm and 1.0cm,
+    box/.append style={inner sep=4pt, minimum height=0.55cm}
+]
+% Root
+\node[box, fill=blue!15, minimum width=3.2cm] (root) {\textbf{Sequence Mixer Registry (17 variants)}};
+
+% Category headers
+\node[box, fill=red!10, below left=1.0cm and 5.4cm of root, minimum width=2.2cm] (dense) {\textbf{Dense (2)}};
+\node[box, fill=green!10, below left=1.0cm and 1.8cm of root, minimum width=2.2cm] (recur) {\textbf{Recurrent (4)}};
+\node[box, fill=yellow!12, below right=1.0cm and 1.8cm of root, minimum width=2.2cm] (sparse) {\textbf{Sparse (7)}};
+\node[box, fill=purple!12, below right=1.0cm and 5.4cm of root, minimum width=2.2cm] (gated) {\textbf{Gated (7)}};
+
+% Dense column
+\node[box, fill=red!5, below=of dense] (d1) {\texttt{standard\_attn}};
+\node[box, fill=red!5, below=of d1] (d2) {\texttt{sigmoid\_attn}};
+
+% Recurrent column
+\node[box, fill=green!5, below=of recur] (r1) {\texttt{retnet / retnet\_attn}};
+\node[box, fill=green!5, below=of r1] (r2) {\texttt{mamba}};
+\node[box, fill=green!5, below=of r2] (r3) {\texttt{ode}};
+\node[box, fill=green!5, below=of r3] (r4) {\texttt{titan\_attn}};
+
+% Sparse column
+\node[box, fill=yellow!6, below=of sparse] (s1) {\texttt{sparse\_transformer\_attn}};
+\node[box, fill=yellow!6, below=of s1] (s2) {\texttt{longformer\_attn}};
+\node[box, fill=yellow!6, below=of s2] (s3) {\texttt{bigbird\_attn}};
+\node[box, fill=yellow!6, below=of s3] (s4) {\texttt{sparsek\_attn}};
+\node[box, fill=yellow!6, below=of s4] (s5) {\texttt{nsa\_attn}};
+\node[box, fill=yellow!6, below=of s5] (s6) {\texttt{sparge\_attn}};
+\node[box, fill=yellow!6, below=of s6] (s7) {\texttt{fasa\_attn}};
+
+% Gated column
+\node[box, fill=purple!6, below=of gated] (g1) {\texttt{gla\_attn}};
+\node[box, fill=purple!6, below=of g1] (g2) {\texttt{deltanet\_attn}};
+\node[box, fill=purple!6, below=of g2] (g3) {\texttt{gated\_deltanet\_attn}};
+\node[box, fill=purple!6, below=of g3] (g4) {\texttt{gated\_deltanet2\_attn}};
+\node[box, fill=purple!6, below=of g4] (g5) {\texttt{hgrn2\_attn}};
+\node[box, fill=purple!6, below=of g5] (g6) {\texttt{fox\_attn}};
+\node[box, fill=purple!6, below=of g6] (g7) {\texttt{gated\_softmax\_attn}};
+
+% Root-to-category links
+\draw[line] (root) -- (dense);
+\draw[line] (root) -- (recur);
+\draw[line] (root) -- (sparse);
+\draw[line] (root) -- (gated);
+
+% Category-to-list links
+\draw[line] (dense) -- (d1);
+\draw[line] (d1) -- (d2);
+
+\draw[line] (recur) -- (r1);
+\draw[line] (r1) -- (r2);
+\draw[line] (r2) -- (r3);
+\draw[line] (r3) -- (r4);
+
+\draw[line] (sparse) -- (s1);
+\draw[line] (s1) -- (s2);
+\draw[line] (s2) -- (s3);
+\draw[line] (s3) -- (s4);
+\draw[line] (s4) -- (s5);
+\draw[line] (s5) -- (s6);
+\draw[line] (s6) -- (s7);
+
+\draw[line] (gated) -- (g1);
+\draw[line] (g1) -- (g2);
+\draw[line] (g2) -- (g3);
+\draw[line] (g3) -- (g4);
+\draw[line] (g4) -- (g5);
+\draw[line] (g5) -- (g6);
+\draw[line] (g6) -- (g7);
+\end{tikzpicture}}
+\caption{Taxonomía completa de las diecisiete arquitecturas de mezcladores de secuencias soportadas. Las líneas base densas proporcionan enrutamiento global completo a costo cuadrático. Las arquitecturas recurrentes permiten inferencia en tiempo constante mediante compresión de estado. Las variantes dispersas reducen la complejidad mediante patrones estructurados o selección de tokens. Los mecanismos con compuerta introducen control dependiente de datos sobre la retención y el olvido de memoria.}
+\label{fig:comprehensive-taxonomy}
+\end{figure}
+
+\subsection{Atención Estándar}
+Dadas las matrices proyectadas $(Q,K,V)$:
+\[
+\text{Attn}(Q,K,V)=\text{softmax}\left(\frac{QK^\top}{\sqrt{d_k}}\right)V
+\]
+Este es el mecanismo base para el enrutamiento de contenido \citep{vaswani_attention_2017}.
+
+\subsection{Atención Sigmoide}
+La atención sigmoide elimina la normalización de probabilidad por fila:
+\[
+\text{SigmoidAttn}(Q,K,V)=\sigma\left(\frac{QK^\top}{\sqrt{d_k}}+b\right)V
+\]
+y tiene diferentes requisitos de estabilidad de entrenamiento, a menudo con normalización adicional \citep{ramapuram_theory_2024}.
+
+\subsection{Formulación Retentiva}
+RetNet usa retención con matriz de decaimiento $D$:
+\[
+\text{Retention}(Q,K,V)=\left(QK^\top \odot D\right)V
+\]
+con forma recurrente:
+\[
+S_n=\gamma S_{n-1}+k_n^\top v_n,\qquad o_n=q_n S_n
+\]
+permitiendo inferencia recurrente de bajo costo \citep{sun_retentive_2023,yang_survey_2025}.
+
+\subsection{SSM Selectivo (Mamba)}
+La recurrencia discreta selectiva de espacio de estados es:
+\[
+h_t=\bar{A}_t h_{t-1}+\bar{B}_t x_t,\qquad y_t=C_t h_t
+\]
+donde $(\bar{A}_t,\bar{B}_t,C_t)$ dependen de la entrada, preservando escalado en tiempo lineal con escaneo consciente del hardware \citep{gu_mamba_2023,hwang_hydra_2024}.
+
+\subsection{Actualizaciones Continuas estilo ODE}
+El marco de profundidad continua:
+\[
+\frac{dh(t)}{dt}=f_\theta(h(t),t)
+\]
+con integradores RK prácticos para ejecución discreta \citep{zhang_continuous_2021}.
+
+\subsection{Memoria en Tiempo de Prueba (Titans)}
+Una actualización aumentada con memoria puede escribirse:
+\[
+M_t=(1-\alpha_t)M_{t-1}+S_t,\qquad
+S_t=\eta_t S_{t-1}-\theta_t\nabla \ell(M_{t-1};x_t)
+\]
+para adaptar la memoria en tiempo de inferencia \citep{behrouz_titans_2025,behrouz_titans_2024}.
+
+\subsection{Extensiones Dispersas y con Compuerta en el Código Base Actual}
+El registro de mezcladores ahora incluye bloques dispersos:
+\texttt{sparse\_transformer\_attn}, \texttt{longformer\_attn}, \texttt{bigbird\_attn},
+\texttt{sparsek\_attn}, \texttt{nsa\_attn}, \texttt{sparge\_attn}, y \texttt{fasa\_attn};
+y bloques con compuerta:
+\texttt{gla\_attn}, \texttt{deltanet\_attn}, \texttt{gated\_deltanet\_attn},
+\texttt{gated\_deltanet2\_attn}, \texttt{hgrn2\_attn}, \texttt{fox\_attn}, y \texttt{gated\_softmax\_attn}.
+
+La implementación impone una política de ejecución explícita para métodos dispersos sin entrenamiento:
+\texttt{fasa\_attn} y \texttt{sparge\_attn} son solo para evaluación/inferencia y generan errores en tiempo de ejecución si se usan mientras el modelo está en modo de entrenamiento.
+
+\begin{figure}[t]
+\centering
+\fitfigure{\begin{tikzpicture}[node distance=0.9cm and 0.9cm]
+\node[box, fill=gray!10] (tokens) {Token sequence};
+\node[box, fill=blue!8, below left=1.1cm and 2.5cm of tokens] (local) {Local / windowed\\Longformer};
+\node[box, fill=yellow!10, below=1.1cm of tokens] (hybrid) {Hybrid sparse graph\\BigBird / Sparse Transformer};
+\node[box, fill=orange!12, below right=1.1cm and 2.5cm of tokens] (select) {Selective pruning\\SparseK / NSA / FASA / SpargeAttn};
+\draw[line] (tokens) -- (local);
+\draw[line] (tokens) -- (hybrid);
+\draw[line] (tokens) -- (select);
+\node[group, fit=(local)(hybrid)(select), label=below:{\small Three sparse design strategies: locality, structured graph sparsity, and learned or predicted selection}] {};
+\end{tikzpicture}}
+\caption{Mapa conceptual de las estrategias de diseño de atención dispersa utilizadas en el código base. Diferentes métodos reducen el costo restringiendo vecindarios, construyendo grafos dispersos o seleccionando solo tokens/bloques de alto valor.}
+\label{fig:sparse-map}
+\end{figure}
+
+\subsection{Bloques de Atención Dispersa Implementados (Detallado)}
+Este código base incluye siete familias de atención dispersa \citep{child_sparse_transformer_2019,beltagy_longformer_2020,zaheer_bigbird_2020,lou_sparsek_2024,yuan_nsa_2025,zhang_spargeattn_2025,wang_fasa_2026}.
+
+\paragraph{Sparse Transformer (\texttt{sparse\_transformer\_attn}).}
+Utiliza máscaras dispersas factorizadas (con zancada + fijas) para aproximar la conectividad densa a menor costo que la atención completa $\mathcal{O}(n^2)$:
+\[
+\text{Attn}_i=\text{softmax}\!\left(\frac{q_iK_{A_i}^\top}{\sqrt{d_k}}\right)V_{A_i}
+\]
+donde $A_i$ es la vecindad dispersa inducida por reglas de zancada/fijas.
+\citep{child_sparse_transformer_2019}
+
+\paragraph{Longformer (\texttt{longformer\_attn}).}
+Utiliza localidad de ventana deslizante con tokens globales opcionales:
+\[
+A_i=\{j:\lvert i-j\rvert \le w/2\}\cup\mathcal{G}
+\]
+produciendo escalado lineal en longitud de secuencia para ventana fija $w$.
+\citep{beltagy_longformer_2020}
+
+\paragraph{BigBird (\texttt{bigbird\_attn}).}
+Combina ventanas locales, enlaces aleatorios y tokens globales:
+\[
+A_i=A_i^{\text{window}}\cup A_i^{\text{random}}\cup A_i^{\text{global}}
+\]
+para preservar una fuerte conectividad de contexto largo con cómputo disperso.
+\citep{zaheer_bigbird_2020}
+
+\paragraph{SparseK (\texttt{sparsek\_attn}).}
+Utiliza una proyección diferenciable tipo top-$k$ sobre puntuaciones de importancia antes de la atención, de modo que solo los pares KV seleccionados participan en la ruta costosa de producto punto.
+\citep{lou_sparsek_2024}
+
+\paragraph{NSA (\texttt{nsa\_attn}).}
+Implementa un diseño disperso de tres ramas: rama comprimida, rama seleccionada y rama de ventana local, y luego las combina con compuertas aprendidas:
+\[
+o_t=\sum_{c\in\{\text{cmp},\text{sel},\text{win}\}} g_t^c\,\text{Attn}(q_t,\tilde K_t^c,\tilde V_t^c)
+\]
+\citep{yuan_nsa_2025}
+
+\paragraph{SpargeAttn (\texttt{sparge\_attn}).}
+Filtrado de bloques en dos etapas sin entrenamiento: primero predice interacciones de bloques insignificantes, luego aplica poda consciente de softmax para eliminar bloques de baja contribución.
+\citep{zhang_spargeattn_2025}
+
+\paragraph{FASA (\texttt{fasa\_attn}).}
+Atención sin entrenamiento consciente de frecuencia: utiliza fragmentos de frecuencia RoPE dominantes para la predicción de importancia de tokens, luego aplica atención completa solo en los tokens seleccionados.
+\citep{wang_fasa_2026}
+
+\small
+\begin{longtable}{p{2.5cm}p{1.6cm}p{1.9cm}p{2.4cm}p{4.1cm}p{1.5cm}}
+\toprule
+\textbf{Bloque} & \textbf{Entrenable} & \textbf{Tendencia Asintótica} & \textbf{Unidad de Dispersión Principal} & \textbf{Notas de Integración Actual} & \textbf{Ref} \\
+\midrule
+\endhead
+Sparse Transformer & Sí & sub-cuadrática & patrón de máscara (a nivel de token) & Máscaras factorizadas con zancada/fijas dentro del pipeline SDPA. & \citep{child_sparse_transformer_2019} \\
+Longformer & Sí & lineal en $n$ ($w$ fijo) & ventana deslizante + tokens globales & Máscara de ventana con índices globales opcionales. & \citep{beltagy_longformer_2020} \\
+BigBird & Sí & casi lineal & bordes ventana + aleatorios + globales & Máscara dispersa aleatorizada más rutas local/global. & \citep{zaheer_bigbird_2020} \\
+SparseK & Sí & similar a lineal (KV seleccionados) & selección diferenciable top-$k$ de KV & Red de puntuación aprendida + proyección SparseK + atención con KV agrupados. & \citep{lou_sparsek_2024} \\
+NSA & Sí & multi-rama con tokens reducidos & bloques comprimidos + bloques seleccionados + ventana local & Tres ramas dispersas combinadas con compuerta en un tensor de salida. & \citep{yuan_nsa_2025} \\
+SpargeAttn & No (sin entrenamiento) & dependiente del bloque disperso & dispersión de bloque predecida a nivel de bloque & Solo evaluación en este repositorio; genera error en modo entrenamiento. & \citep{zhang_spargeattn_2025} \\
+FASA & No (sin entrenamiento) & dependiente del token seleccionado & fragmentos de frecuencia dominantes + tokens seleccionados & Solo evaluación en este repositorio; genera error en modo entrenamiento. & \citep{wang_fasa_2026} \\
+\bottomrule
+\end{longtable}
+\normalsize
+
+\subsection{Bloques de Atención con Compuerta Implementados (Detallado)}
+Este código base incluye ocho bloques con compuerta \citep{yang_gla_2023,yang_deltanet_2024,yang_gated_deltanet_2024,hatamizadeh_gated_deltanet2_2026,sun_retentive_2023,qin_hgrn2_2024,lin_forgetting_transformer_2025,qiu_gated_attention_2025}.
+
+La idea unificadora es que las compuertas controlan \emph{qué información sobrevive}. Algunas compuertas actúan sobre actualizaciones de estado recurrente (GLA, variantes de DeltaNet, HGRN2), mientras que otras modifican la ruta de atención completa (FoX y Gated Softmax). Esto hace que las compuertas sean especialmente útiles cuando el modelo debe equilibrar recuerdo, actualidad y memoria limitada.
+
+\begin{figure}[t]
+\centering
+\fitfigure{\begin{tikzpicture}[node distance=1.2cm and 1.0cm]
+\node[box, fill=green!8] (state) {Previous state\\$S_{t-1}$};
+\node[box, fill=red!8, right=of state] (gate) {Gate(s)\\$\alpha_t,\beta_t,G_t,f_t$};
+\node[box, fill=blue!8, right=of gate] (write) {New key/value\\or SDPA output};
+\node[box, fill=yellow!12, below=of gate] (next) {Updated memory / output\\$S_t$ or $O_t$};
+\draw[line] (state) -- (gate);
+\draw[line] (gate) -- (write);
+\draw[line] (state) |- (next);
+\draw[line] (write) -- (next);
+\end{tikzpicture}}
+\caption{Plantilla de compuerta genérica. Una compuerta puede atenuar la memoria existente, regular la fuerza de escritura o modular las salidas de atención densa, dependiendo de la familia del bloque.}
+\label{fig:gating-template}
+\end{figure}
+
+\paragraph{GLA (\texttt{gla\_attn}).}
+La Atención Lineal con Compuerta aplica decaimiento multiplicativo dependiente de datos en las actualizaciones de estado recurrente:
+\[
+S_t=G_t\odot S_{t-1}+v_tk_t^\top,\qquad o_t=S_tq_t
+\]
+para controlar la acumulación de memoria.
+\citep{yang_gla_2023}
+
+\paragraph{DeltaNet (\texttt{deltanet\_attn}).}
+Utiliza una escritura correctora de error tipo delta-regla con fuerza de escritura aprendida $\beta_t$:
+\[
+S_t=S_{t-1}(I-\beta_tk_tk_t^\top)+\beta_tv_tk_t^\top
+\]
+lo que mejora el reemplazo de memoria dirigido.
+\citep{yang_deltanet_2024}
+
+\paragraph{Gated DeltaNet (\texttt{gated\_deltanet\_attn}).}
+Añade compuerta de decaimiento $\alpha_t$ sobre las escrituras de delta-regla:
+\[
+S_t=\alpha_t S_{t-1}(I-\beta_tk_tk_t^\top)+\beta_tv_tk_t^\top
+\]
+tanto para olvido global como para actualizaciones correctivas locales.
+\citep{yang_gated_deltanet_2024}
+
+\paragraph{Gated DeltaNet-2 (\texttt{gated\_deltanet2\_attn}).}
+Desacopla la compuerta delta escalar $\beta_t$ en una compuerta de borrado canalizada $\mathbf{b}_t$ (eje de claves) y una compuerta de escritura canalizada $\mathbf{w}_t$ (eje de valores), con decaimiento canalizado $\boldsymbol{\alpha}_t$ (estilo KDA):
+\[
+S_t=(I-k_t(\mathbf{b}_t\odot k_t)^\top)\,\mathrm{Diag}(\boldsymbol{\alpha}_t)\,S_{t-1}+k_t(\mathbf{w}_t\odot v_t)^\top
+\]
+para control de memoria más fino; se reduce a KDA y Gated DeltaNet como casos especiales.
+\citep{hatamizadeh_gated_deltanet2_2026}
+
+\paragraph{Alias RetNet Attn (\texttt{retnet\_attn}).}
+Proporciona un alias explícito con compuerta que envuelve el comportamiento de retención multiescala para consistencia de nomenclatura en los registros de capas.
+\citep{sun_retentive_2023}
+
+\paragraph{HGRN2 (\texttt{hgrn2\_attn}).}
+Utiliza compuertas de olvido con cota inferior y expansión de estado con producto exterior:
+\[
+S_t=\text{diag}(g_t)S_{t-1}+v_tk_t^\top
+\]
+para aumentar la expresividad del estado recurrente mientras se mantiene la eficiencia.
+\citep{qin_hgrn2_2024}
+
+\paragraph{FoX (\texttt{fox\_attn}).}
+Inyecta sesgo de olvido a nivel de token directamente en los logits de softmax:
+\[
+O=\text{softmax}(QK^\top + D)V
+\]
+donde $D$ se deriva de compuertas acumulativas de log-olvido.
+\citep{lin_forgetting_transformer_2025}
+
+\paragraph{Gated Softmax (\texttt{gated\_softmax\_attn}).}
+Aplica una compuerta sigmoide post-SDPA:
+\[
+Y'=\text{SDPA}(Q,K,V)\odot \sigma(XW_g)
+\]
+lo que añade compuerta de canal multiplicativa sin reemplazar la atención softmax.
+\citep{qiu_gated_attention_2025}
+
+\small
+\begin{longtable}{p{2.4cm}p{2.0cm}p{2.2cm}p{1.8cm}p{4.0cm}p{1.5cm}}
+\toprule
+\textbf{Bloque} & \textbf{Tipo de Estado} & \textbf{Mecanismo de Compuerta} & \textbf{Ruta Softmax} & \textbf{Notas de Integración Actual} & \textbf{Ref} \\
+\midrule
+\endhead
+GLA & estado recurrente matricial & decaimiento multiplicativo dependiente de datos & No (recurrente lineal) & Actualización recurrente con proyección de compuerta de bajo rango. & \citep{yang_gla_2023} \\
+DeltaNet & estado recurrente matricial & compuerta de escritura ($\beta$) & No (recurrente lineal) & Corrección delta-regla con Q/K normalizados. & \citep{yang_deltanet_2024} \\
+Gated DeltaNet & estado recurrente matricial & compuertas de decaimiento + escritura ($\alpha,\beta$) & No (recurrente lineal) & Olvido combinado y escritura dirigida. & \citep{yang_gated_deltanet_2024} \\
+Gated DeltaNet-2 & estado recurrente matricial & compuertas de borrado + escritura decoupladas (canalizadas) & No (recurrente lineal) & Borrado canalizado (claves) + escritura (valores); decaimiento estilo KDA. & \citep{hatamizadeh_gated_deltanet2_2026} \\
+RetNet Attn & estado recurrente matricial & decaimiento multiescala fijo & No (retención) & Envoltorio alias sobre el mezclador RetNet existente. & \citep{sun_retentive_2023} \\
+HGRN2 & estado recurrente matricial & compuerta de olvido con cota inferior & No (recurrente lineal) & Compuerta recurrente jerárquica con productos exteriores. & \citep{qin_hgrn2_2024} \\
+FoX & matriz de atención completa & compuerta de olvido en espacio de logits & Sí & Sesgo de olvido añadido antes de softmax. & \citep{lin_forgetting_transformer_2025} \\
+Gated Softmax & matriz de atención completa & compuerta sigmoide post-atención & Sí & Compuerta sigmoide aplicada después de la salida SDPA. & \citep{qiu_gated_attention_2025} \\
+\bottomrule
+\end{longtable}
+\normalsize
+
+\begin{algorithm}[t]
+\caption{Paso Adelante del Mezclador Guiado por Patrón (Conceptual)}
+\begin{algorithmic}[1]
+\Require Estados ocultos $H$, patrón $P$, índice de capa $\ell$
+\State $m \gets P[\ell \bmod |P|]$
+\If{$m \in \{\texttt{fasa\_attn}, \texttt{sparge\_attn}\}$ y el modelo está en modo entrenamiento}
+    \State lanzar error de configuración/tiempo de ejecución (bloque sin entrenamiento en modo entrenar)
+\ElsIf{$m=\texttt{standard\_attn}$}
+    \State $H \gets \text{softmax-attention}(H)$
+\ElsIf{$m=\texttt{sigmoid\_attn}$}
+    \State $H \gets \text{sigmoid-attention}(H)$
+\ElsIf{$m\in\{\texttt{retnet},\texttt{retnet\_attn}\}$}
+    \State $H \gets \text{retention}(H)$
+\ElsIf{$m=\texttt{mamba}$}
+    \State $H \gets \text{selective-ssm}(H)$
+\ElsIf{$m=\texttt{ode}$}
+    \State $H \gets \text{rk-step}(H)$
+\ElsIf{$m$ es una clave de atención dispersa}
+    \State $H \gets \text{sparse-attention-family}(H)$
+\ElsIf{$m$ es una clave de atención con compuerta}
+    \State $H \gets \text{gated-attention-family}(H)$
+\Else
+    \State $H \gets \text{memory-augmented-attn}(H)$
+\EndIf
+\State \Return $H$
+\end{algorithmic}
+\end{algorithm}
+

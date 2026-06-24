@@ -2,19 +2,29 @@
 
 This document describes the project as a configurable library + CLI toolchain.
 
+The LaTeX sources are split by section under `docs/paper/` (English) and `docs/paper-es/` (Spanish). Each folder is self-contained and references the shared `docs/bibliography/` via a relative `../bibliography/...` path, so compilation must be run **from inside the paper folder**.
+
+English (run from `docs/paper/`):
+
 ```bash
+cd docs/paper
 pdflatex -interaction=nonstopmode paper.tex
 bibtex paper
 pdflatex -interaction=nonstopmode paper.tex
 pdflatex -interaction=nonstopmode paper.tex
 ```
 
+Spanish (run from `docs/paper-es/`):
+
 ```bash
+cd docs/paper-es
 pdflatex -interaction=nonstopmode paper-es.tex
 bibtex paper-es
 pdflatex -interaction=nonstopmode paper-es.tex
 pdflatex -interaction=nonstopmode paper-es.tex
 ```
+
+Each main file only contains the preamble, front matter, and `\input` links to the per-section files in `sections/` and `appendices/`.
 
 ## 1. CLI Command Surface
 

@@ -1,0 +1,32 @@
+\section{Trabajo Relacionado}
+
+Este trabajo se sitúa en la intersección de tres áreas activas de investigación: arquitecturas de atención alternativas, mecanismos de atención dispersa y algoritmos de optimización avanzados. Esta sección proporciona un estudio conciso; las formulaciones matemáticas detalladas y las descripciones algorítmicas se difieren a los apéndices.
+
+\subsection{Arquitecturas de Mezcladores de Secuencia}
+
+\subsubsection{Líneas Base de Atención Densa}
+La atención softmax estándar \citep{vaswani_attention_2017} logra un contexto global completo mediante interacciones por pares de $n^2$, pero incurre en costos prohibitivos de memoria y cómputo para secuencias largas. La atención sigmoide \citep{ramapuram_theory_2024} reemplaza la softmax por filas con una sigmoide elemento a elemento, logrando una convergencia más rápida y hasta un 17\% de aceleración del núcleo, aunque requiere estabilización con normalización híbrida a escala. Ambas sirven como líneas base densas en este conjunto de herramientas.
+
+\subsubsection{Arquitecturas Recurrentes y Retentivas}
+RetNet \citep{sun_retentive_2023} resuelve el ``triángulo imposible'' de entrenamiento paralelo, inferencia $\mathcal{O}(1)$ y rendimiento sólido mediante una formulación dual de atención-retención. Mamba \citep{gu_mamba_2023} introduce selectividad dependiente de la entrada en modelos de espacio de estados, logrando complejidad lineal con algoritmos de exploración conscientes del hardware. Los transformers tipo EDO \citep{zhang_continuous_2021} tratan la profundidad como integración numérica sobre un sistema dinámico continuo. Titans \citep{behrouz_titans_2025} aumenta la inferencia con memorización neuronal en tiempo de prueba para contextos extremadamente largos. En el Apéndice~\ref{sec:annex-transformer} se proporcionan formulaciones detalladas.
+
+\subsubsection{Mecanismos de Atención Dispersa}
+Los métodos de atención dispersa reducen el cuello de botella cuadrático restringiendo las interacciones entre tokens: Sparse Transformer \citep{child_sparse_transformer_2019} utiliza patrones factorizados con paso y fijos ($\mathcal{O}(n\sqrt{n})$); Longformer \citep{beltagy_longformer_2020} emplea ventanas deslizantes con tokens globales ($\mathcal{O}(n \cdot w)$); BigBird \citep{zaheer_bigbird_2020} combina caminos locales, aleatorios y globales; SparseK \citep{lou_sparsek_2024} aplica selección diferenciable top-$k$; NSA \citep{yuan_nsa_2025} utiliza un diseño jerárquico de tres ramas; SpargeAttn \citep{zhang_spargeattn_2025} realiza poda a nivel de bloques en dos etapas; y FASA \citep{wang_fasa_2026} aprovecha características de frecuencia de RoPE para la selección de tokens. Las descripciones completas se encuentran en el Apéndice~\ref{sec:annex-sparse}.
+
+\subsubsection{Mecanismos de Atención con Compuerta}
+Las arquitecturas con compuerta controlan el flujo de información mediante compuertas aprendibles: GLA \citep{yang_gla_2023} agrega compuertas diagonales dependientes de datos a la atención lineal; DeltaNet \citep{yang_deltanet_2024} aplica la regla de aprendizaje delta a las actualizaciones de estado recurrente; Gated DeltaNet \citep{yang_gated_deltanet_2024} sintetiza ambos mecanismos; Gated DeltaNet-2 \citep{hatamizadeh_gated_deltanet2_2026} desacopla la compuerta delta escalar en compuertas de borrado canalizadas (eje de claves) y escritura canalizada (eje de valores); HGRN2 \citep{qin_hgrn2_2024} introduce compuertas de olvido jerárquicas con expansión de estado mediante producto exterior; FoX \citep{lin_forgetting_transformer_2025} incrusta compuertas de olvido directamente en la atención softmax; y Gated Softmax \citep{qiu_gated_attention_2025} aplica compuertas de canal posteriores a SDPA. Las derivaciones matemáticas completas aparecen en el Apéndice~\ref{sec:annex-gated}.
+
+\subsection{Algoritmos de Optimización}
+
+La optimización de arquitecturas de transformers altamente parametrizadas requiere navegar paisajes de pérdida no convexos con espectros de Hessiana heterogéneos. La literatura se ha diversificado en varias familias más allá de la línea base clásica de AdamW \citep{loshchilov_decoupled_2017}:
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Reducción de varianza y momento}: RAdam \citep{liu_variance_2019}, Adan \citep{xie_adan_2022}, ADOPT \citep{taniguchi_adopt_2024}, AdEMAMix \citep{pagliardini_ademamix_2024}, MARS \citep{yuan_mars_2024} y optimizadores Cautious \citep{liang_cautious_2024} abordan la inestabilidad en pasos iniciales, las garantías de convergencia y la mezcla de historial con EMA dual.
+    \item \textbf{Eficientes en memoria}: Adafactor \citep{shazeer_adafactor_2018}, GaLore \citep{zhao_galore_2024}, Lion \citep{chen_symbolic_2023} y APOLLO \citep{zhu2025apollosgdlikememoryadamwlevel} reducen la memoria del estado del optimizador mediante factorización, proyección de bajo rango o actualizaciones basadas en signo.
+    \item \textbf{Sin programación de tasa y libres de parámetros}: Schedule-Free AdamW \citep{defazio_road_2024} y Prodigy \citep{mishchenko_prodigy_2023} absorben el programador o el ajuste de la tasa de aprendizaje en la dinámica del optimizador.
+    \item \textbf{De segundo orden y conscientes de curvatura}: Shampoo \citep{gupta_shampoo_2018}, SOAP \citep{vyas_soap_2024} y Sophia \citep{liu_sophia_2023} incorporan información aproximada de segundo orden.
+    \item \textbf{Orientados a geometría}: Muon \citep{shen_convergence_2025} y Turbo-Muon \citep{boissin_turbo-muon_2025} remodelan la geometría de actualización mediante ortogonalización.
+\end{itemize}
+
+En el Apéndice~\ref{sec:annex-optimizers} se proporcionan descripciones algorítmicas detalladas, pseudocódigo y una comparación exhaustiva de complejidad.
+
