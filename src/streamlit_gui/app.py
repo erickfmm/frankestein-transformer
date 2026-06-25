@@ -93,8 +93,8 @@ UI_STRINGS = {
 
 def load_schema() -> Dict[str, Any]:
     """Load the training configuration schema."""
-    with open(SCHEMA_PATH, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+    from src.utils.schema_loader import resolve_schema
+    return resolve_schema(SCHEMA_PATH)
 
 
 def get_current_language() -> str:

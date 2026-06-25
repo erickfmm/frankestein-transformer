@@ -228,8 +228,8 @@ def _extract_state_dict(checkpoint: Dict[str, Any]) -> Dict[str, torch.Tensor]:
 
 
 def _load_schema_layer_enum(schema_path: Path) -> List[str]:
-    with schema_path.open("r", encoding="utf-8") as handle:
-        schema = yaml.safe_load(handle) or {}
+    from src.utils.schema_loader import resolve_schema
+    schema = resolve_schema(schema_path)
     return list(
         schema.get("properties", {})
         .get("model", {})

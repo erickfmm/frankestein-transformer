@@ -1,14 +1,13 @@
 import pathlib
 import unittest
 
-import yaml
+from src.utils.schema_loader import resolve_schema
 
 
 class SchemaAttentionLayerTests(unittest.TestCase):
     def test_schema_includes_all_attention_layer_names(self):
         schema_path = pathlib.Path(__file__).parent.parent / "src" / "schema.yaml"
-        with schema_path.open("r", encoding="utf-8") as handle:
-            schema = yaml.safe_load(handle)
+        schema = resolve_schema(schema_path)
 
         enum_values = (
             schema["properties"]["model"]["properties"]["layer_pattern"]["items"]["enum"]
@@ -43,8 +42,7 @@ class SchemaAttentionLayerTests(unittest.TestCase):
 
     def test_schema_includes_mixture_of_depths_fields(self):
         schema_path = pathlib.Path(__file__).parent.parent / "src" / "schema.yaml"
-        with schema_path.open("r", encoding="utf-8") as handle:
-            schema = yaml.safe_load(handle)
+        schema = resolve_schema(schema_path)
 
         model_properties = schema["properties"]["model"]["properties"]
 
