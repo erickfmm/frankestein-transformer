@@ -21,3 +21,5 @@ docs/**/*.bbl
 docs/**/*.blg
 
 *.csv
+
+.opencode/node_modules/
