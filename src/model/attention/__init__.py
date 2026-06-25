@@ -1,8 +1,6 @@
 from .engram import EngramLayer
-from .hope import HoPE
 from .ode import ODEAttentionBlock
 from .retnet import MultiScaleRetention
-from .rope import RoPE
 from .sigmoid import SigmoidAttention
 from .sparse import (
     BigBirdAttention,
@@ -25,6 +23,7 @@ from .gated import (
     HGRN2Attention,
     RetNetAttention,
 )
+from ..embeddings import HoPE, RoPE
 
 __all__ = [
     "EngramLayer",

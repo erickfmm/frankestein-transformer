@@ -6,7 +6,8 @@ TORCH_AVAILABLE = find_spec("torch") is not None
 
 if TORCH_AVAILABLE:
     import torch
-    from src.model.tormented_bert_frankestein import FactorizedEmbedding, UltraConfig
+    from src.model.embeddings import FactorizedEmbedding
+    from src.model.tormented_bert_frankestein import UltraConfig
 
 
 def _cfg(**overrides):

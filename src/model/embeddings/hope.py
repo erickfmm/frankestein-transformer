@@ -10,6 +10,8 @@ sensitive to longer-range positions.
 HoPE is used as the positional encoding for TitanAttention blocks.
 """
 
+from __future__ import annotations
+
 import math
 
 import torch

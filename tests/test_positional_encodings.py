@@ -6,8 +6,8 @@ TORCH_AVAILABLE = find_spec("torch") is not None
 
 if TORCH_AVAILABLE:
     import torch
-    from src.model.attention.rope import RoPE
-    from src.model.attention.hope import HoPE
+    from src.model.embeddings.rope import RoPE
+    from src.model.embeddings.hope import HoPE
 
 
 @unittest.skipUnless(TORCH_AVAILABLE, "torch required")

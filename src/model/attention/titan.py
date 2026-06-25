@@ -18,8 +18,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from .common import BitLinear
-from .hope import HoPE
-from .rope import RoPE
+from ..embeddings.hope import HoPE
+from ..embeddings.rope import RoPE
 
 
 class TitanAttention(nn.Module):
