@@ -13,11 +13,11 @@ output/
 **/nohup.out**
 **/training_metrics.csv
 
-docs/*.aux
-docs/*.log
-docs/*.out
-docs/*.toc
-docs/*.bbl
-docs/*.blg
+docs/**/*.aux
+docs/**/*.log
+docs/**/*.out
+docs/**/*.toc
+docs/**/*.bbl
+docs/**/*.blg
 
 *.csv
