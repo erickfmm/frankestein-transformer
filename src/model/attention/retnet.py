@@ -16,7 +16,8 @@ import math
 import torch
 import torch.nn as nn
 
-from .common import BitLinear, get_norm
+from .common import BitLinear
+from ..norm import get_norm
 
 
 class MultiScaleRetention(nn.Module):

@@ -1,15 +1,16 @@
 """Shared utilities for attention modules.
 
-Provides quantization helpers (BitNet b1.58 ternary weights, 8-bit activations),
-custom normalization layers (DynamicTanhNorm, Derf), and a factory function
-for selecting the normalization type from the model configuration.
+Provides quantization helpers (BitNet b1.58 ternary weights, 8-bit activations)
+and the ``BitLinear`` layer.
+
+Normalization layers (``DynamicTanhNorm``, ``Derf``) and the ``get_norm``
+factory have been moved to ``src/model/norm/``.
 
 References:
     Ma et al. (2024), "The Era of 1-bit LLMs: All Large Language Models are in
     1.58 Bits", arXiv:2402.17764.
 """
 
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -92,111 +93,4 @@ class BitLinear(nn.Linear):
         return output
 
 
-class DynamicTanhNorm(nn.Module):
-    """Dynamic Tanh normalization layer.
 
-    Applies standard normalization (subtract mean, divide by standard deviation)
-    followed by a learnable affine transformation through ``tanh``. The
-    learnable parameters ``alpha`` and ``beta`` allow the layer to adapt the
-    saturation point and slope of the tanh non-linearity per dimension.
-
-    Args:
-        dim: Number of features in the input (normalized dimension).
-        eps: Small constant for numerical stability in standard deviation.
-            Defaults to ``1e-6``.
-
-    Attributes:
-        alpha: Learnable scale parameter of shape ``(dim,)``, initialized to 1.
-        beta: Learnable shift parameter of shape ``(dim,)``, initialized to 0.
-        eps: Epsilon value for numerical stability.
-    """
-
-    def __init__(self, dim, eps=1e-6):
-        super().__init__()
-        self.alpha = nn.Parameter(torch.ones(dim))
-        self.beta = nn.Parameter(torch.zeros(dim))
-        self.eps = eps
-
-    def forward(self, x):
-        """Apply dynamic tanh normalization.
-
-        Args:
-            x: Input tensor of shape ``(..., dim)``.
-
-        Returns:
-            Tensor of same shape as ``x``, normalized and passed through
-            ``tanh`` with learnable affine parameters.
-        """
-        mu = x.mean(dim=-1, keepdim=True)
-        sigma = x.std(dim=-1, keepdim=True)
-        x_norm = (x - mu) / (sigma + self.eps)
-        return torch.tanh(x_norm * self.alpha + self.beta)
-
-
-class Derf(nn.Module):
-    """Derf normalization layer.
-
-    Applies the error function (erf) as a smooth, saturating non-linearity
-    with learnable affine parameters. The formulation is::
-
-        y = gamma * erf(alpha * x + s) + beta
-
-    where ``alpha`` and ``s`` are scalar parameters controlling the slope and
-    shift of the erf, and ``gamma``, ``beta`` are per-dimension scale and bias.
-
-    Args:
-        dim: Number of features in the input (normalized dimension).
-
-    Attributes:
-        alpha: Learnable scalar slope parameter, initialized to 1.0.
-        s: Learnable scalar shift parameter, initialized to 0.0.
-        gamma: Learnable per-dimension scale of shape ``(dim,)``, initialized
-            to 1.
-        beta: Learnable per-dimension bias of shape ``(dim,)``, initialized
-            to 0.
-    """
-
-    def __init__(self, dim: int):
-        super().__init__()
-        self.alpha = nn.Parameter(torch.tensor(1.0))
-        self.s = nn.Parameter(torch.tensor(0.0))
-        self.gamma = nn.Parameter(torch.ones(dim))
-        self.beta = nn.Parameter(torch.zeros(dim))
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Apply Derf normalization.
-
-        Args:
-            x: Input tensor of shape ``(..., dim)``.
-
-        Returns:
-            Tensor of same shape as ``x``, transformed by the erf non-linearity
-            with learnable affine parameters.
-        """
-        return self.gamma * torch.erf(self.alpha * x + self.s) + self.beta
-
-
-def get_norm(config):
-    """Factory function that returns a normalization module based on config.
-
-    Selects among ``LayerNorm``, ``DynamicTanhNorm``, and ``Derf`` based on
-    the ``norm_type`` field in the configuration.
-
-    Args:
-        config: Model configuration object with attributes ``norm_type``
-            (one of ``"layer_norm"``, ``"dynamic_tanh"``, ``"derf"``) and
-            ``hidden_size``.
-
-    Returns:
-        A normalization ``nn.Module`` instance appropriate for the requested
-        ``norm_type``.
-
-    Raises:
-        AttributeError: If ``config`` does not have ``norm_type`` or
-            ``hidden_size`` attributes.
-    """
-    if config.norm_type == "dynamic_tanh":
-        return DynamicTanhNorm(config.hidden_size)
-    if config.norm_type == "derf":
-        return Derf(config.hidden_size)
-    return nn.LayerNorm(config.hidden_size)

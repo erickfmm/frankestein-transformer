@@ -19,7 +19,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .common import BitLinear, get_norm
+from .common import BitLinear
+from ..norm import get_norm
 
 
 class ODEFunc(nn.Module):

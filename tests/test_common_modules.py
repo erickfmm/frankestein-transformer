@@ -11,6 +11,8 @@ if TORCH_AVAILABLE:
         activation_quant,
         weight_quant,
         BitLinear,
+    )
+    from src.model.norm import (
         DynamicTanhNorm,
         Derf,
         get_norm,

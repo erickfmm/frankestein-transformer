@@ -54,7 +54,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .attention.common import BitLinear, get_norm
+from .attention.common import BitLinear
+from .norm import get_norm
 from .attention.engram import EngramLayer
 from .attention.gated import (
     DeltaNetAttention,
