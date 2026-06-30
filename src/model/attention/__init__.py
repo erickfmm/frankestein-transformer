@@ -6,10 +6,12 @@ from .sparse import (
     BigBirdAttention,
     FASAAttention,
     LongformerAttention,
+    MSAAttention,
     NSAAttention,
     SparseKAttention,
     SparseTransformerAttention,
     SpargeAttention,
+    SparDAAttention,
 )
 from .grouped_query_attention import GroupedQueryAttention
 from .standard import StandardAttention
@@ -22,7 +24,17 @@ from .gated import (
     GatedLinearAttention,
     GatedSoftmaxAttention,
     HGRN2Attention,
+    KDAAttention,
     RetNetAttention,
+)
+from .latent import (
+    GTAAttention,
+    GQLAAttention,
+    IHAAttention,
+    MLAAttention,
+    MLRAAttention,
+    MTLAAttention,
+    TuckerAttention,
 )
 from ..embeddings import HoPE, RoPE
 
@@ -43,6 +55,8 @@ __all__ = [
     "NSAAttention",
     "SpargeAttention",
     "FASAAttention",
+    "MSAAttention",
+    "SparDAAttention",
     "GatedLinearAttention",
     "DeltaNetAttention",
     "GatedDeltaNetAttention",
@@ -51,4 +65,12 @@ __all__ = [
     "HGRN2Attention",
     "ForgettingAttention",
     "GatedSoftmaxAttention",
+    "KDAAttention",
+    "MLAAttention",
+    "GQLAAttention",
+    "MLRAAttention",
+    "TuckerAttention",
+    "IHAAttention",
+    "GTAAttention",
+    "MTLAAttention",
 ]

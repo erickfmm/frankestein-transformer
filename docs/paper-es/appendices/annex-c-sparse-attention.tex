@@ -462,6 +462,111 @@ donde $m_{\text{antiguo}}, m_{\text{nuevo}}$ son máximos del softmax en línea 
     \item \textbf{Limitación}: La aceleración depende de la dispersidad inherente; la granularidad a nivel de bloque puede pasar por alto patrones más finos; se requiere ajuste de umbral por familia de modelos.
 \end{itemize}
 
+\subsection{MSA (MiniMax Sparse Attention): Atención Dispersa por Bloques con Rama de Índice Ligera}
+
+\subsubsection{Formulación Matemática}
+
+MSA \citep{lai_minimax_2026} es un mecanismo de atención dispersa por bloques construido sobre atención agrupada por consultas (GQA) que combina una \textbf{Rama de Índice} ligera para la selección de bloques con una \textbf{Rama Principal} para atención softmax dispersa por bloques exacta sobre los bloques seleccionados. Sea $N$ la longitud de la secuencia, $B_k = 128$ el tamaño de bloque, y $k = 16$ el número de bloques seleccionados por consulta (lo que yield un presupuesto fijo por consulta de $k \cdot B_k = 2048$ tokens independientemente de $N$).
+
+\paragraph{Rama de Índice}: Una proyección de baja dimensionalidad produce consultas de índice $\mathbf{q}_t^{\text{idx}} \in \mathbb{R}^{d_{\text{idx}}}$ y representantes de bloque $\mathbf{r}_b \in \mathbb{R}^{d_{\text{idx}}}$ para cada bloque KV $b$. Los puntajes de índice por grupo GQA son:
+\[
+s_{t,b}^{(g)} = \mathbf{q}_t^{\text{idx},(g)} \cdot \mathbf{r}_b, \qquad \mathcal{I}_t^{(g)} = \mathrm{TopK}\left(\{s_{t,b}^{(g)}\}_{b=1}^{N/B_k},\; k\right)
+\]
+La entrada del índice está \textbf{desconectada} (stop-gradient), de modo que los gradientes no fluyen hacia atrás a través de la entrada del indexador; la Rama de Índice se entrena en su lugar mediante una pérdida de alineación KL entre su distribución de atención y la distribución de la Rama Principal. Debido a que softmax preserva el orden, los puntajes crudos de índice se alimentan directamente al operador top-$k$ \emph{sin} un softmax explícito (\textbf{top-$k$ sin exponencial}), reduciendo el costo numérico.
+
+\paragraph{Bloque local forzado}: El bloque que contiene la posición de consulta $t$ \textbf{siempre} se incluye en $\mathcal{I}_t^{(g)}$, garantizando cobertura de contexto local.
+
+\paragraph{Rama Principal}: La atención estándar de producto punto escalado se calcula exactamente sobre la unión de los bloques seleccionados:
+\[
+\mathbf{o}_t^{(h)} = \mathrm{softmax}\left(\frac{\mathbf{q}_t^{(h)} \mathbf{K}_{\mathcal{I}_t}^{(h)\top}}{\sqrt{d_h}}\right) \mathbf{V}_{\mathcal{I}_t}^{(h)}
+\]
+donde $\mathbf{K}_{\mathcal{I}_t}, \mathbf{V}_{\mathcal{I}_t}$ reúnen los tensores de clave/valor de precisión completa de los bloques seleccionados. La selección se realiza independientemente por grupo GQA, de modo que diferentes grupos de consulta dentro de la misma capa pueden atender a diferentes subconjuntos de bloques.
+
+\subsubsection{Pseudocódigo Algorítmico}
+
+\begin{algorithm}[H]
+\caption{MSA: Atención Dispersa MiniMax con Ramas de Índice + Principal}
+\begin{algorithmic}[1]
+\Require Consulta $\mathbf{Q} \in \mathbb{R}^{N \times d}$, Clave $\mathbf{K}$, Valor $\mathbf{V}$, tamaño de bloque $B_k = 128$, bloques top-$k$ $k = 16$
+\Require Proyección de índice $W_{\text{idx}}$ (entrada desconectada), representantes de bloque $\{\mathbf{r}_b\}$
+\Ensure Salida $\mathbf{Y} \in \mathbb{R}^{N \times d}$
+\State Calcular representantes de bloque: $\mathbf{r}_b \gets \mathrm{mean}(\mathbf{K}_{bB_k:(b+1)B_k})$ para $b = 1, \ldots, N/B_k$
+\For{posición de consulta $t = 1, \ldots, N$}
+    \For{cada grupo GQA $g$}
+        \State $\mathbf{q}_t^{\text{idx}} \gets \mathrm{sg}(W_{\text{idx}} \mathbf{x}_t)$ \Comment{consulta de índice desconectada}
+        \State Calcular puntajes de bloque: $s_b \gets \mathbf{q}_t^{\text{idx}} \cdot \mathbf{r}_b$
+        \State Identificar bloque local: $b_{\text{local}} \gets \lfloor t / B_k \rfloor$
+        \State $\mathcal{I}_t^{(g)} \gets \mathrm{TopK}(\{s_b\}, k) \cup \{b_{\text{local}}\}$ \Comment{top-$k$ sin exp + local forzado}
+    \EndFor
+    \State Reunir KV seleccionado: $\tilde{\mathbf{K}}_t \gets \mathrm{Gather}(\mathbf{K}, \mathcal{I}_t)$, $\tilde{\mathbf{V}}_t \gets \mathrm{Gather}(\mathbf{V}, \mathcal{I}_t)$
+    \State Rama principal SDPA: $\mathbf{y}_t \gets \mathrm{softmax}(\mathbf{q}_t \tilde{\mathbf{K}}_t^\top / \sqrt{d_h}) \tilde{\mathbf{V}}_t$
+\EndFor
+\State Agregar pérdida de alineación KL $\mathcal{L}_{\text{KL}} = \mathrm{KL}(\text{dist índice} \,\|\, \text{dist principal})$ durante el entrenamiento
+\Return $\mathbf{Y}$
+\end{algorithmic}
+\end{algorithm}
+
+\subsubsection{Características Clave}
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Complejidad}: Rama de índice $\mathcal{O}(H_{\text{kv}} \cdot d_{\text{idx}} \cdot N^2)$; Rama principal $\mathcal{O}(H_q \cdot d_h \cdot N \cdot k \cdot B_k)$. Presupuesto por consulta fijo en $k \cdot B_k = 2048$ tokens independientemente de $N$.
+    \item \textbf{Entrenable}: Sí; de extremo a extremo (la Rama de Índice se entrena mediante una pérdida de alineación KL, no es solo inferencia).
+    \item \textbf{Estado}: Caché KV $\mathcal{O}(N)$ (tamaño GQA); sin expansión de la dimensión de estado recurrente.
+    \item \textbf{Fortaleza}: Desplegado en el modelo 109B MiniMax-M3, MSA logra una reducción de cómputo de atención por token de $28.4\times$ a contexto de 1M, con $14.2\times$ en prefill y $7.6\times$ en decodificación en GPUs H800.
+    \item \textbf{Limitación}: La granularidad de selección es fija a nivel de bloque ($B_k = 128$); el bloque local forzado y la selección independiente por grupo aumentan la complejidad de ingeniería y requieren kernels personalizados de bloques dispersos.
+\end{itemize}
+
+\subsection{SparDA (Atención Dispersa Desacoplada): Selección de Bloques Anticipada Guiada por Pronóstico}
+
+\subsubsection{Formulación Matemática}
+
+SparDA \citep{fu_sparda_2026} introduce un esquema de atención dispersa \textbf{desacoplado} que aumenta las proyecciones estándar por capa $Q, K, V$ con una cuarta proyección, el \textbf{Pronóstico}, que predice los bloques KV que serán necesarios en la \emph{siguiente} capa. Esta anticipación permite solapar el prefetch CPU-a-GPU de los bloques seleccionados de la siguiente capa con la ejecución de la capa actual, ocultando la latencia de offload que afecta a las implementaciones de atención dispersa en hardware con memoria limitada.
+
+\paragraph{Proyección de Pronóstico}: Para la entrada $\mathbf{x} \in \mathbb{R}^{N \times d}$,
+\[
+\mathbf{F} = \mathbf{x} \mathbf{W}_F \in \mathbb{R}^{N \times H_{\text{kv}} \times d_f}
+\]
+con \textbf{una cabeza de Pronóstico por grupo GQA}, lo que reduce la sobrecarga de selección frente a los selectores multi-cabeza usados en trabajos anteriores.
+
+\paragraph{Puntuación y selección de bloques}: Para cada consulta $i$ y bloque KV $b$ con representante $\mathbf{r}_b$:
+\[
+S_{i,b} = \mathbf{F}_i \cdot \mathbf{r}_b, \qquad \mathcal{I}_i = \mathrm{TopK}(\{S_{i,b}\}_b, k)
+\]
+\paragraph{Atención dispersa por bloques}: La atención estándar de producto punto escalado se calcula entonces sobre los bloques seleccionados:
+\[
+\mathbf{o}_i = \mathrm{softmax}\left(\frac{\mathbf{q}_i \mathbf{K}_{\mathcal{I}_i}^\top}{\sqrt{d_h}}\right) \mathbf{V}_{\mathcal{I}_i}
+\]
+\paragraph{Entrenamiento}: SparDA añade menos del $0.5\%$ de parámetros adicionales. Solo las proyecciones de Pronóstico se entrenan, emparejando la distribución de atención del selector disperso original (congelado)---una destilación ligera que preserva el comportamiento del modelo base mientras habilita el prefetch anticipado.
+
+\subsubsection{Pseudocódigo Algorítmico}
+
+\begin{algorithm}[H]
+\caption{SparDA: Atención Dispersa Desacoplada con Prefetch de Pronóstico}
+\begin{algorithmic}[1]
+\Require Entrada $\mathbf{x} \in \mathbb{R}^{N \times d}$, bloques de Clave/Valor en caché, bloques top-$k$ $k$
+\Require Proyecciones $W_q, W_k, W_v, W_F$; selector base congelado $\pi_{\text{orig}}$
+\Ensure Salida $\mathbf{Y}$; bloques prefetched para la siguiente capa
+\State Calcular Pronóstico: $\mathbf{F} \gets \mathbf{x} \mathbf{W}_F$ \Comment{una cabeza por grupo GQA}
+\For{consulta $i = 1, \ldots, N$}
+    \State Calcular puntajes de bloque: $S_{i,b} \gets \mathbf{F}_i \cdot \mathbf{r}_b$ para cada bloque $b$
+    \State Seleccionar: $\mathcal{I}_i \gets \mathrm{TopK}(\{S_{i,b}\}, k)$
+    \State \textbf{Prefetch} $\mathbf{K}_{\mathcal{I}_i}, \mathbf{V}_{\mathcal{I}_i}$ de CPU a GPU para la \emph{siguiente} capa \Comment{solapa con la capa actual}
+\EndFor
+\State Calcular SDPA dispersa por bloques sobre los bloques seleccionados de la capa actual: $\mathbf{Y} \gets \mathrm{BlockSparseSDPA}(\mathbf{Q}, \mathbf{K}, \mathbf{V}, \{\mathcal{I}_i\})$
+\State Pérdida de entrenamiento: $\mathcal{L} \gets \mathrm{KL}(\text{dist Pronóstico} \,\|\, \pi_{\text{orig}})$ \Comment{solo se actualiza $W_F$}
+\Return $\mathbf{Y}$
+\end{algorithmic}
+\end{algorithm}
+
+\subsubsection{Características Clave}
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Complejidad}: Pronóstico $\mathcal{O}(H_{\text{kv}} \cdot d_f \cdot N \cdot N_{\text{bloques}})$; Atención principal $\mathcal{O}(H_q \cdot d_h \cdot N \cdot k \cdot B_k)$.
+    \item \textbf{Entrenable}: Sí; solo las proyecciones de Pronóstico se entrenan ($<0.5\%$ parámetros extra).
+    \item \textbf{Fortaleza}: En dos modelos sparse-pretrained de 8B, SparDA logra hasta $1.25\times$ en prefill y $1.7\times$ en decodificación sobre el baseline de offload de atención dispersa, y hasta $5.3\times$ throughput de decodificación frente a un baseline disperso sin offload.
+    \item \textbf{Limitación}: Requiere un pipeline de offload CPU--GPU y un selector base congelado; el beneficio anticipado depende de que la demanda de bloques de la siguiente capa sea predecible a partir del Pronóstico actual.
+\end{itemize}
+
 \subsection{Resumen Comparativo}
 
 \footnotesize
@@ -477,6 +582,8 @@ SparseK & $O(nd)$ & Sí & Tokens top-$k$ & 2024 & Selección diferenciable \\
 NSA & $O((t/d+nl'+w)d)$ & Sí & Multi-rama & 2025 & Diseño de 3 ramas alineado con hardware \\
 FASA & $O(tN_{\text{tip}}+N_{\text{fac}}d)$ & No & Fragmentos de frecuencia & 2026 & Conocimiento de frecuencia RoPE \\
 SpargeAttn & $O(n^2 s \cdot d)$ & No & Filtro de bloques & 2025 & Filtrado universal de dos etapas \\
+MSA & $O(H_{\text{kv}}d_{\text{idx}}N^2 + H_q d_h N k B_k)$ & Sí & Bloques top-$k$ & 2026 & Bloques dispersos con rama índice (desplegado 109B) \\
+SparDA & $O(H_{\text{kv}}d_f N N_b + H_q d_h N k B_k)$ & Sí & Pronóstico de bloques & 2026 & Selección desacoplada con prefetch anticipado \\
 \bottomrule
 \end{longtable}
 \normalsize

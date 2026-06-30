@@ -285,6 +285,16 @@ properties:
       | `sparsek_attn` | SparseK: differentiable top-k KV selection | ✅ | ✅ |
       | `sparge_attn` ⚠️ | SpargeAttn — **eval-only**, two-stage block pruning | ❌ | ✅ |
       | `fasa_attn` ⚠️ | FASA — **eval-only**, frequency-aware token selection | ❌ | ✅ |
+      | `msa_attn` | MiniMax Sparse Attention — block-sparse on GQA (arXiv:2606.13392) | ✅ | ✅ |
+      | `sparda_attn` | SparDA — decoupled sparse attention with a Forecast projection (arXiv:2606.04511) | ✅ | ✅ |
+      | `kda_attn` | Kimi Delta Attention — channel-wise decay + scalar write gate (arXiv:2510.26692) | ✅ | ✅ |
+      | `mla_attn` | Multi-Head Latent Attention + RoPE (arXiv:2506.09342) | ✅ | ✅ |
+      | `gqla_attn` | Group-Query Latent Attention — two decoding paths (arXiv:2605.15250) | ✅ | ✅ |
+      | `mlra_attn` | Multi-Head Low-Rank Attention — partitionable latent (arXiv:2603.02188) | ✅ | ✅ |
+      | `tucker_attn` | Tucker Attention — generalised low-rank factorisation (arXiv:2603.30033) | ✅ | ✅ |
+      | `iha_attn` | Interleaved Head Attention — cross-head pseudo-heads (arXiv:2602.21371) | ✅ | ✅ |
+      | `gta_attn` | Grouped-head laTenT Attention — shared map + latent values (arXiv:2506.17286) | ✅ | ✅ |
+      | `mtla_attn` | Multi-head Temporal Latent Attention — temporal KV merge (arXiv:2505.13544) | ✅ | ✅ |
 
       **Examples explained:**
       - `[standard_attn]` repeated 12 times: Classic BERT-like encoder. Simplest configuration, serves as a reliable baseline. All layers use full quadratic attention.
@@ -318,6 +328,16 @@ properties:
       | `sparsek_attn` | SparseK: selección top-k diferenciable | ✅ | ✅ |
       | `sparge_attn` ⚠️ | SpargeAttn — **solo evaluación** | ❌ | ✅ |
       | `fasa_attn` ⚠️ | FASA — **solo evaluación** | ❌ | ✅ |
+      | `msa_attn` | MiniMax Sparse Attention — bloques dispersos sobre GQA (arXiv:2606.13392) | ✅ | ✅ |
+      | `sparda_attn` | SparDA — atención dispersa desacoplada con proyección Forecast (arXiv:2606.04511) | ✅ | ✅ |
+      | `kda_attn` | Kimi Delta Attention — decaimiento canalizado + compuerta escalar (arXiv:2510.26692) | ✅ | ✅ |
+      | `mla_attn` | Multi-Head Latent Attention + RoPE (arXiv:2506.09342) | ✅ | ✅ |
+      | `gqla_attn` | Group-Query Latent Attention — dos rutas de decodificación (arXiv:2605.15250) | ✅ | ✅ |
+      | `mlra_attn` | Multi-Head Low-Rank Attention — latente particionable (arXiv:2603.02188) | ✅ | ✅ |
+      | `tucker_attn` | Tucker Attention — factorización de bajo rango generalizada (arXiv:2603.30033) | ✅ | ✅ |
+      | `iha_attn` | Interleaved Head Attention — pseudo-cabezas entre cabezas (arXiv:2602.21371) | ✅ | ✅ |
+      | `gta_attn` | Grouped-head laTenT Attention — mapa compartido + valores latentes (arXiv:2506.17286) | ✅ | ✅ |
+      | `mtla_attn` | Multi-head Temporal Latent Attention — fusión temporal de KV (arXiv:2505.13544) | ✅ | ✅ |
       **Ejemplos explicados:**
       - `[standard_attn]` repetido 12 veces: Encoder clásico tipo BERT. Configuración más simple, sirve como línea base confiable. Todas las capas usan atención cuadrática completa.
       - `[retnet, titan_attn, retnet, mamba, titan_attn, ode]` con `num_layers=6`: Arquitectura mixta que combina retención recurrente (largo alcance eficiente), atención Titan con codificación posicional (atención local precisa), Mamba SSM (modelado de secuencias en tiempo lineal) y ODE de profundidad continua. Cada posición recibe un tipo diferente de cómputo, permitiendo representaciones diversas.
@@ -350,6 +370,16 @@ properties:
         - gated_softmax_attn
         - engram_attn
         - gqa_attn
+        - mla_attn
+        - gqla_attn
+        - mlra_attn
+        - tucker_attn
+        - iha_attn
+        - gta_attn
+        - mtla_attn
+        - msa_attn
+        - sparda_attn
+        - kda_attn
     examples:
       - [retnet, titan_attn, retnet, mamba, titan_attn, ode]
       - [standard_attn]
@@ -877,3 +907,326 @@ properties:
       **Impacto:** Afecta qué tokens colisionan en el espacio hash. Usar 42 para reproducibilidad
       reproducibility. Change if adverse collisions are suspected.
     examples: [42]
+
+  # =====================================================================
+  # Latent / KV-compression attention family (arXiv:2506.09342, 2605.15250,
+  # 2603.02188, 2603.30033, 2602.21371, 2506.17286, 2505.13544)
+  # =====================================================================
+  mla_latent_rank:
+    type: integer
+    title: "MLA Latent Rank"
+    title_es: "Rango Latente MLA"
+    description: |-
+      Rank of the joint key-value latent for `mla_attn` (Multi-Head Latent
+      Attention, arXiv:2506.09342). The paper's Pareto-optimal setting is
+      `hidden_size // 2` with RoPE, which halves the KV cache while
+      matching MHA quality. Set to `null` (the default) to use
+      `hidden_size // 2`. Only applies when `mla_attn` appears in
+      `layer_pattern`.
+
+      **Examples explained:**
+      - `mla_latent_rank=384` with `hidden_size=768`: half-rank latent, the
+        paper's recommended setting. ~50% KV-cache reduction with negligible
+        quality loss on small models.
+      - `mla_latent_rank=192` with `hidden_size=768`: quarter-rank, more
+        aggressive compression. Larger quality impact, useful for very
+        cache-constrained deployment.
+      - `mla_latent_rank=null`: defaults to `hidden_size // 2`.
+    description_es: |-
+      Rango del latente conjunto clave-valor para `mla_attn` (Multi-Head
+      Latent Attention, arXiv:2506.09342). La configuración Pareto-óptima del
+      paper es `hidden_size // 2` con RoPE, lo que reduce a la mitad el caché
+      KV manteniendo la calidad de MHA. `null` (por defecto) usa
+      `hidden_size // 2`. Solo aplica cuando `mla_attn` está en `layer_pattern`.
+    examples: [384]
+  gqla_latent_rank:
+    type: integer
+    title: "GQLA Latent Rank"
+    title_es: "Rango Latente GQLA"
+    description: |-
+      Rank of the joint KV latent for `gqla_attn` (Group-Query Latent
+      Attention, arXiv:2605.15250). `null` defaults to `hidden_size // 2`.
+      Only applies when `gqla_attn` is in `layer_pattern`.
+    description_es: |-
+      Rango del latente KV conjunto para `gqla_attn` (Group-Query Latent
+      Attention, arXiv:2605.15250). `null` por defecto es `hidden_size // 2`.
+      Solo aplica cuando `gqla_attn` está en `layer_pattern`.
+    examples: [384]
+  gqla_num_groups:
+    type: integer
+    title: "GQLA Number of Groups"
+    title_es: "Número de Grupos GQLA"
+    description: |-
+      Number of GQA groups used by the expanded `gqa` decoding path of
+      `gqla_attn`. Must divide `num_heads` evenly. `null` defaults to
+      `num_heads // 4`. Only applies when `gqla_attn` is in `layer_pattern`.
+    description_es: |-
+      Número de grupos GQA usados por la ruta de decodificación `gqa`
+      expandida de `gqla_attn`. Debe dividir `num_heads`. `null` por
+      defecto es `num_heads // 4`. Solo aplica con `gqla_attn`.
+    examples: [4]
+  gqla_decode_path:
+    type: string
+    title: "GQLA Decode Path"
+    title_es: "Ruta de Decodificación GQLA"
+    description: |-
+      Selected decoding path for `gqla_attn`. `"mqa_absorb"` matches MLA's
+      absorbed MQA form (best for H100-class bandwidth). `"gqa"` expands the
+      latent into per-group full heads (best for commodity GPUs with MTP).
+      Both paths are algebraically equivalent for the forward output.
+    description_es: |-
+      Ruta de decodificación seleccionada para `gqla_attn`. `"mqa_absorb"`
+      corresponde a la forma MQA absorbida de MLA (mejor para H100).
+      `"gqa"` expande el latente en cabezas completas por grupo (mejor para
+      GPUs commodity con MTP). Ambas rutas son algebraicamente equivalentes.
+    enum: [mqa_absorb, gqa]
+    examples: [gqa]
+  mlra_latent_rank:
+    type: integer
+    title: "MLRA Latent Rank"
+    title_es: "Rango Latente MLRA"
+    description: |-
+      Total latent rank for `mlra_attn` (Multi-Head Low-Rank Attention,
+      arXiv:2603.02188), partitioned across `mlra_num_latent_heads`
+      sub-heads for tensor-parallel decoding. `null` defaults to
+      `hidden_size // 2`. Must be divisible by `mlra_num_latent_heads`.
+    description_es: |-
+      Rango latente total para `mlra_attn` (Multi-Head Low-Rank Attention,
+      arXiv:2603.02188), particionado entre `mlra_num_latent_heads`
+      sub-cabezas para decodificación tensor-paralela. `null` por defecto es
+      `hidden_size // 2`. Debe ser divisible por `mlra_num_latent_heads`.
+    examples: [384]
+  mlra_num_latent_heads:
+    type: integer
+    title: "MLRA Latent Heads"
+    title_es: "Cabezas Latentes MLRA"
+    description: |-
+      Number of disjoint latent sub-spaces for `mlra_attn`. Enables
+      partitionable 4-way tensor-parallel decoding (each device loads a
+      disjoint slice). Must divide `mlra_latent_rank` evenly. Default: 4.
+    description_es: |-
+      Número de sub-espacios latentes disjuntos para `mlra_attn`. Habilita
+      decodificación tensor-paralela de 4 vías (cada dispositivo carga un
+      slice disjunto). Debe dividir `mlra_latent_rank`. Por defecto: 4.
+    examples: [4]
+  tucker_query_rank:
+    type: integer
+    title: "Tucker Query Rank"
+    title_es: "Rango de Query Tucker"
+    description: |-
+      Tucker rank along the hidden axis for the query weight tensor of
+      `tucker_attn` (arXiv:2603.30033). `null` defaults to `hidden_size`
+      (recovers MHA query rank). Special cases: MHA = `hidden_size`;
+      MLA = latent rank.
+    description_es: |-
+      Rango Tucker a lo largo del eje oculto para el tensor de pesos de
+      query de `tucker_attn` (arXiv:2603.30033). `null` por defecto es
+      `hidden_size` (recupera el rango de query de MHA).
+    examples: [768]
+  tucker_key_rank:
+    type: integer
+    title: "Tucker Key Rank"
+    title_es: "Rango de Key Tucker"
+    description: |-
+      Tucker rank for the key weight tensor of `tucker_attn`. `null`
+      defaults to `hidden_size // 2`. Setting `key_rank = value_rank =
+      hidden_size` recovers MHA; setting both to a small latent rank
+      recovers MLA.
+    description_es: |-
+      Rango Tucker para el tensor de pesos de key de `tucker_attn`. `null`
+      por defecto es `hidden_size // 2`. Igualar `key_rank = value_rank =
+      hidden_size` recupera MHA; igualar ambos a un rango latente pequeño
+      recupera MLA.
+    examples: [384]
+  tucker_value_rank:
+    type: integer
+    title: "Tucker Value Rank"
+    title_es: "Rango de Value Tucker"
+    description: |-
+      Tucker rank for the value weight tensor of `tucker_attn`. `null`
+      defaults to `hidden_size // 2`. See `tucker_key_rank` for the
+      MHA/MLA special cases.
+    description_es: |-
+      Rango Tucker para el tensor de pesos de value de `tucker_attn`. `null`
+      por defecto es `hidden_size // 2`. Ver `tucker_key_rank` para los
+      casos especiales MHA/MLA.
+    examples: [384]
+  iha_num_pseudo_heads:
+    type: integer
+    title: "IHA Pseudo-Heads"
+    title_es: "Pseudo-Cabezas IHA"
+    description: |-
+      Number of pseudo-heads `P` per head for `iha_attn` (Interleaved Head
+      Attention, arXiv:2602.21371). Typically `P = num_heads`. Pseudo
+      Q/K/V are learned linear combinations of all `H` original heads,
+      inducing up to `P**2` attention patterns per head with modest
+      `O(H**2 * P)` parameter overhead. `null` defaults to `num_heads`.
+    description_es: |-
+      Número de pseudo-cabezas `P` por cabeza para `iha_attn` (Interleaved
+      Head Attention, arXiv:2602.21371). Típicamente `P = num_heads`. Las
+      pseudo Q/K/V son combinaciones lineales aprendidas de todas las `H`
+      cabezas originales, induciendo hasta `P**2` patrones de atención por
+      cabeza con overhead `O(H**2 * P)`. `null` por defecto es `num_heads`.
+    examples: [12]
+  gta_num_shared_groups:
+    type: integer
+    title: "GTA Shared Groups"
+    title_es: "Grupos Compartidos GTA"
+    description: |-
+      Number of head groups sharing a single attention map for `gta_attn`
+      (Grouped-head laTenT Attention, arXiv:2506.17286). Must divide
+      `num_heads`. `null` defaults to `num_heads // 4`. Smaller values =
+      more sharing = smaller key cache.
+    description_es: |-
+      Número de grupos de cabezas que comparten un único mapa de atención
+      para `gta_attn` (Grouped-head laTenT Attention, arXiv:2506.17286).
+      Debe dividir `num_heads`. `null` por defecto es `num_heads // 4`.
+      Valores menores = más compartir = menor caché de claves.
+    examples: [4]
+  gta_value_latent_rank:
+    type: integer
+    title: "GTA Value Latent Rank"
+    title_es: "Rango Latente de Value GTA"
+    description: |-
+      Rank of the value-cache latent for `gta_attn`. The value cache is
+      compressed by a down-projection and reconstructed by a non-linear
+      (silu) decoder. `null` defaults to `hidden_size // 2`.
+    description_es: |-
+      Rango del latente del caché de valores para `gta_attn`. El caché de
+      valores se comprime con una proyección de bajada y se reconstruye con
+      un decodificador no lineal (silu). `null` por defecto es
+      `hidden_size // 2`.
+    examples: [384]
+  mtla_latent_rank:
+    type: integer
+    title: "MTLA Latent Rank"
+    title_es: "Rango Latente MTLA"
+    description: |-
+      Latent rank along the feature axis for `mtla_attn` (Multi-head
+      Temporal Latent Attention, arXiv:2505.13544). `null` defaults to
+      `hidden_size // 2`.
+    description_es: |-
+      Rango latente a lo largo del eje de features para `mtla_attn`
+      (Multi-head Temporal Latent Attention, arXiv:2505.13544). `null` por
+      defecto es `hidden_size // 2`.
+    examples: [384]
+  mtla_merge_factor:
+    type: integer
+    title: "MTLA Merge Factor"
+    title_es: "Factor de Fusión MTLA"
+    description: |-
+      Number of consecutive KV cache entries merged into a single
+      temporal slot for `mtla_attn`. Shrinks the temporal length by this
+      factor. Must be >= 1. Default: 2.
+    description_es: |-
+      Número de entradas consecutivas del caché KV fusionadas en un único
+      slot temporal para `mtla_attn`. Reduce la longitud temporal por este
+      factor. Debe ser >= 1. Por defecto: 2.
+    examples: [2]
+  mtla_stride:
+    type: integer
+    title: "MTLA Stride"
+    title_es: "Stride MTLA"
+    description: |-
+      Stride between merged temporal slots for `mtla_attn`. `null`
+      defaults to `mtla_merge_factor`. Smaller stride = overlapping
+      windows; larger stride = non-overlapping.
+    description_es: |-
+      Stride entre slots temporales fusionados para `mtla_attn`. `null`
+      por defecto es `mtla_merge_factor`. Stride menor = ventanas
+      superpuestas; stride mayor = no superpuestas.
+    examples: [2]
+
+  # =====================================================================
+  # MiniMax Sparse Attention (arXiv:2606.13392) and SparDA (arXiv:2606.04511)
+  # =====================================================================
+  msa_block_size:
+    type: integer
+    title: "MSA Block Size"
+    title_es: "Tamaño de Bloque MSA"
+    description: |-
+      Block size `B_k` for `msa_attn` (MiniMax Sparse Attention,
+      arXiv:2606.13392). Tokens are partitioned into contiguous blocks of
+      this size; the Index Branch scores blocks and the Main Branch
+      attends to selected blocks. Paper default: 128.
+    description_es: |-
+      Tamaño de bloque `B_k` para `msa_attn` (MiniMax Sparse Attention,
+      arXiv:2606.13392). Los tokens se particionan en bloques contiguos de
+      este tamaño; la rama índice puntúa bloques y la rama principal atiende
+      a los seleccionados. Por defecto del paper: 128.
+    examples: [128]
+  msa_topk_blocks:
+    type: integer
+    title: "MSA Top-k Blocks"
+    title_es: "Top-k Bloques MSA"
+    description: |-
+      Number of blocks selected per GQA group per query for `msa_attn`.
+      The block containing the query is always forced into the selected
+      set. Paper default: 16 (giving a fixed 2048-token budget per
+      query at `block_size=128`).
+    description_es: |-
+      Número de bloques seleccionados por grupo GQA por consulta para
+      `msa_attn`. El bloque que contiene la consulta siempre se incluye.
+      Por defecto del paper: 16 (presupuesto fijo de 2048 tokens por
+      consulta con `block_size=128`).
+    examples: [16]
+  msa_index_dim:
+    type: integer
+    title: "MSA Index Head Dim"
+    title_es: "Dim de Cabeza Índice MSA"
+    description: |-
+      Dimensionality `d_idx` of the Index Branch heads for `msa_attn`.
+      Constraint: `num_kv_heads * d_idx << num_heads * head_dim`. Default:
+      64. The exact value is an appendix hyperparameter in the paper.
+    description_es: |-
+      Dimensionalidad `d_idx` de las cabezas de la rama índice para
+      `msa_attn`. Restricción: `num_kv_heads * d_idx << num_heads *
+      head_dim`. Por defecto: 64.
+    examples: [64]
+  msa_kl_loss_weight:
+    type: number
+    title: "MSA KL Loss Weight"
+    title_es: "Peso de Pérdida KL MSA"
+    description: |-
+      Weight `lambda` of the KL alignment loss that trains the Index Branch
+      of `msa_attn`. Set to 0 to disable (Index Branch then only learns via
+      the indexer warmup). The paper leaves the exact value to appendix
+      ablations. Default: 0.0.
+    description_es: |-
+      Peso `lambda` de la pérdida de alineación KL que entrena la rama
+      índice de `msa_attn`. 0 para deshabilitar. El paper deja el valor
+      exacto a ablacions del apéndice. Por defecto: 0.0.
+    examples: [0.0]
+  sparda_block_size:
+    type: integer
+    title: "SparDA Block Size"
+    title_es: "Tamaño de Bloque SparDA"
+    description: |-
+      KV block size for `sparda_attn` (SparDA, arXiv:2606.04511). The
+      Forecast projection scores blocks of this size. Default: 128.
+    description_es: |-
+      Tamaño de bloque KV para `sparda_attn` (SparDA, arXiv:2606.04511). La
+      proyección Forecast puntúa bloques de este tamaño. Por defecto: 128.
+    examples: [128]
+  sparda_topk_blocks:
+    type: integer
+    title: "SparDA Top-k Blocks"
+    title_es: "Top-k Bloques SparDA"
+    description: |-
+      Number of KV blocks selected per GQA group per query for
+      `sparda_attn`. Default: 16.
+    description_es: |-
+      Número de bloques KV seleccionados por grupo GQA por consulta para
+      `sparda_attn`. Por defecto: 16.
+    examples: [16]
+  sparda_forecast_dim:
+    type: integer
+    title: "SparDA Forecast Dim"
+    title_es: "Dim de Forecast SparDA"
+    description: |-
+      Dimensionality of the Forecast projection for `sparda_attn`. One
+      Forecast head per GQA group. Default: 64.
+    description_es: |-
+      Dimensionalidad de la proyección Forecast para `sparda_attn`. Una
+      cabeza Forecast por grupo GQA. Por defecto: 64.
+    examples: [64]

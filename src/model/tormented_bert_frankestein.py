@@ -40,6 +40,18 @@ Supported attention mixer families (20+):
   ``fox_attn``, ``gated_softmax_attn``.
 * ``engram_attn`` — Engram conditional memory via scalable lookup.
 * ``gqa_attn`` — Grouped-Query Attention (GQA; Ainslie et al. 2023).
+* Latent family (7 variants): ``mla_attn`` (Multi-Head Latent
+  Attention + RoPE, arXiv:2506.09342), ``gqla_attn`` (Group-Query
+  Latent Attention, arXiv:2605.15250), ``mlra_attn`` (Multi-Head
+  Low-Rank Attention, arXiv:2603.02188), ``tucker_attn`` (Tucker
+  Attention, arXiv:2603.30033), ``iha_attn`` (Interleaved Head
+  Attention, arXiv:2602.21371), ``gta_attn`` (Grouped-head laTenT
+  Attention, arXiv:2506.17286), ``mtla_attn`` (Multi-head Temporal
+  Latent Attention, arXiv:2505.13544).
+* Extended sparse family: ``msa_attn`` (MiniMax Sparse Attention,
+  arXiv:2606.13392), ``sparda_attn`` (SparDA, arXiv:2606.04511).
+* Extended gated family: ``kda_attn`` (Kimi Delta Attention,
+  arXiv:2510.26692).
 
 Training-free policy: ``fasa_attn`` and ``sparge_attn`` raise a RuntimeError
 when called in training mode; they are eval/inference-only blocks.
@@ -76,13 +88,25 @@ from .attention.sparse import (
     BigBirdAttention,
     FASAAttention,
     LongformerAttention,
+    MSAAttention,
     NSAAttention,
     SparseKAttention,
     SparseTransformerAttention,
     SpargeAttention,
+    SparDAAttention,
 )
 from .attention.standard import StandardAttention
 from .attention.titan import TitanAttention
+from .attention.gated import KDAAttention
+from .attention.latent import (
+    GTAAttention,
+    GQLAAttention,
+    IHAAttention,
+    MLAAttention,
+    MLRAAttention,
+    MTLAAttention,
+    TuckerAttention,
+)
 from .embeddings import FactorizedEmbedding
 
 
@@ -113,8 +137,12 @@ class UltraConfig:
             ``"deltanet_attn"``, ``"gated_deltanet_attn"``,
             ``"gated_deltanet2_attn"``,
             ``"hgrn2_attn"``, ``"fox_attn"``, ``"gated_softmax_attn"``,
-            ``"engram_attn"``, ``"gqa_attn"``. Default: ``["retnet", "ode", "mamba",
-            "titan_attn"] * 3``.
+            ``"kda_attn"``,
+            ``"engram_attn"``, ``"gqa_attn"``,
+            ``"mla_attn"``, ``"gqla_attn"``, ``"mlra_attn"``,
+            ``"tucker_attn"``, ``"iha_attn"``, ``"gta_attn"``,
+            ``"mtla_attn"``, ``"msa_attn"``, ``"sparda_attn"``.
+            Default: ``["retnet", "ode", "mamba", "titan_attn"] * 3``.
         ode_solver: ODE solver for ``ode`` mixer layers. One of ``"rk4"``
             (Runge-Kutta 4th order) or ``"euler"``. Default: ``"rk4"``.
         ode_steps: Number of ODE integration steps per ``ode`` layer.
@@ -241,6 +269,46 @@ class UltraConfig:
 
     num_kv_heads: int = 1
 
+    # ---- MLA (arXiv:2506.09342) ----
+    mla_latent_rank: Optional[int] = None
+
+    # ---- GQLA (arXiv:2605.15250) ----
+    gqla_latent_rank: Optional[int] = None
+    gqla_num_groups: Optional[int] = None
+    gqla_decode_path: str = "gqa"
+
+    # ---- MLRA (arXiv:2603.02188) ----
+    mlra_latent_rank: Optional[int] = None
+    mlra_num_latent_heads: int = 4
+
+    # ---- Tucker Attention (arXiv:2603.30033) ----
+    tucker_query_rank: Optional[int] = None
+    tucker_key_rank: Optional[int] = None
+    tucker_value_rank: Optional[int] = None
+
+    # ---- IHA (arXiv:2602.21371) ----
+    iha_num_pseudo_heads: Optional[int] = None
+
+    # ---- GTA (arXiv:2506.17286) ----
+    gta_num_shared_groups: Optional[int] = None
+    gta_value_latent_rank: Optional[int] = None
+
+    # ---- MTLA (arXiv:2505.13544) ----
+    mtla_latent_rank: Optional[int] = None
+    mtla_merge_factor: int = 2
+    mtla_stride: Optional[int] = None
+
+    # ---- MSA / MiniMax Sparse Attention (arXiv:2606.13392) ----
+    msa_block_size: int = 128
+    msa_topk_blocks: int = 16
+    msa_index_dim: int = 64
+    msa_kl_loss_weight: float = 0.0
+
+    # ---- SparDA (arXiv:2606.04511) ----
+    sparda_block_size: int = 128
+    sparda_topk_blocks: int = 16
+    sparda_forecast_dim: int = 64
+
     def __post_init__(self):
         """Validate and derive dependent configuration fields after dataclass init.
 
@@ -253,6 +321,33 @@ class UltraConfig:
         """
         if self.ffn_hidden_size is None:
             self.ffn_hidden_size = self.hidden_size * 2
+
+        # ---- Resolve latent-family ranks that default to hidden_size // 2 ----
+        half = max(1, self.hidden_size // 2)
+        if self.mla_latent_rank is None:
+            self.mla_latent_rank = half
+        if self.gqla_latent_rank is None:
+            self.gqla_latent_rank = half
+        if self.gqla_num_groups is None:
+            self.gqla_num_groups = max(1, self.num_heads // 4)
+        if self.mlra_latent_rank is None:
+            self.mlra_latent_rank = half
+        if self.tucker_query_rank is None:
+            self.tucker_query_rank = self.hidden_size
+        if self.tucker_key_rank is None:
+            self.tucker_key_rank = half
+        if self.tucker_value_rank is None:
+            self.tucker_value_rank = half
+        if self.iha_num_pseudo_heads is None:
+            self.iha_num_pseudo_heads = self.num_heads
+        if self.gta_num_shared_groups is None:
+            self.gta_num_shared_groups = max(1, self.num_heads // 4)
+        if self.gta_value_latent_rank is None:
+            self.gta_value_latent_rank = half
+        if self.mtla_latent_rank is None:
+            self.mtla_latent_rank = half
+        if self.mtla_stride is None:
+            self.mtla_stride = self.mtla_merge_factor
 
         if self.positional_encoding is None:
             self.positional_encoding = "hope" if bool(self.use_hope) else "rope"
@@ -359,8 +454,18 @@ class HybridLayer(nn.Module):
             "hgrn2_attn": HGRN2Attention,
             "fox_attn": ForgettingAttention,
             "gated_softmax_attn": GatedSoftmaxAttention,
+            "kda_attn": KDAAttention,
             "engram_attn": EngramLayer,
             "gqa_attn": GroupedQueryAttention,
+            "mla_attn": MLAAttention,
+            "gqla_attn": GQLAAttention,
+            "mlra_attn": MLRAAttention,
+            "tucker_attn": TuckerAttention,
+            "iha_attn": IHAAttention,
+            "gta_attn": GTAAttention,
+            "mtla_attn": MTLAAttention,
+            "msa_attn": MSAAttention,
+            "sparda_attn": SparDAAttention,
         }
 
         if layer_type == "mamba":

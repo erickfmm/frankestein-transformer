@@ -11,10 +11,12 @@ if TORCH_AVAILABLE:
         BigBirdAttention,
         FASAAttention,
         LongformerAttention,
+        MSAAttention,
         NSAAttention,
         SparseKAttention,
         SparseTransformerAttention,
         SpargeAttention,
+        SparDAAttention,
     )
 
 
@@ -173,6 +175,48 @@ class FASAAttentionTests(unittest.TestCase):
         attn.eval()
         with torch.no_grad():
             self.assertEqual(attn(_x()).shape, (BSZ, SEQ, DIM))
+
+
+@unittest.skipUnless(TORCH_AVAILABLE, "torch required")
+class MSAAttentionTests(unittest.TestCase):
+    def test_output_shape(self):
+        attn = MSAAttention(_cfg(num_kv_heads=2, msa_block_size=4, msa_topk_blocks=2))
+        self.assertEqual(attn(_x()).shape, (BSZ, SEQ, DIM))
+
+    def test_decoder_mode(self):
+        attn = MSAAttention(_cfg(num_kv_heads=2, msa_block_size=4, msa_topk_blocks=2, mode="decoder"))
+        self.assertEqual(attn(_x()).shape, (BSZ, SEQ, DIM))
+
+    def test_gradient_flows(self):
+        attn = MSAAttention(_cfg(num_kv_heads=2, msa_block_size=4, msa_topk_blocks=2))
+        x = _x().requires_grad_(True)
+        attn(x).sum().backward()
+        self.assertIsNotNone(x.grad)
+
+    def test_invalid_kv_heads_raises(self):
+        with self.assertRaises(ValueError):
+            MSAAttention(_cfg(num_kv_heads=4))  # 4 does not divide 6
+
+
+@unittest.skipUnless(TORCH_AVAILABLE, "torch required")
+class SparDAAttentionTests(unittest.TestCase):
+    def test_output_shape(self):
+        attn = SparDAAttention(_cfg(num_kv_heads=2, sparda_block_size=4, sparda_topk_blocks=2))
+        self.assertEqual(attn(_x()).shape, (BSZ, SEQ, DIM))
+
+    def test_decoder_mode(self):
+        attn = SparDAAttention(_cfg(num_kv_heads=2, sparda_block_size=4, sparda_topk_blocks=2, mode="decoder"))
+        self.assertEqual(attn(_x()).shape, (BSZ, SEQ, DIM))
+
+    def test_gradient_flows(self):
+        attn = SparDAAttention(_cfg(num_kv_heads=2, sparda_block_size=4, sparda_topk_blocks=2))
+        x = _x().requires_grad_(True)
+        attn(x).sum().backward()
+        self.assertIsNotNone(x.grad)
+
+    def test_invalid_kv_heads_raises(self):
+        with self.assertRaises(ValueError):
+            SparDAAttention(_cfg(num_kv_heads=4))
 
 
 if __name__ == "__main__":

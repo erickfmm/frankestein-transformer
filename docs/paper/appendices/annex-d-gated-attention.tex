@@ -442,6 +442,65 @@ Memory & Constant $\mathcal{O}(d^2)$ inference state. & Neg-eigenvalue erase ran
 
 \normalsize
 
+\subsection{8. Kimi Delta Attention (KDA): Channel-wise Decay Gating for the Delta Rule}
+
+\subsubsection{Mathematical Foundation}
+
+Kimi Delta Attention \citep{kimi_kda_2025} is the core module of Kimi Linear and extends Gated DeltaNet with a finer-grained \textbf{channel-wise decay gate}. Where Gated DeltaNet uses a single scalar per-head decay $\alpha_t$ alongside the scalar delta write gate $\beta_t$, KDA replaces the scalar decay with a \textbf{per-key-channel} decay $\boldsymbol{\alpha}_t \in \mathbb{R}^{d_k}$, parameterised through a log-decay formulation and applied as a diagonal matrix $\mathbf{D}_t = \mathrm{diag}(\boldsymbol{\alpha}_t)$ before the delta-rule update. The delta rule itself retains a scalar per-head write gate $\beta_t$:
+\[
+\mathbf{S}_t = (\mathbf{I} - \beta_t \mathbf{k}_t \mathbf{k}_t^\top)\, \mathbf{D}_t\, \mathbf{S}_{t-1} + \beta_t \mathbf{v}_t \mathbf{k}_t^\top, \qquad \mathbf{o}_t = \mathbf{S}_t^\top \mathbf{q}_t
+\]
+The channel-wise decay follows a log-decay parameterisation (computed in fp32 for numerical stability over long cumulative products):
+\[
+\mathbf{g} = \mathbf{a} - \mathrm{softplus}(\boldsymbol{\delta}), \qquad \boldsymbol{\alpha}_t = \exp(\mathbf{g})
+\]
+where $\mathbf{a}$ and $\boldsymbol{\delta}$ are learned per-channel parameters. This gives each key channel an independent forgetting timescale, allowing the model to retain some channels longer than others within the same head.
+
+\paragraph{Reduction to Gated DeltaNet}: When $\boldsymbol{\alpha}_t$ collapses to a scalar (i.e., all channels share the same decay), KDA reduces exactly to Gated DeltaNet. The channel-wise decay is thus a strict generalisation that adds per-channel selectivity on top of the scalar decay/write gating of Gated DeltaNet.
+
+\paragraph{Chunkwise training}: A bespoke chunkwise algorithm uses a specialised \textbf{Diagonal-Plus-Low-Rank (DPLR)} variant of the transition matrix to remain hardware-efficient. The product of per-step transitions $(\mathbf{I} - \beta_t \mathbf{k}_t \mathbf{k}_t^\top)\mathbf{D}_t$ admits a DPLR decomposition that allows matmul-rich parallelism on tensor cores while preserving the channel-wise decay structure.
+
+\begin{algorithm}[H]
+\caption{Kimi Delta Attention Recurrent Forward (Reference Form)}
+\begin{algorithmic}[1]
+\Require Input $\mathbf{x}_t$; prior state $\mathbf{S}_{t-1} \in \mathbb{R}^{d_k \times d_v}$
+\Require Projections: $W_q, W_k, W_v, W_\beta$; log-decay parameters $\mathbf{a}, \boldsymbol{\delta}$
+\Ensure Output $\mathbf{o}_t$ and state $\mathbf{S}_t$
+\State $\mathbf{q}_t \gets W_q \mathbf{x}_t$, $\mathbf{k}_t \gets W_k \mathbf{x}_t$, $\mathbf{v}_t \gets W_v \mathbf{x}_t$
+\State $\beta_t \gets \mathrm{sigmoid}(W_\beta \mathbf{x}_t)$ \Comment{scalar per-head write gate}
+\State $\boldsymbol{\alpha}_t \gets \exp(\mathbf{a} - \mathrm{softplus}(\boldsymbol{\delta}))$ \Comment{channel-wise decay, fp32}
+\State $\mathbf{D}_t \gets \mathrm{diag}(\boldsymbol{\alpha}_t)$ \Comment{diagonal decay matrix}
+\State Decay state: $\mathbf{S}_t \gets \mathbf{D}_t \mathbf{S}_{t-1}$
+\State Read: $\mathbf{r}_t \gets \mathbf{S}_t^\top \mathbf{k}_t$ \Comment{current prediction along key}
+\State Delta-rule update: $\mathbf{S}_t \gets \mathbf{S}_t - \beta_t \mathbf{k}_t \mathbf{r}_t^\top + \beta_t \mathbf{v}_t \mathbf{k}_t^\top$
+\State Retrieve: $\mathbf{o}_t \gets \mathbf{S}_t^\top \mathbf{q}_t$
+\State Output gating: $\mathbf{o}_t \gets \mathrm{GroupNorm}(\mathbf{o}_t) \odot \mathrm{silu}(W_g \mathbf{x}_t)$
+\State \Return $\mathbf{o}_t$, $\mathbf{S}_t$
+\end{algorithmic}
+\end{algorithm}
+
+\subsubsection{Empirical Performance and Trade-offs}
+
+KDA is deployed in Kimi Linear, a hybrid model (3B activated / 48B total parameters) combining KDA layers with Multi-head Latent Attention (MLA). Kimi Linear outperforms a full-MLA baseline across all evaluated tasks, reduces the KV cache by up to $75\%$, and achieves up to $6\times$ decoding throughput for 1M-token context. The channel-wise decay is the principal driver of the gain: it allows fine-grained control over which key channels persist, improving long-context recall relative to scalar-decay Gated DeltaNet.
+
+\begin{table}[H]
+\centering
+\footnotesize
+\begin{tabularx}{\linewidth}{lXX}
+\toprule
+\textbf{Aspect} & \textbf{Strength} & \textbf{Limitation} \\
+\midrule
+Recall & Channel-wise decay improves long-context recall over scalar-decay baselines; deployed in Kimi Linear (3B/48B hybrid). & Recurrent matrix state $\mathcal{O}(d^2)$ is heavier than diagonal-gated linear attention. \\
+Throughput & Up to $6\times$ decoding throughput at 1M context; $75\%$ KV cache reduction vs full MLA. & Requires DPLR-aware chunkwise kernels for hardware efficiency. \\
+Memory & Constant $\mathcal{O}(d^2)$ inference state (matrix recurrent). & Log-decay fp32 computation adds overhead; reduction to Gated DeltaNet loses channel selectivity. \\
+\bottomrule
+\end{tabularx}
+\caption{KDA trade-offs in Kimi Linear (3B activated / 48B total) \citep{kimi_kda_2025}.}
+\label{tab:kda-tradeoffs}
+\end{table}
+
+\normalsize
+
 \subsection{Comparative Analysis: Taxonomy of Gated Mechanisms}
 
 \footnotesize
@@ -458,6 +517,7 @@ HGRN2 & 2024 & Matrix (recurrent) & Diagonal (bounded) & $\mathcal{O}(Ld^2)$ & $
 FoX & 2025 & Full attention & Logit-space bias & $\mathcal{O}(L^2d)$ & $\mathcal{O}(L)$ KV cache & \citep{lin_forgetting_transformer_2025} \\
 Gated Softmax & 2025 & Full attention & Post-SDPA sigmoid & $\mathcal{O}(L^2d)$ & $\mathcal{O}(L)$ KV cache & \citep{qiu_gated_attention_2025} \\
 Gated DeltaNet-2 & 2026 & Matrix (recurrent) & Decoupled erase + write (channel-wise) & $\mathcal{O}(Ld^2)$ & $\mathcal{O}(d^2)$ memory & \citep{hatamizadeh_gated_deltanet2_2026} \\
+KDA & 2025 & Matrix (recurrent) & Channel-wise decay + scalar write & $\mathcal{O}(Ld^2)$ & $\mathcal{O}(d^2)$ memory & \citep{kimi_kda_2025} \\
 \bottomrule
 \end{longtable}
 \normalsize
@@ -478,6 +538,7 @@ HGRN2 & Yes & Moderate & Weak & Moderate & Multi-scale temporal modeling \\
 FoX & Yes & Very strong & Very strong (near-perfect) & Excellent & Preserve softmax; minimal overhead \\
 Gated Softmax & Yes & Strong & Good & Good & Simplicity; no replacement of SDPA \\
 Gated DeltaNet-2 & Yes & Very strong & Very strong & Excellent & Decoupled channel-wise erase/write; best RULER multi-key \\
+KDA & Yes & Very strong & Very strong & Excellent & Channel-wise decay; deployed in Kimi Linear (75\% KV reduction, $6\times$ decode) \\
 \bottomrule
 \end{longtable}
 \normalsize
@@ -498,6 +559,7 @@ HGRN2 & Medium-High & $O(d^2)$ constant & Multi-scale temporal patterns \\
 FoX & Moderate (quadratic) & $O(Ld)$ KV cache & Length extrapolation; long-context generation \\
 Gated Softmax & High (minimal overhead) & $O(Ld)$ KV cache & Drop-in improvement for existing models \\
 Gated DeltaNet-2 & High (near-flat scaling) & $O(d^2)$ constant & Long-context retrieval; multi-key NIAH \\
+KDA & High (up to $6\times$ decode at 1M) & $O(d^2)$ constant & Production hybrid (Kimi Linear); long-context decode \\
 \bottomrule
 \end{longtable}
 \normalsize

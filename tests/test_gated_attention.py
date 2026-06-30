@@ -15,6 +15,7 @@ if TORCH_AVAILABLE:
         HGRN2Attention,
         ForgettingAttention,
         GatedSoftmaxAttention,
+        KDAAttention,
     )
 
 
@@ -161,6 +162,27 @@ class GatedSoftmaxAttentionTests(unittest.TestCase):
         x = _x().requires_grad_(True)
         attn(x).sum().backward()
         self.assertIsNotNone(x.grad)
+
+
+@unittest.skipUnless(TORCH_AVAILABLE, "torch required")
+class KDAAttentionTests(unittest.TestCase):
+    def test_output_shape(self):
+        attn = KDAAttention(_cfg())
+        self.assertEqual(attn(_x()).shape, (BSZ, SEQ, DIM))
+
+    def test_decoder_mode(self):
+        attn = KDAAttention(_cfg(mode="decoder"))
+        self.assertEqual(attn(_x()).shape, (BSZ, SEQ, DIM))
+
+    def test_gradient_flows(self):
+        attn = KDAAttention(_cfg())
+        x = _x().requires_grad_(True)
+        attn(x).sum().backward()
+        self.assertIsNotNone(x.grad)
+
+    def test_invalid_hidden_raises(self):
+        with self.assertRaises(ValueError):
+            KDAAttention(_cfg(hidden_size=50, num_heads=6))
 
 
 if __name__ == "__main__":

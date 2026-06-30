@@ -445,6 +445,65 @@ Memoria & Estado de inferencia constante $\mathcal{O}(d^2)$. & Rango de borrado 
 
 \normalsize
 
+\subsection{8. Kimi Delta Attention (KDA): Compuerta de Decaimiento Canalizada para la Regla Delta}
+
+\subsubsection{Fundamento Matemático}
+
+Kimi Delta Attention \citep{kimi_kda_2025} es el módulo central de Kimi Linear y extiende Gated DeltaNet con una \textbf{compuerta de decaimiento canalizada} de grano más fino. Mientras que Gated DeltaNet usa un único decaimiento escalar por cabeza $\alpha_t$ junto con la compuerta escalar de escritura delta $\beta_t$, KDA reemplaza el decaimiento escalar con un decaimiento \textbf{por canal de clave} $\boldsymbol{\alpha}_t \in \mathbb{R}^{d_k}$, parametrizado mediante una formulación de log-decaimiento y aplicado como una matriz diagonal $\mathbf{D}_t = \mathrm{diag}(\boldsymbol{\alpha}_t)$ antes de la actualización de la regla delta. La regla delta en sí retiene una compuerta de escritura escalar por cabeza $\beta_t$:
+\[
+\mathbf{S}_t = (\mathbf{I} - \beta_t \mathbf{k}_t \mathbf{k}_t^\top)\, \mathbf{D}_t\, \mathbf{S}_{t-1} + \beta_t \mathbf{v}_t \mathbf{k}_t^\top, \qquad \mathbf{o}_t = \mathbf{S}_t^\top \mathbf{q}_t
+\]
+El decaimiento canalizado sigue una parametrización de log-decaimiento (calculada en fp32 por estabilidad numérica en productos acumulativos largos):
+\[
+\mathbf{g} = \mathbf{a} - \mathrm{softplus}(\boldsymbol{\delta}), \qquad \boldsymbol{\alpha}_t = \exp(\mathbf{g})
+\]
+donde $\mathbf{a}$ y $\boldsymbol{\delta}$ son parámetros aprendidos por canal. Esto da a cada canal de clave una escala temporal de olvido independiente, permitiendo al modelo retener algunos canales más tiempo que otros dentro de la misma cabeza.
+
+\paragraph{Reducción a Gated DeltaNet}: Cuando $\boldsymbol{\alpha}_t$ colapsa a un escalar (es decir, todos los canales comparten el mismo decaimiento), KDA se reduce exactamente a Gated DeltaNet. El decaimiento canalizado es por tanto una generalización estricta que añade selectividad por canal sobre el decaimiento/escritura escalares de Gated DeltaNet.
+
+\paragraph{Entrenamiento por fragmentos}: Un algoritmo por fragmentos ad hoc usa una variante \textbf{Diagonal-Plus-Low-Rank (DPLR)} especializada de la matriz de transición para mantener la eficiencia en hardware. El producto de las transiciones por paso $(\mathbf{I} - \beta_t \mathbf{k}_t \mathbf{k}_t^\top)\mathbf{D}_t admite una descomposición DPLR que permite paralelismo rico en matmuls en tensor cores preservando la estructura de decaimiento canalizado.
+
+\begin{algorithm}[H]
+\caption{Avance Recurrente de Kimi Delta Attention (Forma de Referencia)}
+\begin{algorithmic}[1]
+\Require Entrada $\mathbf{x}_t$; estado previo $\mathbf{S}_{t-1} \in \mathbb{R}^{d_k \times d_v}$
+\Require Proyecciones: $W_q, W_k, W_v, W_\beta$; parámetros de log-decaimiento $\mathbf{a}, \boldsymbol{\delta}$
+\Ensure Salida $\mathbf{o}_t$ y estado $\mathbf{S}_t$
+\State $\mathbf{q}_t \gets W_q \mathbf{x}_t$, $\mathbf{k}_t \gets W_k \mathbf{x}_t$, $\mathbf{v}_t \gets W_v \mathbf{x}_t$
+\State $\beta_t \gets \mathrm{sigmoid}(W_\beta \mathbf{x}_t)$ \Comment{compuerta de escritura escalar por cabeza}
+\State $\boldsymbol{\alpha}_t \gets \exp(\mathbf{a} - \mathrm{softplus}(\boldsymbol{\delta}))$ \Comment{decaimiento canalizado, fp32}
+\State $\mathbf{D}_t \gets \mathrm{diag}(\boldsymbol{\alpha}_t)$ \Comment{matriz diagonal de decaimiento}
+\State Decaer estado: $\mathbf{S}_t \gets \mathbf{D}_t \mathbf{S}_{t-1}$
+\State Lectura: $\mathbf{r}_t \gets \mathbf{S}_t^\top \mathbf{k}_t$ \Comment{predicción actual a lo largo de la clave}
+\State Actualización delta: $\mathbf{S}_t \gets \mathbf{S}_t - \beta_t \mathbf{k}_t \mathbf{r}_t^\top + \beta_t \mathbf{v}_t \mathbf{k}_t^\top$
+\State Recuperar: $\mathbf{o}_t \gets \mathbf{S}_t^\top \mathbf{q}_t$
+\State Compuerta de salida: $\mathbf{o}_t \gets \mathrm{GroupNorm}(\mathbf{o}_t) \odot \mathrm{silu}(W_g \mathbf{x}_t)$
+\State \Return $\mathbf{o}_t$, $\mathbf{S}_t$
+\end{algorithmic}
+\end{algorithm}
+
+\subsubsection{Rendimiento Empírico y Compromisos}
+
+KDA está desplegado en Kimi Linear, un modelo híbrido (3B activados / 48B parámetros totales) que combina capas KDA con Multi-head Latent Attention (MLA). Kimi Linear supera a un baseline de MLA completa en todas las tareas evaluadas, reduce el caché KV hasta un $75\%$, y logra hasta $6\times$ de throughput de decodificación para contexto de 1M de tokens. El decaimiento canalizado es el principal impulsor de la ganancia: permite control fino sobre qué canales de clave persisten, mejorando el recuerdo de contexto largo frente a Gated DeltaNet con decaimiento escalar.
+
+\begin{table}[H]
+\centering
+\footnotesize
+\begin{tabularx}{\linewidth}{lXX}
+\toprule
+\textbf{Aspecto} & \textbf{Fortaleza} & \textbf{Limitación} \\
+\midrule
+Recuperación & El decaimiento canalizado mejora el recuerdo de contexto largo frente a baselines de decaimiento escalar; desplegado en Kimi Linear (híbrido 3B/48B). & El estado recurrente matricial $\mathcal{O}(d^2)$ es más pesado que la atención lineal con compuerta diagonal. \\
+Rendimiento & Hasta $6\times$ de throughput de decodificación a 1M de contexto; $75\%$ de reducción de caché KV frente a MLA completa. & Requiere kernels por fragmentos conscientes de DPLR para eficiencia en hardware. \\
+Memoria & Estado de inferencia constante $\mathcal{O}(d^2)$ (recurrente matricial). & El cálculo log-decaimiento en fp32 añade sobrecarga; la reducción a Gated DeltaNet pierde selectividad por canal. \\
+\bottomrule
+\end{tabularx}
+\caption{Compromisos de KDA en Kimi Linear (3B activados / 48B total) \citep{kimi_kda_2025}.}
+\label{tab:kda-tradeoffs-es}
+\end{table}
+
+\normalsize
+
 \subsection{Análisis Comparativo: Taxonomía de Mecanismos con Compuerta}
 
 \footnotesize
@@ -461,6 +520,7 @@ HGRN2 & 2024 & Matriz (recurrente) & Diagonal (acotada) & $\mathcal{O}(Ld^2)$ & 
 FoX & 2025 & Atención completa & Sesgo en espacio de logits & $\mathcal{O}(L^2d)$ & $\mathcal{O}(L)$ caché KV & \citep{lin_forgetting_transformer_2025} \\
 Gated Softmax & 2025 & Atención completa & Sigmoide post-SDPA & $\mathcal{O}(L^2d)$ & $\mathcal{O}(L)$ caché KV & \citep{qiu_gated_attention_2025} \\
 Gated DeltaNet-2 & 2026 & Matriz (recurrente) & Borrado + escritura decouplados (canalizado) & $\mathcal{O}(Ld^2)$ & $\mathcal{O}(d^2)$ memoria & \citep{hatamizadeh_gated_deltanet2_2026} \\
+KDA & 2025 & Matriz (recurrente) & Decaimiento canalizado + escritura escalar & $\mathcal{O}(Ld^2)$ & $\mathcal{O}(d^2)$ memoria & \citep{kimi_kda_2025} \\
 \bottomrule
 \end{longtable}
 \normalsize
@@ -481,6 +541,7 @@ HGRN2 & Sí & Moderada & Débil & Moderada & Modelado temporal multi-escala \\
 FoX & Sí & Muy fuerte & Muy fuerte (casi perfecta) & Excelente & Preserva softmax; sobrecarga mínima \\
 Gated Softmax & Sí & Fuerte & Buena & Buena & Simplicidad; no reemplaza SDPA \\
 Gated DeltaNet-2 & Sí & Muy fuerte & Muy fuerte & Excelente & Borrado/escritura canalizados decouplados; mejor RULER multi-key \\
+KDA & Sí & Muy fuerte & Muy fuerte & Excelente & Decaimiento canalizado; desplegado en Kimi Linear (75\% reducción KV, $6\times$ decodificación) \\
 \bottomrule
 \end{longtable}
 \normalsize
@@ -501,6 +562,7 @@ HGRN2 & Medio-Alto & $O(d^2)$ constante & Patrones temporales multi-escala \\
 FoX & Moderado (cuadrático) & $O(Ld)$ caché KV & Extrapolación de longitud; generación de contexto largo \\
 Gated Softmax & Alto (sobrecarga mínima) & $O(Ld)$ caché KV & Mejora directa para modelos existentes \\
 Gated DeltaNet-2 & Alto (escalado casi plano) & $O(d^2)$ constante & Recuperación de contexto largo; multi-key NIAH \\
+KDA & Alto (hasta $6\times$ decodificación a 1M) & $O(d^2)$ constante & Producción híbrida (Kimi Linear); decodificación de contexto largo \\
 \bottomrule
 \end{longtable}
 \normalsize

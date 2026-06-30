@@ -462,6 +462,111 @@ where $m_{\text{old}}, m_{\text{new}}$ are online softmax running maxima (comput
     \item \textbf{Limitation}: Speedup depends on inherent sparsity; block-level granularity may miss finer patterns; threshold tuning required per model family.
 \end{itemize}
 
+\subsection{MSA (MiniMax Sparse Attention): Blockwise Sparse Attention with Lightweight Index Branch}
+
+\subsubsection{Mathematical Formulation}
+
+MSA \citep{lai_minimax_2026} is a blockwise sparse attention mechanism built on grouped-query attention (GQA) that combines a lightweight \textbf{Index Branch} for block selection with a \textbf{Main Branch} for exact block-sparse softmax attention over the selected blocks. Let $N$ be the sequence length, $B_k = 128$ the block size, and $k = 16$ the number of blocks selected per query (yielding a fixed per-query budget of $k \cdot B_k = 2048$ tokens regardless of $N$).
+
+\paragraph{Index Branch}: A low-dimensional projection produces index queries $\mathbf{q}_t^{\text{idx}} \in \mathbb{R}^{d_{\text{idx}}}$ and block representatives $\mathbf{r}_b \in \mathbb{R}^{d_{\text{idx}}}$ for each KV block $b$. The index scores per GQA group are:
+\[
+s_{t,b}^{(g)} = \mathbf{q}_t^{\text{idx},(g)} \cdot \mathbf{r}_b, \qquad \mathcal{I}_t^{(g)} = \mathrm{TopK}\left(\{s_{t,b}^{(g)}\}_{b=1}^{N/B_k},\; k\right)
+\]
+The index input is \textbf{detached} (stop-gradient), so gradients do not flow back through the indexer's input; the Index Branch is trained instead by a KL alignment loss between its attention distribution and the Main Branch's distribution. Because softmax is order-preserving, the raw index scores feed directly into the top-$k$ operator \emph{without} an explicit softmax (\textbf{exp-free top-$k$}), reducing numerical cost.
+
+\paragraph{Forced local block}: The block containing the query position $t$ is \textbf{always} included in $\mathcal{I}_t^{(g)}$, guaranteeing local context coverage.
+
+\paragraph{Main Branch}: Standard scaled dot-product attention is computed exactly over the union of selected blocks:
+\[
+\mathbf{o}_t^{(h)} = \mathrm{softmax}\left(\frac{\mathbf{q}_t^{(h)} \mathbf{K}_{\mathcal{I}_t}^{(h)\top}}{\sqrt{d_h}}\right) \mathbf{V}_{\mathcal{I}_t}^{(h)}
+\]
+where $\mathbf{K}_{\mathcal{I}_t}, \mathbf{V}_{\mathcal{I}_t}$ gather the full-precision key/value tensors of the selected blocks. Selection is performed independently per GQA group, so different query groups within the same layer may attend to different block subsets.
+
+\subsubsection{Algorithmic Pseudocode}
+
+\begin{algorithm}[H]
+\caption{MSA: MiniMax Sparse Attention with Index + Main Branches}
+\begin{algorithmic}[1]
+\Require Query $\mathbf{Q} \in \mathbb{R}^{N \times d}$, Key $\mathbf{K}$, Value $\mathbf{V}$, block size $B_k = 128$, top-$k$ blocks $k = 16$
+\Require Index projection $W_{\text{idx}}$ (detached input), block representatives $\{\mathbf{r}_b\}$
+\Ensure Output $\mathbf{Y} \in \mathbb{R}^{N \times d}$
+\State Compute block reps: $\mathbf{r}_b \gets \mathrm{mean}(\mathbf{K}_{bB_k:(b+1)B_k})$ for $b = 1, \ldots, N/B_k$
+\For{query position $t = 1, \ldots, N$}
+    \For{each GQA group $g$}
+        \State $\mathbf{q}_t^{\text{idx}} \gets \mathrm{sg}(W_{\text{idx}} \mathbf{x}_t)$ \Comment{detached index query}
+        \State Compute block scores: $s_b \gets \mathbf{q}_t^{\text{idx}} \cdot \mathbf{r}_b$
+        \State Identify local block: $b_{\text{local}} \gets \lfloor t / B_k \rfloor$
+        \State $\mathcal{I}_t^{(g)} \gets \mathrm{TopK}(\{s_b\}, k) \cup \{b_{\text{local}}\}$ \Comment{exp-free top-$k$ + forced local}
+    \EndFor
+    \State Gather selected KV: $\tilde{\mathbf{K}}_t \gets \mathrm{Gather}(\mathbf{K}, \mathcal{I}_t)$, $\tilde{\mathbf{V}}_t \gets \mathrm{Gather}(\mathbf{V}, \mathcal{I}_t)$
+    \State Main branch SDPA: $\mathbf{y}_t \gets \mathrm{softmax}(\mathbf{q}_t \tilde{\mathbf{K}}_t^\top / \sqrt{d_h}) \tilde{\mathbf{V}}_t$
+\EndFor
+\State Add KL alignment loss $\mathcal{L}_{\text{KL}} = \mathrm{KL}(\text{index dist} \,\|\, \text{main dist})$ during training
+\Return $\mathbf{Y}$
+\end{algorithmic}
+\end{algorithm}
+
+\subsubsection{Key Characteristics}
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Complexity}: Index branch $\mathcal{O}(H_{\text{kv}} \cdot d_{\text{idx}} \cdot N^2)$; Main branch $\mathcal{O}(H_q \cdot d_h \cdot N \cdot k \cdot B_k)$. Per-query budget fixed at $k \cdot B_k = 2048$ tokens regardless of $N$.
+    \item \textbf{Trainable}: Yes; end-to-end (the Index Branch is trained via a KL alignment loss, not eval-only).
+    \item \textbf{State}: $\mathcal{O}(N)$ KV cache (GQA-sized); no expansion of the recurrent/state dimension.
+    \item \textbf{Strength}: Deployed on the 109B MiniMax-M3, MSA achieves a $28.4\times$ per-token attention compute reduction at 1M context, with $14.2\times$ prefill and $7.6\times$ decode speedup on H800 GPUs.
+    \item \textbf{Limitation}: Selection granularity is fixed at the block level ($B_k = 128$); the forced local block and per-group independent selection increase engineering complexity and require custom block-sparse kernels.
+\end{itemize}
+
+\subsection{SparDA (Sparse Decoupled Attention): Forecast-Guided Lookahead Block Selection}
+
+\subsubsection{Mathematical Formulation}
+
+SparDA \citep{fu_sparda_2026} introduces a \textbf{decoupled} sparse attention scheme that augments the standard per-layer projections $Q, K, V$ with a fourth projection, the \textbf{Forecast}, which predicts the KV blocks that will be needed by the \emph{next} layer. This lookahead enables overlapping CPU-to-GPU prefetch of the next layer's selected blocks with the current layer's execution, hiding the offload latency that plagues sparse-attention deployments on memory-constrained hardware.
+
+\paragraph{Forecast projection}: For input $\mathbf{x} \in \mathbb{R}^{N \times d}$,
+\[
+\mathbf{F} = \mathbf{x} \mathbf{W}_F \in \mathbb{R}^{N \times H_{\text{kv}} \times d_f}
+\]
+with \textbf{one Forecast head per GQA group}, which reduces selection overhead relative to multi-head selectors used by prior work.
+
+\paragraph{Block scoring and selection}: For each query $i$ and KV block $b$ with representative $\mathbf{r}_b$:
+\[
+S_{i,b} = \mathbf{F}_i \cdot \mathbf{r}_b, \qquad \mathcal{I}_i = \mathrm{TopK}(\{S_{i,b}\}_b, k)
+\]
+\paragraph{Block-sparse attention}: Standard scaled dot-product attention is then computed over the selected blocks:
+\[
+\mathbf{o}_i = \mathrm{softmax}\left(\frac{\mathbf{q}_i \mathbf{K}_{\mathcal{I}_i}^\top}{\sqrt{d_h}}\right) \mathbf{V}_{\mathcal{I}_i}
+\]
+\paragraph{Training}: SparDA adds fewer than $0.5\%$ additional parameters. Only the Forecast projections are trained, by matching the original (frozen) sparse selector's attention distribution---a lightweight distillation that preserves the base model's behaviour while enabling lookahead prefetch.
+
+\subsubsection{Algorithmic Pseudocode}
+
+\begin{algorithm}[H]
+\caption{SparDA: Sparse Decoupled Attention with Forecast Prefetch}
+\begin{algorithmic}[1]
+\Require Input $\mathbf{x} \in \mathbb{R}^{N \times d}$, cached Key/Value blocks, top-$k$ blocks $k$
+\Require Projections $W_q, W_k, W_v, W_F$; frozen base selector $\pi_{\text{orig}}$
+\Ensure Output $\mathbf{Y}$; prefetched blocks for next layer
+\State Compute Forecast: $\mathbf{F} \gets \mathbf{x} \mathbf{W}_F$ \Comment{one head per GQA group}
+\For{query $i = 1, \ldots, N$}
+    \State Compute block scores: $S_{i,b} \gets \mathbf{F}_i \cdot \mathbf{r}_b$ for each block $b$
+    \State Select: $\mathcal{I}_i \gets \mathrm{TopK}(\{S_{i,b}\}, k)$
+    \State \textbf{Prefetch} $\mathbf{K}_{\mathcal{I}_i}, \mathbf{V}_{\mathcal{I}_i}$ from CPU to GPU for the \emph{next} layer \Comment{overlaps with current layer}
+\EndFor
+\State Compute block-sparse SDPA over current-layer selected blocks: $\mathbf{Y} \gets \mathrm{BlockSparseSDPA}(\mathbf{Q}, \mathbf{K}, \mathbf{V}, \{\mathcal{I}_i\})$
+\State Training loss: $\mathcal{L} \gets \mathrm{KL}(\text{Forecast dist} \,\|\, \pi_{\text{orig}})$ \Comment{only $W_F$ is updated}
+\Return $\mathbf{Y}$
+\end{algorithmic}
+\end{algorithm}
+
+\subsubsection{Key Characteristics}
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Complexity}: Forecast $\mathcal{O}(H_{\text{kv}} \cdot d_f \cdot N \cdot N_{\text{blocks}})$; Main attention $\mathcal{O}(H_q \cdot d_h \cdot N \cdot k \cdot B_k)$.
+    \item \textbf{Trainable}: Yes; only the Forecast projections are trained ($<0.5\%$ extra parameters).
+    \item \textbf{Strength}: On two 8B sparse-pretrained models, SparDA achieves up to $1.25\times$ prefill and $1.7\times$ decode speedup over the sparse-attention offload baseline, and up to $5.3\times$ decode throughput versus a non-offload sparse baseline.
+    \item \textbf{Limitation}: Requires a CPU--GPU offload pipeline and a frozen base selector; the lookahead benefit is contingent on next-layer block demand being predictable from the current Forecast.
+\end{itemize}
+
 \subsection{Comparative Summary}
 
 \footnotesize
@@ -477,6 +582,8 @@ SparseK & $O(nd)$ & Y & Top-$k$ tokens & 2024 & Differentiable selection \\
 NSA & $O((t/d+nl'+w)d)$ & Y & Multi-branch & 2025 & Hardware-aligned 3-branch design \\
 FASA & $O(tN_{\text{tip}}+N_{\text{fac}}d)$ & N & Freq chunks & 2026 & RoPE frequency insight \\
 SpargeAttn & $O(n^2 s \cdot d)$ & N & Block filter & 2025 & Two-stage universal filtering \\
+MSA & $O(H_{\text{kv}}d_{\text{idx}}N^2 + H_q d_h N k B_k)$ & Y & Block top-$k$ & 2026 & Index-branch block sparse (deployed 109B) \\
+SparDA & $O(H_{\text{kv}}d_f N N_b + H_q d_h N k B_k)$ & Y & Forecast block & 2026 & Lookahead prefetch decoupled selection \\
 \bottomrule
 \end{longtable}
 \normalsize

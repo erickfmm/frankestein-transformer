@@ -227,8 +227,16 @@ Examples:
 - `dropout`: global dropout.
 - `layer_pattern`: list of blocks.
 - Legacy blocks: `retnet`, `retnet_attn`, `mamba`, `ode`, `titan_attn`, `standard_attn`, `sigmoid_attn`.
-- Sparse blocks: `sparse_transformer_attn`, `longformer_attn`, `bigbird_attn`, `sparsek_attn`, `nsa_attn`, `sparge_attn`, `fasa_attn`.
-- Gated blocks: `gla_attn`, `deltanet_attn`, `gated_deltanet_attn`, `hgrn2_attn`, `fox_attn`, `gated_softmax_attn`.
+- Sparse blocks: `sparse_transformer_attn`, `longformer_attn`, `bigbird_attn`, `sparsek_attn`, `nsa_attn`, `sparge_attn`, `fasa_attn`, `msa_attn` (MiniMax Sparse Attention, arXiv:2606.13392), `sparda_attn` (SparDA, arXiv:2606.04511).
+- Gated blocks: `gla_attn`, `deltanet_attn`, `gated_deltanet_attn`, `hgrn2_attn`, `fox_attn`, `gated_softmax_attn`, `kda_attn` (Kimi Delta Attention, arXiv:2510.26692).
+- Latent blocks (KV-compression / head-mixing, generalising GQA):
+  - `mla_attn` — Multi-Head Latent Attention + RoPE (arXiv:2506.09342).
+  - `gqla_attn` — Group-Query Latent Attention, two decoding paths (arXiv:2605.15250).
+  - `mlra_attn` — Multi-Head Low-Rank Attention, partitionable latent (arXiv:2603.02188).
+  - `tucker_attn` — Tucker Attention, generalised low-rank factorisation (arXiv:2603.30033).
+  - `iha_attn` — Interleaved Head Attention, cross-head pseudo-heads (arXiv:2602.21371).
+  - `gta_attn` — Grouped-head laTenT Attention, shared map + latent values (arXiv:2506.17286).
+  - `mtla_attn` — Multi-head Temporal Latent Attention, temporal KV merge (arXiv:2505.13544).
 - Training-free policy: `sparge_attn` and `fasa_attn` are eval-only; training mode raises an explicit runtime error.
 - `ode_solver`: `rk4` or `euler`.
 - `ode_steps`: integration steps.
@@ -248,6 +256,32 @@ Examples:
 - `ffn_hidden_size`: FFN intermediate dimension.
 - `ffn_activation`: `silu` or `gelu`.
 - `mode`: `encoder` or `decoder` (if omitted, defaults to encoder unless `model_class: frankesteindecoder`, which forces decoder).
+
+### Latent / KV-compression family (optional)
+
+- `mla_latent_rank`: rank of the joint KV latent for `mla_attn` (default `hidden_size // 2`).
+- `gqla_latent_rank`: latent rank for `gqla_attn` (default `hidden_size // 2`).
+- `gqla_num_groups`: number of GQA groups for the expanded path (default `num_heads // 4`).
+- `gqla_decode_path`: `"mqa_absorb"` or `"gqa"` (default `"gqa"`).
+- `mlra_latent_rank`: total latent rank for `mlra_attn` (default `hidden_size // 2`).
+- `mlra_num_latent_heads`: number of disjoint latent sub-heads (default 4).
+- `tucker_query_rank`, `tucker_key_rank`, `tucker_value_rank`: Tucker ranks (default `hidden_size` for Q, `hidden_size // 2` for K/V).
+- `iha_num_pseudo_heads`: number of pseudo-heads per head for `iha_attn` (default `num_heads`).
+- `gta_num_shared_groups`: number of head groups sharing an attention map for `gta_attn` (default `num_heads // 4`).
+- `gta_value_latent_rank`: value-cache latent rank for `gta_attn` (default `hidden_size // 2`).
+- `mtla_latent_rank`: feature-axis latent rank for `mtla_attn` (default `hidden_size // 2`).
+- `mtla_merge_factor`: consecutive KV entries merged per temporal slot (default 2).
+- `mtla_stride`: stride between merged slots (default `mtla_merge_factor`).
+
+### MiniMax Sparse Attention & SparDA (optional)
+
+- `msa_block_size`: KV block size for `msa_attn` (default 128).
+- `msa_topk_blocks`: blocks selected per GQA group per query (default 16).
+- `msa_index_dim`: Index Branch head dim (default 64).
+- `msa_kl_loss_weight`: KL alignment loss weight (default 0.0).
+- `sparda_block_size`: KV block size for `sparda_attn` (default 128).
+- `sparda_topk_blocks`: blocks selected per GQA group (default 16).
+- `sparda_forecast_dim`: Forecast projection dim (default 64).
 
 ## Decoder Examples (Famous Architecture-Inspired)
 
