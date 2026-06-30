@@ -1,7 +1,7 @@
 \section{Anexo B: Transformadores Densos, Recurrentes y Aumentados con Memoria}
 \label{sec:annex-transformer}
 
-Este anexo exhaustivo sintetiza las arquitecturas modernas de transformers más allá de la línea base estándar de softmax. El campo ha evolucionado hacia seis paradigmas principales: atención densa global con variantes, compresión de estado recurrente con decaimiento, modelos de espacio de estado selectivos, integración numérica de profundidad continua, arquitecturas aumentadas con memoria y enfoques híbridos. Comprender esta taxonomía ilumina las compensaciones fundamentales entre expresividad, costo computacional, huella de memoria y simplicidad de despliegue.
+Este anexo exhaustivo sintetiza las arquitecturas modernas de transformers más allá de la línea base estándar de softmax. El campo ha evolucionado hacia seis paradigmas principales: atención densa global con variantes, compresión de cabezas clave-valor mediante atención por consultas agrupadas, compresión de estado recurrente con decaimiento, modelos de espacio de estado selectivos, integración numérica de profundidad continua, arquitecturas aumentadas con memoria y enfoques híbridos. Comprender esta taxonomía ilumina las compensaciones fundamentales entre expresividad, costo computacional, huella de memoria y simplicidad de despliegue.
 
 \subsection{Atención Densa de Referencia: Estándar y Sigmoide}
 
@@ -41,6 +41,27 @@ A diferencia de softmax, la sigmoide no impone una distribución de probabilidad
     \item \textbf{Complejidad de inferencia}: $\mathcal{O}(n)$ por token con caché KV (asintóticamente igual, pero con factores constantes más bajos).
     \item \textbf{Fortalezas}: Supera la competencia de suma cero; evita la sincronización por filas; implementación eficiente en hardware.
     \item \textbf{Debilidades}: Requiere estabilización cuidadosa (norma híbrida); inestabilidad de entrenamiento a grandes escalas sin pérdida auxiliar.
+\end{itemize}
+
+\subsubsection{Atención por Consultas Agrupadas (GQA)}
+La atención por consultas agrupadas (GQA) \citep{ainslie_gqa_2023} tiende un puente entre la atención multi-cabeza (MHA) y la atención multi-consulta (MQA) al particionar las cabezas de consulta en grupos, cada uno compartiendo una sola cabeza clave-valor. Si $h$ es el número total de cabezas de atención, $h_k$ es el número de cabezas clave-valor, y $G = h / h_k$ es el tamaño del grupo, entonces cada grupo de $G$ cabezas de consulta comparte una cabeza KV:
+
+\begin{algorithmic}[1]
+\State \textbf{Entrada:} $\mathbf{Q} \in \mathbb{R}^{n \times h \cdot d_h}$, $\mathbf{K} \in \mathbb{R}^{n \times h_k \cdot d_h}$, $\mathbf{V} \in \mathbb{R}^{n \times h_k \cdot d_h}$
+\State $\mathbf{K}_{\text{completo}} \gets \texttt{repeat\_interleave}(\mathbf{K}, G)$ \Comment{expandir de $h_k$ a $h$ cabezas}
+\State $\mathbf{V}_{\text{completo}} \gets \texttt{repeat\_interleave}(\mathbf{V}, G)$
+\State $\text{puntajes} \gets \frac{\mathbf{Q}\mathbf{K}_{\text{completo}}^\top}{\sqrt{d_h}} \in \mathbb{R}^{n \times n}$ \Comment{producto punto estándar tras expansión}
+\State $\text{pesos\_atencion} \gets \texttt{softmax}(\text{puntajes}, \text{eje}=1)$
+\State \textbf{Salida:} $\mathbf{Y} = \text{pesos\_atencion} \cdot \mathbf{V}_{\text{completo}} \in \mathbb{R}^{n \times h \cdot d_h}$
+\end{algorithmic}
+
+GQA interpola suavemente entre MHA ($h_k = h$, $G = 1$) y MQA ($h_k = 1$, $G = h$). La ventaja clave es un balance ajustable entre la huella del caché KV y la capacidad representacional. Cada cabeza KV adicional consume $2 \cdot d_h \cdot n$ bytes extra en el caché, por lo que reducir $h_k$ produce ahorros proporcionales de memoria.
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Complejidad de entrenamiento}: $\mathcal{O}(n^2 \cdot h \cdot d_h)$ (idéntico a MHA tras la expansión de cabezas).
+    \item \textbf{Complejidad de inferencia}: $\mathcal{O}(n)$ por token, espacio de caché KV $\mathcal{O}(h_k \cdot n \cdot d_h)$.
+    \item \textbf{Fortalezas}: Balance flexible de cabezas; probado a escala (Llama 2 y 3 usan $h_k = 8$ cabezas KV con $h = 32$ cabezas de consulta); reduce el caché KV en factor $G \times$; soporta inferencia rápida con FlashAttention.
+    \item \textbf{Debilidades}: Menos cabezas KV pueden reducir la capacidad representacional en modelos pequeños; requerir que $h_k$ divida a $h$ restringe las opciones arquitectónicas.
 \end{itemize}
 
 \subsection{Arquitecturas Recurrentes y Retentivas}
@@ -163,6 +184,7 @@ El módulo de memoria $\mathcal{M}$ se actualiza literalmente durante el paso ha
 \midrule
 \endhead
 Atención Estándar & $O(n^2 d)$ & $O(n)$ caché & $O(nd)$ & Expresividad perfecta, enrutamiento completo de tokens, cuello de botella KV. \\
+GQA & $O(n^2 d)$ & $O(n)$ caché & $O(h_k \cdot n \cdot d_h)$ & Compresión KV ajustable, probado a escala, reducción de caché en factor $G \times$. \\
 Atención Sigmoide & $O(n^2 d)$ & $O(n)$ caché & $O(nd)$ & Compuerta elemento a elemento, eficiente en hardware, estable a escala con norma híbrida. \\
 RetNet & $O(n^2 d)$ & $O(1)$ & $O(d^2)$ & Decaimiento multi-escala, triple modo de cómputo, patrón de olvido fijo. \\
 Mamba & $O(nd)$ & $O(1)$ & $O(d)$ & Dinámica selectiva dependiente de la entrada, entrenamiento e inferencia lineales, escaneo de hardware. \\

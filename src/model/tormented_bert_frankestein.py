@@ -4,7 +4,7 @@
 **TORMENTED** = **T**ernary **O**DE **R**etention **M**amba **E**xperts **N**eural **T**anh **E**ncoder **D**epth.
 
 This module implements a mixed-architecture Transformer encoder/decoder that
-integrates 17+ attention mixer families, Mixture-of-Experts (MoE) FFN routing,
+integrates 20+ attention mixer families, Mixture-of-Experts (MoE) FFN routing,
 BitNet b1.58 ternary weight quantization, factorized embeddings, looped depth
 for parameter-efficient recursion, Mixture-of-Depths token routing, and Engram
 conditional memory layers.
@@ -24,7 +24,7 @@ Core components:
 * :class:`FactorizedEmbedding` — reduced-dimension embedding with optional
   Conv1d pre-projection.
 
-Supported attention mixer families (17+):
+Supported attention mixer families (20+):
 
 * ``standard_attn`` — scaled dot-product self-attention.
 * ``sigmoid_attn`` — sigmoid-based linear attention.
@@ -39,6 +39,7 @@ Supported attention mixer families (17+):
   ``gated_deltanet_attn``, ``gated_deltanet2_attn``, ``hgrn2_attn``,
   ``fox_attn``, ``gated_softmax_attn``.
 * ``engram_attn`` — Engram conditional memory via scalable lookup.
+* ``gqa_attn`` — Grouped-Query Attention (GQA; Ainslie et al. 2023).
 
 Training-free policy: ``fasa_attn`` and ``sparge_attn`` raise a RuntimeError
 when called in training mode; they are eval/inference-only blocks.
@@ -57,6 +58,7 @@ import torch.nn.functional as F
 from .attention.common import BitLinear
 from .norm import get_norm
 from .attention.engram import EngramLayer
+from .attention.grouped_query_attention import GroupedQueryAttention
 from .attention.gated import (
     DeltaNetAttention,
     ForgettingAttention,
@@ -111,7 +113,7 @@ class UltraConfig:
             ``"deltanet_attn"``, ``"gated_deltanet_attn"``,
             ``"gated_deltanet2_attn"``,
             ``"hgrn2_attn"``, ``"fox_attn"``, ``"gated_softmax_attn"``,
-            ``"engram_attn"``. Default: ``["retnet", "ode", "mamba",
+            ``"engram_attn"``, ``"gqa_attn"``. Default: ``["retnet", "ode", "mamba",
             "titan_attn"] * 3``.
         ode_solver: ODE solver for ``ode`` mixer layers. One of ``"rk4"``
             (Runge-Kutta 4th order) or ``"euler"``. Default: ``"rk4"``.
@@ -237,6 +239,8 @@ class UltraConfig:
     engram_kernel_size: int = 4
     engram_seed: int = 42
 
+    num_kv_heads: int = 1
+
     def __post_init__(self):
         """Validate and derive dependent configuration fields after dataclass init.
 
@@ -356,6 +360,7 @@ class HybridLayer(nn.Module):
             "fox_attn": ForgettingAttention,
             "gated_softmax_attn": GatedSoftmaxAttention,
             "engram_attn": EngramLayer,
+            "gqa_attn": GroupedQueryAttention,
         }
 
         if layer_type == "mamba":

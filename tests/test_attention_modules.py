@@ -12,6 +12,7 @@ if TORCH_AVAILABLE:
     from src.model.attention.titan import TitanAttention
     from src.model.attention.ode import ODEAttentionBlock, ODEFunc
     from src.model.attention.retnet import MultiScaleRetention
+    from src.model.attention.grouped_query_attention import GroupedQueryAttention
 
 
 def _cfg(**overrides):
@@ -242,6 +243,79 @@ class MultiScaleRetentionTests(unittest.TestCase):
     def test_decay_mask_buffer_registered(self):
         ret = MultiScaleRetention(_cfg())
         self.assertTrue(hasattr(ret, "decay_mask"))
+
+
+@unittest.skipUnless(TORCH_AVAILABLE, "torch required")
+class GroupedQueryAttentionTests(unittest.TestCase):
+    def _make(self, **kw):
+        return GroupedQueryAttention(_cfg(**kw))
+
+    def _x(self):
+        return torch.randn(BSZ, SEQ, DIM)
+
+    def test_encoder_output_shape(self):
+        attn = self._make(num_kv_heads=2)
+        y = attn(self._x())
+        self.assertEqual(y.shape, (BSZ, SEQ, DIM))
+
+    def test_decoder_output_shape(self):
+        attn = self._make(num_kv_heads=2, mode="decoder")
+        y = attn(self._x())
+        self.assertEqual(y.shape, (BSZ, SEQ, DIM))
+
+    def test_kv_heads_one_mqa(self):
+        attn = self._make(num_kv_heads=1)
+        y = attn(self._x())
+        self.assertEqual(y.shape, (BSZ, SEQ, DIM))
+
+    def test_kv_heads_equal_num_heads(self):
+        attn = self._make(num_kv_heads=6)
+        y = attn(self._x())
+        self.assertEqual(y.shape, (BSZ, SEQ, DIM))
+
+    def test_logical_layer_idx_accepted(self):
+        attn = self._make(num_kv_heads=2)
+        y = attn(self._x(), logical_layer_idx=3)
+        self.assertEqual(y.shape, (BSZ, SEQ, DIM))
+
+    def test_invalid_hidden_size_raises(self):
+        with self.assertRaises(ValueError):
+            GroupedQueryAttention(_cfg(hidden_size=50, num_heads=6, num_kv_heads=2))
+
+    def test_invalid_kv_heads_less_than_one_raises(self):
+        with self.assertRaises(ValueError):
+            GroupedQueryAttention(_cfg(num_heads=6, num_kv_heads=0))
+
+    def test_invalid_kv_heads_greater_than_num_heads_raises(self):
+        with self.assertRaises(ValueError):
+            GroupedQueryAttention(_cfg(num_heads=6, num_kv_heads=12))
+
+    def test_indivisible_kv_heads_raises(self):
+        with self.assertRaises(ValueError):
+            GroupedQueryAttention(_cfg(num_heads=6, num_kv_heads=4))
+
+    def test_gradient_flows(self):
+        attn = self._make(num_kv_heads=2)
+        x = self._x().requires_grad_(True)
+        attn(x).sum().backward()
+        self.assertIsNotNone(x.grad)
+
+    def test_batch_size_one(self):
+        attn = self._make(num_kv_heads=3)
+        x = torch.randn(1, SEQ, DIM)
+        y = attn(x)
+        self.assertEqual(y.shape, (1, SEQ, DIM))
+
+    def test_seq_len_one(self):
+        attn = self._make(num_kv_heads=2)
+        x = torch.randn(BSZ, 1, DIM)
+        y = attn(x)
+        self.assertEqual(y.shape, (BSZ, 1, DIM))
+
+    def test_with_bitnet(self):
+        attn = GroupedQueryAttention(_cfg(use_bitnet=True, num_kv_heads=2))
+        y = attn(self._x())
+        self.assertEqual(y.shape, (BSZ, SEQ, DIM))
 
 
 if __name__ == "__main__":

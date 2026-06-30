@@ -4,11 +4,12 @@
 
 ## Taxonomy Overview
 
-The system implements **19 sequence mixer architectures** organized into five functional categories. The taxonomy figure from the paper:
+The system implements **20 sequence mixer architectures** organized into five functional categories. The taxonomy figure from the paper:
 
 ```
-Sequence Mixer Registry (19 variants)
+Sequence Mixer Registry (20 variants)
 ├── Dense (2): standard_attn, sigmoid_attn
+├── GQA (1): gqa_attn
 ├── Recurrent (5): retnet/retnet_attn, mamba, ode, titan_attn, engram_attn
 ├── Sparse (7): sparse_transformer_attn, longformer_attn, bigbird_attn,
 │                sparsek_attn, nsa_attn, sparge_attn, fasa_attn
@@ -45,6 +46,20 @@ Sequence Mixer Registry (19 variants)
 | Key Characteristics | Element-wise sigmoid replaces row-wise softmax; eliminates zero-sum token competition |
 | Pros | 17% kernel speedup via FlashSigmoid; superior sample complexity (MoE analysis); hardware-friendly element-wise ops |
 | Cons | Requires hybrid-norm stabilization at scale; training instability without auxiliary loss |
+
+## Grouped-Query Attention (1)
+
+### `gqa_attn` — Grouped-Query Attention
+
+| Attribute | Value |
+|---|---|
+| Paper | Ainslie et al. (2023) — arXiv:2305.13245 |
+| Core Equation | `GQA(Q,K,V) = softmax(Q K^⊤/√d_k) V` with `K,V ∈ ℝ^{B×G×T×d_k}` where G = number of KV head groups |
+| Training Complexity | O(n²·d) quadratic |
+| Inference Complexity | O(n) per step, O(n·d_kv·d) KV cache (d_kv = num_kv_heads × head_dim) |
+| Key Characteristics | Num. KV heads is configurable between 1 (MQA) and num_heads (MHA); each KV head broadcasts to num_heads/num_kv_heads query heads |
+| Pros | Quality close to MHA with speed almost matching MQA; reduces KV-cache memory by num_heads/num_kv_heads × ; can be uptrained from MHA checkpoints via mean-pooling |
+| Cons | Still O(n²) quadratic; KV cache larger than pure MQA; optimal group count is model-size dependent |
 
 ## Recurrent and Retentive Architectures (5)
 
@@ -291,6 +306,7 @@ Previous state S_{t−1} → Gate(s) α_t, β_t, G_t, f_t → New key/value or S
 |---|---|---|---|---|---|
 | `standard_attn` | Dense | O(n²d) | O(n)/step | Yes | Full expressiveness baseline |
 | `sigmoid_attn` | Dense | O(n²d) | O(n)/step | Yes | Element-wise gating, 17% kernel speedup |
+| `gqa_attn` | GQA | O(n²d) | O(n)/step | Yes | Configurable KV heads, quality-speed tradeoff |
 | `retnet` | Recurrent | O(n²d) / chunkwise | O(1)/step | Yes | Triple computation paradigm |
 | `mamba` | Recurrent | O(nd) | O(1)/step | Yes | Linear training + constant inference |
 | `ode` | Recurrent | O(k·n²d) | O(k·n)/step | Yes | Numerical integration refinement |

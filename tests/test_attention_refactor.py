@@ -12,6 +12,7 @@ from src.model.attention import (
     GatedDeltaNetAttention,
     GatedLinearAttention,
     GatedSoftmaxAttention,
+    GroupedQueryAttention,
     HGRN2Attention,
     HoPE,
     LongformerAttention,
@@ -84,6 +85,7 @@ class AttentionRefactorTests(unittest.TestCase):
         self.assertTrue(callable(HGRN2Attention))
         self.assertTrue(callable(ForgettingAttention))
         self.assertTrue(callable(GatedSoftmaxAttention))
+        self.assertTrue(callable(GroupedQueryAttention))
 
     def test_default_forward_compat(self):
         config = self._build_config(["titan_attn", "standard_attn"])
@@ -133,6 +135,7 @@ class AttentionRefactorTests(unittest.TestCase):
             "fox_attn",
             "gated_softmax_attn",
             "engram_attn",
+            "gqa_attn",
         ]
         for layer_type in layer_types:
             config = self._build_config([layer_type])

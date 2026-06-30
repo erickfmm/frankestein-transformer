@@ -11,6 +11,7 @@ from .sparse import (
     SparseTransformerAttention,
     SpargeAttention,
 )
+from .grouped_query_attention import GroupedQueryAttention
 from .standard import StandardAttention
 from .titan import TitanAttention
 from .gated import (
@@ -27,6 +28,7 @@ from ..embeddings import HoPE, RoPE
 
 __all__ = [
     "EngramLayer",
+    "GroupedQueryAttention",
     "TitanAttention",
     "StandardAttention",
     "SigmoidAttention",

@@ -1,7 +1,7 @@
 \section{Annex B: Dense, Recurrent, and Memory-Augmented Transformers}
 \label{sec:annex-transformer}
 
-This comprehensive annex synthesizes modern transformer architectures beyond the standard softmax baseline. The field has evolved toward six primary paradigms: dense global attention with variants, recurrent state compression with decay, selective state-space models, continuous-depth numerical integration, memory-augmented architectures, and hybrid approaches. Understanding this taxonomy illuminates fundamental tradeoffs between expressiveness, computational cost, memory footprint, and deployment simplicity.
+This comprehensive annex synthesizes modern transformer architectures beyond the standard softmax baseline. The field has evolved toward six primary paradigms: dense global attention with variants, key-value head compression via grouped-query attention, recurrent state compression with decay, selective state-space models, continuous-depth numerical integration, memory-augmented architectures, and hybrid approaches. Understanding this taxonomy illuminates fundamental tradeoffs between expressiveness, computational cost, memory footprint, and deployment simplicity.
 
 \subsection{Dense Attention Baselines: Standard and Sigmoid}
 
@@ -41,6 +41,27 @@ Unlike softmax, sigmoid does not enforce a probability distribution (weights nee
     \item \textbf{Inference complexity}: $\mathcal{O}(n)$ per token with KV cache (asymptotically same, but lower constant factors).
     \item \textbf{Strengths}: Overcomes zero-sum competition; avoids row-wise synchronization; hardware-friendly implementation.
     \item \textbf{Weaknesses}: Requires careful stabilization (hybrid-norm); training instability at large scales without auxiliary loss.
+\end{itemize}
+
+\subsubsection{Grouped-Query Attention (GQA)}
+Grouped-query attention \citep{ainslie_gqa_2023} bridges multi-head attention (MHA) and multi-query attention (MQA) by partitioning query heads into groups, each sharing a single key-value head. If $h$ is the total number of attention heads, $h_k$ is the number of key-value heads, and $G = h / h_k$ is the group size, then every group of $G$ query heads shares one KV head:
+
+\begin{algorithmic}[1]
+\State \textbf{Input:} $\mathbf{Q} \in \mathbb{R}^{n \times h \cdot d_h}$, $\mathbf{K} \in \mathbb{R}^{n \times h_k \cdot d_h}$, $\mathbf{V} \in \mathbb{R}^{n \times h_k \cdot d_h}$
+\State $\mathbf{K}_{\text{full}} \gets \texttt{repeat\_interleave}(\mathbf{K}, G)$ \Comment{expand from $h_k$ to $h$ heads}
+\State $\mathbf{V}_{\text{full}} \gets \texttt{repeat\_interleave}(\mathbf{V}, G)$
+\State $\text{scores} \gets \frac{\mathbf{Q}\mathbf{K}_{\text{full}}^\top}{\sqrt{d_h}} \in \mathbb{R}^{n \times n}$ \Comment{standard dot product after expansion}
+\State $\text{attention\_weights} \gets \texttt{softmax}(\text{scores}, \text{axis}=1)$
+\State \textbf{Output:} $\mathbf{Y} = \text{attention\_weights} \cdot \mathbf{V}_{\text{full}} \in \mathbb{R}^{n \times h \cdot d_h}$
+\end{algorithmic}
+
+GQA interpolates smoothly between MHA ($h_k = h$, $G = 1$) and MQA ($h_k = 1$, $G = h$). The key advantage is a tunable tradeoff between KV-cache footprint and representational capacity. Each additional KV head consumes $2 \cdot d_h \cdot n$ extra bytes in the cache, so reducing $h_k$ yields proportional memory savings.
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Training complexity}: $\mathcal{O}(n^2 \cdot h \cdot d_h)$ (identical to MHA after head expansion).
+    \item \textbf{Inference complexity}: $\mathcal{O}(n)$ per token, $\mathcal{O}(h_k \cdot n \cdot d_h)$ KV-cache space.
+    \item \textbf{Strengths}: Flexible head-count tradeoff; proven at scale (Llama 2 \& 3 use $h_k = 8$ KV heads with $h = 32$ query heads); reduces KV-cache by $G \times$; supports fast inference with FlashAttention.
+    \item \textbf{Weaknesses}: Fewer KV heads can reduce representational capacity in small models; requiring $h_k$ to divide $h$ constrains architectural choices.
 \end{itemize}
 
 \subsection{Recurrent and Retentive Architectures}
@@ -163,6 +184,7 @@ The memory module $\mathcal{M}$ is literally updated during the forward pass by 
 \midrule
 \endhead
 Standard Attention & $O(n^2 d)$ & $O(n)$ cache & $O(nd)$ & Perfect expressiveness, full token routing, KV bottleneck. \\
+GQA & $O(n^2 d)$ & $O(n)$ cache & $O(h_k \cdot n \cdot d_h)$ & Tunable KV compression, proven at scale, $G \times$ cache reduction. \\
 Sigmoid Attention & $O(n^2 d)$ & $O(n)$ cache & $O(nd)$ & Element-wise gating, hardware-efficient, stable at scale with hybrid-norm. \\
 RetNet & $O(n^2 d)$ & $O(1)$ & $O(d^2)$ & Multi-scale decay, triple computation mode, fixed forgetting pattern. \\
 Mamba & $O(nd)$ & $O(1)$ & $O(d)$ & Selective input-dependent dynamics, linear training and inference, hardware scan. \\
