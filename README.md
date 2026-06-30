@@ -6,7 +6,7 @@
 [![CI](https://img.shields.io/badge/CI-passing-brightgreen.svg)](https://github.com/erickfmm/frankestein-transformer/actions)
 [![Docs](https://img.shields.io/badge/docs-readthedocs-blue.svg)](https://frankestein-transformer.readthedocs.io/en/latest/)
 
-Config-driven transformer experimentation toolkit with 17+ mixer architectures and 23 optimizer families.
+Config-driven transformer experimentation toolkit with 33+ mixer architectures and 23 optimizer families.
 
 ## Quick Start
 
@@ -22,7 +22,7 @@ Verify: `frankestein-transformer --help`
 
 | Feature | Scale |
 |---------|-------|
-| Sequence mixer architectures | 19 across 4 categories (Dense, Recurrent, Sparse, Gated) |
+| Sequence mixer architectures | 33 across 5 categories (Dense, Recurrent, Sparse, Gated, Latent) |
 | Optimizer families | 23 across 6 categories |
 | Model classes | `frankenstein`, `mini`, `frankesteindecoder` |
 | Training modes | Encoder (MLM) / Decoder (autoregressive) |
@@ -36,7 +36,7 @@ Verify: `frankestein-transformer --help`
 
 | Model Class | Mode | Use Case |
 |-------------|------|----------|
-| `frankenstein` | Encoder | Full-featured MLM pre-training with mixed attention, MoE, and all 19 mixer types |
+| `frankenstein` | Encoder | Full-featured MLM pre-training with mixed attention, MoE, and all 33 mixer types |
 | `mini` | Encoder | Lightweight encoder for constrained resources; reduced hidden size and layers |
 | `frankesteindecoder` | Decoder | Autoregressive causal decoder for LLM-style generation; forces `mode: decoder` |
 
@@ -63,8 +63,9 @@ All model-executing commands accept `--device auto|cpu|cuda|mps`.
 |----------|------------|-------------|
 | **Dense** | `standard_attn`, `sigmoid_attn`, `gated_softmax_attn`, `titan_attn` | Full quadratic attention variants with positional encoding support |
 | **Recurrent** | `retnet`, `retnet_attn`, `mamba`, `ode` | Retention networks, state-space models, and continuous-depth ODE layers |
-| **Sparse** | `sparse_transformer_attn`, `longformer_attn`, `bigbird_attn`, `sparsek_attn`, `nsa_attn`, `sparge_attn` ⚠️, `fasa_attn` ⚠️ | Factorized, sliding-window, and token-selection patterns |
-| **Gated** | `gla_attn`, `deltanet_attn`, `gated_deltanet_attn`, `hgrn2_attn`, `fox_attn`, `engram_attn` | Linear attention with multiplicative gates, delta rules, and n-gram memory |
+| **Sparse** | `sparse_transformer_attn`, `longformer_attn`, `bigbird_attn`, `sparsek_attn`, `nsa_attn`, `sparge_attn` ⚠️, `fasa_attn` ⚠️, `msa_attn`, `sparda_attn` | Factorized, sliding-window, token-selection, and block-sparse (GQA-based) patterns |
+| **Gated** | `gla_attn`, `deltanet_attn`, `gated_deltanet_attn`, `gated_deltanet2_attn`, `hgrn2_attn`, `fox_attn`, `kda_attn`, `engram_attn` | Linear attention with multiplicative gates, delta rules, and n-gram memory |
+| **Latent** | `mla_attn`, `gqla_attn`, `mlra_attn`, `tucker_attn`, `iha_attn`, `gta_attn`, `mtla_attn` | KV-compression and head-mixing variants generalising GQA (latent attention, Tucker factorisation, interleaved pseudo-heads, temporal merging) |
 
 ⚠️ `sparge_attn` and `fasa_attn` are **eval-only** — training raises a runtime error.
 
