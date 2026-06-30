@@ -1152,41 +1152,40 @@ class SBERTTrainer:
             bins: Number of bins for score distribution (more bins = finer control)
             target_std: Target standard deviation for the normal distribution
         """
-        from scipy import stats
-        
         scores = np.array(dataset[score_column], dtype=np.float32)
-        
+
         logger.info(f"Original distribution: mean={scores.mean():.4f}, std={scores.std():.4f}")
         logger.info(f"Score range: [{scores.min():.4f}, {scores.max():.4f}]")
-        
+
         # Create bins
         hist, bin_edges = np.histogram(scores, bins=bins)
         # Target: Normal distribution centered at 0 with specified std
-        # Calculate expected count per bin based on normal distribution
-        norm_dist = stats.norm(loc=0, scale=target_std)
-        
-        # Get probability for each bin
-        bin_probs = []
-        for i in range(bins):
-            prob = norm_dist.cdf(bin_edges[i + 1]) - norm_dist.cdf(bin_edges[i])
-            bin_probs.append(prob)
-        
-        bin_probs = np.array(bin_probs)
-        bin_probs = bin_probs / bin_probs.sum()  # Normalize
-        
+        # Calculate expected count per bin based on normal distribution using PyTorch.
+        bin_edges_t = torch.tensor(bin_edges, dtype=torch.float64)
+        bin_probs = (
+            torch.special.ndtr(bin_edges_t[1:] / target_std)
+            - torch.special.ndtr(bin_edges_t[:-1] / target_std)
+        ).numpy()
+
+        bin_probs_sum = bin_probs.sum()
+        if bin_probs_sum > 0:
+            bin_probs = bin_probs / bin_probs_sum  # Normalize
+        else:
+            bin_probs = np.ones(bins) / bins
+
         # Calculate target samples per bin
         # Use undersampling: limit by the most restrictive bin
         samples_if_all_filled = hist / bin_probs
         samples_if_all_filled[bin_probs < 1e-6] = np.inf  # Ignore near-zero probability bins
-        
+
         # Total samples is limited by the bin with lowest samples/probability ratio
         total_target = int(np.min(samples_if_all_filled[np.isfinite(samples_if_all_filled)]))
-        
+
         # Now calculate per-bin targets
         target_per_bin = (bin_probs * total_target).astype(int)
-        
+
         logger.info(f"Undersampling from {len(scores)} to ~{total_target} samples")
-        
+
         indices_to_keep = []
         for i in range(bins):
             # Get indices in this bin
@@ -1194,9 +1193,9 @@ class SBERTTrainer:
                 in_bin = np.where((scores >= bin_edges[i]) & (scores < bin_edges[i + 1]))[0]
             else:
                 in_bin = np.where((scores >= bin_edges[i]) & (scores <= bin_edges[i + 1]))[0]
-            
+
             target = target_per_bin[i]
-            
+
             # Sample from bin (undersample if needed)
             if len(in_bin) > target and target > 0:
                 sampled = np.random.choice(in_bin, target, replace=False)
@@ -1204,18 +1203,18 @@ class SBERTTrainer:
                 sampled = in_bin
             else:
                 continue
-            
+
             indices_to_keep.extend(sampled.tolist())
-        
+
         resampled = dataset.select(indices_to_keep)
         resampled_scores = np.array(
             [float(resampled[i][score_column]) for i in range(len(resampled))],
             dtype=np.float32,
         )
-        
+
         logger.info(f"Resampled distribution: mean={resampled_scores.mean():.4f}, std={resampled_scores.std():.4f}")
         logger.info(f"Final sample count: {len(resampled)}")
-        
+
         return resampled
 
     def _standardize_scores(

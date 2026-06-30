@@ -52,8 +52,6 @@ autodoc_mock_imports = [
     "pynvml",
     "sentencepiece",
     "sacremoses",
-    "scipy",
-    "sklearn",
     "psutil",
     "tqdm",
     "numpy",

@@ -15,7 +15,6 @@ from typing import List, Union, Optional, Tuple
 from dataclasses import dataclass
 
 from sentence_transformers import SentenceTransformer
-from scipy.spatial.distance import cosine
 import json
 try:
     from ..utils.device import SUPPORTED_DEVICE_CHOICES, resolve_torch_device
@@ -289,33 +288,137 @@ class SBERTInference:
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Cluster sentences by semantic similarity.
-        
+
         Args:
             sentences: List of sentences to cluster
             n_clusters: Number of clusters
             method: Clustering method ('kmeans' or 'agglomerative')
-        
+
         Returns:
             (cluster_labels, embeddings)
         """
-        from sklearn.cluster import KMeans, AgglomerativeClustering
-        
         # Encode sentences
         logger.info(f"Encoding {len(sentences)} sentences for clustering...")
         embeddings = self.encode(sentences, show_progress=True)
-        
+
         # Cluster
         logger.info(f"Clustering into {n_clusters} groups using {method}...")
         if method == "kmeans":
-            clusterer = KMeans(n_clusters=n_clusters, random_state=42)
+            labels = self._kmeans_clustering(embeddings, n_clusters=n_clusters)
         elif method == "agglomerative":
-            clusterer = AgglomerativeClustering(n_clusters=n_clusters)
+            labels = self._agglomerative_clustering(embeddings, n_clusters=n_clusters)
         else:
             raise ValueError(f"Unknown method: {method}")
-        
-        labels = clusterer.fit_predict(embeddings)
-        
+
         return labels, embeddings
+
+    @staticmethod
+    def _kmeans_clustering(embeddings: np.ndarray, n_clusters: int, max_iter: int = 300) -> np.ndarray:
+        """PyTorch k-means clustering on sentence embeddings.
+
+        Args:
+            embeddings: Array of shape (n_samples, embedding_dim).
+            n_clusters: Number of clusters.
+            max_iter: Maximum number of Lloyd iterations.
+
+        Returns:
+            Cluster label array of shape (n_samples,).
+        """
+        n_samples = embeddings.shape[0]
+        if n_samples <= n_clusters:
+            return np.arange(n_samples)
+
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        x = torch.from_numpy(embeddings).to(device)
+
+        # k-means++ initialization
+        indices = [int(torch.randint(0, n_samples, (1,)).item())]
+        for _ in range(1, n_clusters):
+            dists = torch.cdist(x, x[indices])  # (n_samples, k)
+            min_dists = dists.min(dim=1).values
+            probs = min_dists / min_dists.sum()
+            next_idx = int(torch.multinomial(probs, 1).item())
+            indices.append(next_idx)
+        centroids = x[indices].clone()
+
+        for _ in range(max_iter):
+            distances = torch.cdist(x, centroids)  # (n_samples, n_clusters)
+            labels = distances.argmin(dim=1)
+            new_centroids = torch.stack([
+                x[labels == k].mean(dim=0) if (labels == k).any() else centroids[k]
+                for k in range(n_clusters)
+            ])
+            if torch.allclose(centroids, new_centroids, atol=1e-4):
+                break
+            centroids = new_centroids
+
+        return labels.cpu().numpy()
+
+    @staticmethod
+    def _agglomerative_clustering(embeddings: np.ndarray, n_clusters: int) -> np.ndarray:
+        """PyTorch agglomerative (single-linkage) clustering on embeddings.
+
+        This is a best-effort CPU/GPU implementation. It builds a full
+        pairwise distance matrix and repeatedly merges the closest pair until
+        the requested number of clusters is reached.
+
+        Args:
+            embeddings: Array of shape (n_samples, embedding_dim).
+            n_clusters: Number of clusters.
+
+        Returns:
+            Cluster label array of shape (n_samples,).
+        """
+        n_samples = embeddings.shape[0]
+        if n_samples <= n_clusters:
+            return np.arange(n_samples)
+
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        x = torch.from_numpy(embeddings).to(device)
+
+        # Full pairwise distance matrix
+        dists = torch.cdist(x, x)  # (n_samples, n_samples)
+        dists.fill_diagonal_(float('inf'))
+
+        # Each sample starts as its own cluster; track active clusters.
+        active = list(range(n_samples))
+        cluster_of = list(range(n_samples))
+        next_cluster_id = n_samples
+
+        while len(active) > n_clusters:
+            # Find minimum distance pair among active clusters.
+            active_mask = torch.zeros(n_samples, dtype=torch.bool, device=device)
+            for c in active:
+                active_mask[c] = True
+            sub_dists = dists[active_mask][:, active_mask]
+            min_val, min_idx = sub_dists.view(-1).min(dim=0)
+            size = len(active)
+            i = int(min_idx // size)
+            j = int(min_idx % size)
+            if i == j:
+                break
+            ci = active[i]
+            cj = active[j]
+
+            # Merge cj into ci using single linkage (minimum of distances).
+            merged = torch.minimum(dists[ci], dists[cj])
+            dists[ci] = merged
+            dists[:, ci] = merged
+            dists[ci, ci] = float('inf')
+            dists[cj] = float('inf')
+            dists[:, cj] = float('inf')
+
+            for idx, c in enumerate(cluster_of):
+                if c == cj:
+                    cluster_of[idx] = ci
+
+            active.pop(j)
+            next_cluster_id += 1
+
+        # Remap active cluster ids to compact 0..n_clusters-1 labels.
+        unique_active = sorted(set(cluster_of))
+        remap = {c: i for i, c in enumerate(unique_active)}
+        return np.array([remap[c] for c in cluster_of], dtype=np.int64)
     
     def save_embeddings(
         self,
