@@ -34,19 +34,5 @@ Modos posteriores soportados:
 \label{fig:sbert-modes}
 \end{figure}
 
-\begin{algorithm}[t]
-\caption{Enrutador de Modo de Inferencia SBERT}
-\begin{algorithmic}[1]
-\Require modo $m$, modelo $E$, entradas $X$
-\If{$m=\texttt{similarity}$}
-    \State retornar $\cos(E(x_1),E(x_2))$
-\ElsIf{$m=\texttt{search}$}
-    \State retornar top-$k$ por producto-punto/coseno contra embeddings del corpus
-\ElsIf{$m=\texttt{cluster}$}
-    \State retornar etiquetas de clustering sobre $E(X)$
-\Else
-    \State retornar embeddings serializados $E(X)$
-\EndIf
-\end{algorithmic}
-\end{algorithm}
+El pseudocódigo del enrutador de modo de inferencia SBERT---despachando entre los modos de similitud, búsqueda, cluster y codificación sobre un codificador compartido---se difiere al Apéndice~\ref{sec:annex-norm-bitnet-mod}.
 

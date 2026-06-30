@@ -268,77 +268,10 @@ g_{\text{clip}} = g_{\text{acc}}\cdot
 \]
 then overflow guards use \texttt{inf\_post\_clip\_threshold} and retry logic bounded by \texttt{max\_nan\_retries}.
 
-\begin{algorithm}[t]
-\caption{Schema-Driven Training Step with Stability Controls}
-\begin{algorithmic}[1]
-\Require Batch stream, config $C$
-\State Initialize retry counter $r\gets 0$
-\For{each optimizer step}
-    \State Accumulate gradients for $K=C.\texttt{gradient\_accumulation\_steps}$ micro-batches
-    \State Apply global norm clipping with $\tau=C.\texttt{grad\_clip\_max\_norm}$
-    \If{post-clip gradient exceeds $C.\texttt{inf\_post\_clip\_threshold}$ or NaN/Inf detected}
-        \If{$r < C.\texttt{max\_nan\_retries}$}
-            \State restore safe state / skip step; $r \gets r+1$
-            \State \textbf{continue}
-        \Else
-            \State stop training with failure state
-        \EndIf
-    \EndIf
-    \State run optimizer step selected by \texttt{optimizer\_class}
-    \State update scheduler (\texttt{cosine}, \texttt{constant}, or \texttt{linear\_warmup\_then\_constant})
-    \If{step mod \texttt{checkpoint\_every\_n\_steps}$=0$}
-        \State save rolling checkpoint and prune to \texttt{max\_rolling\_checkpoints}
-    \EndIf
-    \State update best checkpoints up to \texttt{num\_best\_checkpoints}
-    \State emit CSV + telemetry following \texttt{gradient\_log\_interval} and \texttt{telemetry\_log\_interval}
-\EndFor
-\end{algorithmic}
-\end{algorithm}
+The complete pseudocode for the schema-driven training step---including gradient accumulation, global-norm clipping, post-clip explosion guards, bounded NaN/Inf retries, scheduler dispatch, and rolling/best checkpoint rotation---is deferred to Appendix~\ref{sec:annex-norm-bitnet-mod}.
 
-\subsection{Normalization Variants: RMSNorm, Dynamic Tanh, and Dynamic Erf}
+\subsection{Normalization Variants}
 \label{sec:normalization}
 
-Normalization determines how activation scale is controlled across depth. In this repository, normalization is not only a modeling choice but also a schema compatibility question, because only certain values are currently accepted by \texttt{norm\_type}. The three formulations most relevant to this codebase are:
-
-\subsection{RMSNorm}
-RMSNorm removes mean-centering and only rescales by root mean square magnitude \citep{zhang_root_2019}:
-\[
-\mathrm{RMS}(x)=\sqrt{\frac{1}{d}\sum_{i=1}^{d}x_i^2+\epsilon},\qquad
-y_i=\gamma_i\frac{x_i}{\mathrm{RMS}(x)}
-\]
-Compared with LayerNorm, RMSNorm is computationally simpler (no subtraction of feature mean) and is often used when reducing normalization overhead is important.
-
-\subsection{Dynamic Tanh (DyT)}
-Dynamic Tanh proposes replacing explicit normalization with a bounded elementwise map \citep{zhu_transformers_2025}:
-\[
-\mathrm{DyT}(x)=\tanh(\alpha x)
-\]
-where $\alpha$ is learned. The core idea is that bounded nonlinear contraction can provide stable signal scaling without explicitly computing per-token normalization statistics.
-
-\subsection{Dynamic Erf (Derf)}
-Derf extends the same normalization-free direction by using an error-function based map \citep{chen_stronger_2025}:
-\[
-\mathrm{Derf}(x)=\mathrm{erf}(\alpha x+s)
-\]
-with learnable scale/shift. Reported results in the cited work indicate stronger performance than DyT and common normalization baselines across multiple domains.
-
-\subsection{Schema Implications}
-Current configuration contract in this repository allows:
-\[
-\texttt{norm\_type}\in\{\texttt{layer\_norm},\texttt{dynamic\_tanh},\texttt{derf}\}
-\]
-so DyT and Derf are directly available in schema-driven runs, while RMSNorm is not currently an accepted enum value and would require code/schema extension.
-
-\scriptsize
-\begin{longtable}{p{2.2cm}p{3.4cm}p{2.0cm}p{4.0cm}}
-\toprule
-\textbf{Method} & \textbf{Formula} & \textbf{Stats Needed} & \textbf{Notes} \\
-\midrule
-\endhead
-RMSNorm & $\gamma_i x_i/\sqrt{\frac{1}{d}\sum_j x_j^2+\epsilon}$ & RMS only & Lower overhead; widely used baseline \citep{zhang_root_2019}. \\
-Dynamic Tanh & $\tanh(\alpha x)$ & none & Normalization-free bounded transform; drop-in replacement \citep{zhu_transformers_2025}. \\
-Dynamic Erf & $\mathrm{erf}(\alpha x+s)$ & none & Normalization-free alternative; improves over DyT \citep{chen_stronger_2025}. \\
-\bottomrule
-\end{longtable}
-\normalsize
+Normalization controls activation scale across depth and is also a schema compatibility question, since only \texttt{layer\_norm}, \texttt{dynamic\_tanh}, and \texttt{derf} are accepted \texttt{norm\_type} values; \texttt{rms\_norm} is not currently a valid schema value. The mathematical formulations of LayerNorm, RMSNorm, Dynamic Tanh (DyT) \citep{zhu_transformers_2025}, and Dynamic Erf (Derf) \citep{chen_stronger_2025}, together with a comparison table, are detailed in Appendix~\ref{sec:annex-norm-bitnet-mod}.
 

@@ -34,19 +34,5 @@ Supported downstream modes:
 \label{fig:sbert-modes}
 \end{figure}
 
-\begin{algorithm}[t]
-\caption{SBERT Inference Mode Router}
-\begin{algorithmic}[1]
-\Require mode $m$, model $E$, inputs $X$
-\If{$m=\texttt{similarity}$}
-    \State return $\cos(E(x_1),E(x_2))$
-\ElsIf{$m=\texttt{search}$}
-    \State return top-$k$ by dot-product/cosine against corpus embeddings
-\ElsIf{$m=\texttt{cluster}$}
-    \State return clustering labels over $E(X)$
-\Else
-    \State return serialized embeddings $E(X)$
-\EndIf
-\end{algorithmic}
-\end{algorithm}
+The pseudocode for the SBERT inference mode router---dispatching among similarity, search, cluster, and encode modes over a shared encoder---is deferred to Appendix~\ref{sec:annex-norm-bitnet-mod}.
 

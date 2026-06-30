@@ -92,63 +92,14 @@ This system implements seventeen distinct sequence mixer architectures organized
 \label{fig:comprehensive-taxonomy}
 \end{figure}
 
-\subsection{Standard Attention}
-Given projected matrices $(Q,K,V)$:
-\[
-\text{Attn}(Q,K,V)=\text{softmax}\left(\frac{QK^\top}{\sqrt{d_k}}\right)V
-\]
-This is the baseline mechanism for content routing \citep{vaswani_attention_2017}.
+\subsection{Dense and Recurrent Families}
+The dense baselines (standard softmax \citep{vaswani_attention_2017} and sigmoid \citep{ramapuram_theory_2024}) and the recurrent/retentive family (RetNet \citep{sun_retentive_2023}, Mamba \citep{gu_mamba_2023}, ODE-style continuous blocks \citep{zhang_continuous_2021}, and Titans test-time memory \citep{behrouz_titans_2025}) provide the foundational expressiveness-versus-efficiency tradeoff. Mathematical formulations, parallel and recurrent forms, algorithmic pseudocode, and an architectural comparison table are collected in Appendix~\ref{sec:annex-transformer}. The pattern-driven mixer dispatch algorithm (including the training-free enforcement policy for \texttt{fasa\_attn} and \texttt{sparge\_attn}) is likewise detailed there.
 
-\subsection{Sigmoid Attention}
-Sigmoid attention removes row-wise probability normalization:
-\[
-\text{SigmoidAttn}(Q,K,V)=\sigma\left(\frac{QK^\top}{\sqrt{d_k}}+b\right)V
-\]
-and has different training stability requirements, often with additional normalization \citep{ramapuram_theory_2024}.
+\subsection{Latent and Low-Rank Attention Family}
+A complementary family compresses the per-token key--value state into a low-rank latent: Multi-Head Latent Attention (MLA), Group-Query Latent Attention (GQLA), Multi-Head Low-Rank Attention (MLRA), Tucker Attention, Interleaved Head Attention (IHA), Grouped-head laTenT Attention (GTA), and Multi-head Temporal Latent Attention (MTLA). These methods unify grouped-query, latent, factorised, and temporal-latent designs under a common low-rank bottleneck. Full formulations, pseudocode, and a comparison table are collected in Appendix~\ref{sec:annex-latent}.
 
-\subsection{Retentive Formulation}
-RetNet uses retention with decay matrix $D$:
-\[
-\text{Retention}(Q,K,V)=\left(QK^\top \odot D\right)V
-\]
-with recurrent form:
-\[
-S_n=\gamma S_{n-1}+k_n^\top v_n,\qquad o_n=q_n S_n
-\]
-enabling low-cost recurrent inference \citep{sun_retentive_2023,yang_survey_2025}.
-
-\subsection{Selective SSM (Mamba)}
-Discrete selective state-space recurrence is:
-\[
-h_t=\bar{A}_t h_{t-1}+\bar{B}_t x_t,\qquad y_t=C_t h_t
-\]
-where $(\bar{A}_t,\bar{B}_t,C_t)$ depend on input, preserving linear-time scaling with hardware-aware scan \citep{gu_mamba_2023,hwang_hydra_2024}.
-
-\subsection{ODE-style Continuous Updates}
-Continuous-depth framing:
-\[
-\frac{dh(t)}{dt}=f_\theta(h(t),t)
-\]
-with practical RK integrators for discrete execution \citep{zhang_continuous_2021}.
-
-\subsection{Test-time Memory (Titans)}
-A memory-augmented update can be written:
-\[
-M_t=(1-\alpha_t)M_{t-1}+S_t,\qquad
-S_t=\eta_t S_{t-1}-\theta_t\nabla \ell(M_{t-1};x_t)
-\]
-to adapt memory at inference time \citep{behrouz_titans_2025,behrouz_titans_2024}.
-
-\subsection{Sparse and Gated Extensions in the Current Codebase}
-The mixer registry now includes sparse blocks:
-\texttt{sparse\_transformer\_attn}, \texttt{longformer\_attn}, \texttt{bigbird\_attn},
-\texttt{sparsek\_attn}, \texttt{nsa\_attn}, \texttt{sparge\_attn}, and \texttt{fasa\_attn};
-and gated blocks:
-\texttt{gla\_attn}, \texttt{deltanet\_attn}, \texttt{gated\_deltanet\_attn},
-\texttt{gated\_deltanet2\_attn}, \texttt{hgrn2\_attn}, \texttt{fox\_attn}, and \texttt{gated\_softmax\_attn}.
-
-The implementation enforces an explicit execution policy for training-free sparse methods:
-\texttt{fasa\_attn} and \texttt{sparge\_attn} are eval/inference-only and raise runtime errors if used while the model is in training mode.
+\subsection{Sparse Attention Extensions}
+The mixer registry includes seven sparse blocks: \texttt{sparse\_transformer\_attn}, \texttt{longformer\_attn}, \texttt{bigbird\_attn}, \texttt{sparsek\_attn}, \texttt{nsa\_attn}, \texttt{sparge\_attn}, and \texttt{fasa\_attn} \citep{child_sparse_transformer_2019,beltagy_longformer_2020,zaheer_bigbird_2020,lou_sparsek_2024,yuan_nsa_2025,zhang_spargeattn_2025,wang_fasa_2026}. The implementation enforces an explicit execution policy for training-free sparse methods: \texttt{fasa\_attn} and \texttt{sparge\_attn} are eval/inference-only and raise runtime errors if used while the model is in training mode. Mathematical formulations, algorithmic pseudocode, per-block characteristics, and a comparison table are collected in Appendix~\ref{sec:annex-sparse}.
 
 \begin{figure}[t]
 \centering
@@ -166,73 +117,8 @@ The implementation enforces an explicit execution policy for training-free spars
 \label{fig:sparse-map}
 \end{figure}
 
-\subsection{Implemented Sparse Attention Blocks (Detailed)}
-This codebase includes seven sparse attention families \citep{child_sparse_transformer_2019,beltagy_longformer_2020,zaheer_bigbird_2020,lou_sparsek_2024,yuan_nsa_2025,zhang_spargeattn_2025,wang_fasa_2026}.
-
-\paragraph{Sparse Transformer (\texttt{sparse\_transformer\_attn}).}
-Uses factorized sparse masks (strided + fixed) to approximate dense connectivity at lower cost than full $\mathcal{O}(n^2)$ attention:
-\[
-\text{Attn}_i=\text{softmax}\!\left(\frac{q_iK_{A_i}^\top}{\sqrt{d_k}}\right)V_{A_i}
-\]
-where $A_i$ is the sparse neighborhood induced by stride/fixed rules.
-\citep{child_sparse_transformer_2019}
-
-\paragraph{Longformer (\texttt{longformer\_attn}).}
-Uses sliding-window locality with optional global tokens:
-\[
-A_i=\{j:\lvert i-j\rvert \le w/2\}\cup\mathcal{G}
-\]
-yielding linear scaling in sequence length for fixed window $w$.
-\citep{beltagy_longformer_2020}
-
-\paragraph{BigBird (\texttt{bigbird\_attn}).}
-Combines local windows, random links, and global tokens:
-\[
-A_i=A_i^{\text{window}}\cup A_i^{\text{random}}\cup A_i^{\text{global}}
-\]
-to preserve strong long-context connectivity with sparse computation.
-\citep{zaheer_bigbird_2020}
-
-\paragraph{SparseK (\texttt{sparsek\_attn}).}
-Uses a differentiable top-$k$ style projection over importance scores before attention, so only selected KV pairs participate in the expensive dot-product path.
-\citep{lou_sparsek_2024}
-
-\paragraph{NSA (\texttt{nsa\_attn}).}
-Implements a three-branch sparse design: compressed branch, selected branch, and local window branch, then combines them with learned gates:
-\[
-o_t=\sum_{c\in\{\text{cmp},\text{sel},\text{win}\}} g_t^c\,\text{Attn}(q_t,\tilde K_t^c,\tilde V_t^c)
-\]
-\citep{yuan_nsa_2025}
-
-\paragraph{SpargeAttn (\texttt{sparge\_attn}).}
-Two-stage training-free block filtering: first predicts negligible block interactions, then applies softmax-aware pruning to remove low-contribution blocks.
-\citep{zhang_spargeattn_2025}
-
-\paragraph{FASA (\texttt{fasa\_attn}).}
-Frequency-aware training-free attention: uses dominant RoPE frequency chunks for token importance prediction, then applies full attention only on selected tokens.
-\citep{wang_fasa_2026}
-
-\small
-\begin{longtable}{p{2.5cm}p{1.6cm}p{1.9cm}p{2.4cm}p{4.1cm}p{1.5cm}}
-\toprule
-\textbf{Block} & \textbf{Trainable} & \textbf{Asymptotic Trend} & \textbf{Primary Sparsity Unit} & \textbf{Current Integration Notes} & \textbf{Ref} \\
-\midrule
-\endhead
-Sparse Transformer & Yes & sub-quadratic & mask pattern (token-level) & Factorized strided/fixed masks inside SDPA pipeline. & \citep{child_sparse_transformer_2019} \\
-Longformer & Yes & linear in $n$ (fixed $w$) & sliding window + global tokens & Window mask with optional global indices. & \citep{beltagy_longformer_2020} \\
-BigBird & Yes & near-linear & window + random + global edges & Randomized sparse mask plus local/global paths. & \citep{zaheer_bigbird_2020} \\
-SparseK & Yes & linear-like (selected KV) & differentiable top-$k$ KV selection & Learned score net + SparseK projection + gathered KV attention. & \citep{lou_sparsek_2024} \\
-NSA & Yes & reduced-token multi-branch & compressed blocks + selected blocks + local window & Three sparse branches gated into one output tensor. & \citep{yuan_nsa_2025} \\
-SpargeAttn & No (training-free) & sparse block dependent & block-level predicted sparsity & Eval-only in this repo; raises in training mode. & \citep{zhang_spargeattn_2025} \\
-FASA & No (training-free) & selected-token dependent & dominant frequency chunks + selected tokens & Eval-only in this repo; raises in training mode. & \citep{wang_fasa_2026} \\
-\bottomrule
-\end{longtable}
-\normalsize
-
-\subsection{Implemented Gated Attention Blocks (Detailed)}
-This codebase includes eight gated blocks \citep{yang_gla_2023,yang_deltanet_2024,yang_gated_deltanet_2024,hatamizadeh_gated_deltanet2_2026,sun_retentive_2023,qin_hgrn2_2024,lin_forgetting_transformer_2025,qiu_gated_attention_2025}.
-
-The unifying idea is that gating controls \emph{what information survives}. Some gates act on recurrent state updates (GLA, DeltaNet variants, HGRN2), while others modify the full attention path itself (FoX and Gated Softmax). This makes gating especially useful when the model must trade off recall, recency, and bounded memory.
+\subsection{Gated Attention Extensions}
+The mixer registry includes eight gated blocks: \texttt{gla\_attn}, \texttt{deltanet\_attn}, \texttt{gated\_deltanet\_attn}, \texttt{gated\_deltanet2\_attn}, \texttt{hgrn2\_attn}, \texttt{fox\_attn}, and \texttt{gated\_softmax\_attn} \citep{yang_gla_2023,yang_deltanet_2024,yang_gated_deltanet_2024,hatamizadeh_gated_deltanet2_2026,qin_hgrn2_2024,lin_forgetting_transformer_2025,qiu_gated_attention_2025}. The unifying idea is that gating controls \emph{what information survives}: some gates act on recurrent state updates (GLA, DeltaNet variants, HGRN2), while others modify the full attention path itself (FoX and Gated Softmax). This makes gating especially useful when the model must trade off recall, recency, and bounded memory. Mathematical formulations, algorithmic pseudocode, a generic gating template, and a comparison table are collected in Appendix~\ref{sec:annex-gated}.
 
 \begin{figure}[t]
 \centering
@@ -249,110 +135,3 @@ The unifying idea is that gating controls \emph{what information survives}. Some
 \caption{Generic gating template. A gate can decay existing memory, regulate write strength, or modulate dense attention outputs, depending on the block family.}
 \label{fig:gating-template}
 \end{figure}
-
-\paragraph{GLA (\texttt{gla\_attn}).}
-Gated Linear Attention applies data-dependent multiplicative decay in recurrent state updates:
-\[
-S_t=G_t\odot S_{t-1}+v_tk_t^\top,\qquad o_t=S_tq_t
-\]
-to control memory accumulation.
-\citep{yang_gla_2023}
-
-\paragraph{DeltaNet (\texttt{deltanet\_attn}).}
-Uses a delta-rule error-correcting write with learned write strength $\beta_t$:
-\[
-S_t=S_{t-1}(I-\beta_tk_tk_t^\top)+\beta_tv_tk_t^\top
-\]
-which improves targeted memory replacement.
-\citep{yang_deltanet_2024}
-
-\paragraph{Gated DeltaNet (\texttt{gated\_deltanet\_attn}).}
-Adds decay gate $\alpha_t$ on top of delta-rule writes:
-\[
-S_t=\alpha_t S_{t-1}(I-\beta_tk_tk_t^\top)+\beta_tv_tk_t^\top
-\]
-for both global forgetting and local corrective updates.
-\citep{yang_gated_deltanet_2024}
-
-\paragraph{Gated DeltaNet-2 (\texttt{gated\_deltanet2\_attn}).}
-Decouples the scalar delta gate $\beta_t$ into a channel-wise erase gate $\mathbf{b}_t$ (key axis) and a channel-wise write gate $\mathbf{w}_t$ (value axis), with channel-wise decay $\boldsymbol{\alpha}_t$ (KDA-style):
-\[
-S_t=(I-k_t(\mathbf{b}_t\odot k_t)^\top)\,\mathrm{Diag}(\boldsymbol{\alpha}_t)\,S_{t-1}+k_t(\mathbf{w}_t\odot v_t)^\top
-\]
-for finer-grained memory control; reduces to KDA and Gated DeltaNet as special cases.
-\citep{hatamizadeh_gated_deltanet2_2026}
-
-\paragraph{RetNet Attn Alias (\texttt{retnet\_attn}).}
-Provides an explicit gated-package alias wrapping multi-scale retention behavior for naming consistency in layer registries.
-\citep{sun_retentive_2023}
-
-\paragraph{HGRN2 (\texttt{hgrn2\_attn}).}
-Uses lower-bounded forget gates with outer-product state expansion:
-\[
-S_t=\text{diag}(g_t)S_{t-1}+v_tk_t^\top
-\]
-to increase recurrent state expressiveness while remaining efficient.
-\citep{qin_hgrn2_2024}
-
-\paragraph{FoX (\texttt{fox\_attn}).}
-Injects token-wise forget bias directly into softmax logits:
-\[
-O=\text{softmax}(QK^\top + D)V
-\]
-where $D$ is derived from cumulative log-forget gates.
-\citep{lin_forgetting_transformer_2025}
-
-\paragraph{Gated Softmax (\texttt{gated\_softmax\_attn}).}
-Applies a post-SDPA sigmoid gate:
-\[
-Y'=\text{SDPA}(Q,K,V)\odot \sigma(XW_g)
-\]
-which adds multiplicative channel gating without replacing softmax attention.
-\citep{qiu_gated_attention_2025}
-
-\small
-\begin{longtable}{p{2.4cm}p{2.0cm}p{2.2cm}p{1.8cm}p{4.0cm}p{1.5cm}}
-\toprule
-\textbf{Block} & \textbf{State Type} & \textbf{Gate Mechanism} & \textbf{Softmax Path} & \textbf{Current Integration Notes} & \textbf{Ref} \\
-\midrule
-\endhead
-GLA & matrix recurrent state & data-dependent multiplicative decay & No (linear recurrent) & Recurrent update with low-rank gate projection. & \citep{yang_gla_2023} \\
-DeltaNet & matrix recurrent state & write gate ($\beta$) & No (linear recurrent) & Delta-rule correction with normalized Q/K. & \citep{yang_deltanet_2024} \\
-Gated DeltaNet & matrix recurrent state & decay + write gates ($\alpha,\beta$) & No (linear recurrent) & Combined forgetting and targeted writing. & \citep{yang_gated_deltanet_2024} \\
-Gated DeltaNet-2 & matrix recurrent state & decoupled erase + write gates (channel-wise) & No (linear recurrent) & Channel-wise erase (key) + write (value); KDA-style decay. & \citep{hatamizadeh_gated_deltanet2_2026} \\
-RetNet Attn & matrix recurrent state & fixed multi-scale decay & No (retention) & Alias wrapper over existing RetNet mixer. & \citep{sun_retentive_2023} \\
-HGRN2 & matrix recurrent state & lower-bounded forget gate & No (linear recurrent) & Hierarchical recurrent gating with outer products. & \citep{qin_hgrn2_2024} \\
-FoX & full attention matrix & logit-space forget gate & Yes & Forget bias added before softmax. & \citep{lin_forgetting_transformer_2025} \\
-Gated Softmax & full attention matrix & post-attention sigmoid gate & Yes & Sigmoid gating applied after SDPA output. & \citep{qiu_gated_attention_2025} \\
-\bottomrule
-\end{longtable}
-\normalsize
-
-\begin{algorithm}[t]
-\caption{Pattern-Driven Mixer Forward (Conceptual)}
-\begin{algorithmic}[1]
-\Require Hidden states $H$, pattern $P$, layer index $\ell$
-\State $m \gets P[\ell \bmod |P|]$
-\If{$m \in \{\texttt{fasa\_attn}, \texttt{sparge\_attn}\}$ and model is in training mode}
-    \State raise configuration/runtime error (training-free block in train mode)
-\ElsIf{$m=\texttt{standard\_attn}$}
-    \State $H \gets \text{softmax-attention}(H)$
-\ElsIf{$m=\texttt{sigmoid\_attn}$}
-    \State $H \gets \text{sigmoid-attention}(H)$
-\ElsIf{$m\in\{\texttt{retnet},\texttt{retnet\_attn}\}$}
-    \State $H \gets \text{retention}(H)$
-\ElsIf{$m=\texttt{mamba}$}
-    \State $H \gets \text{selective-ssm}(H)$
-\ElsIf{$m=\texttt{ode}$}
-    \State $H \gets \text{rk-step}(H)$
-\ElsIf{$m$ is a sparse attention key}
-    \State $H \gets \text{sparse-attention-family}(H)$
-\ElsIf{$m$ is a gated attention key}
-    \State $H \gets \text{gated-attention-family}(H)$
-\Else
-    \State $H \gets \text{memory-augmented-attn}(H)$
-\EndIf
-\State \Return $H$
-\end{algorithmic}
-\end{algorithm}
-

@@ -268,77 +268,10 @@ g_{\text{clip}} = g_{\text{acc}}\cdot
 \]
 luego los guardas de desbordamiento usan \texttt{inf\_post\_clip\_threshold} y lógica de reintentos limitada por \texttt{max\_nan\_retries}.
 
-\begin{algorithm}[t]
-\caption{Paso de Entrenamiento Guiado por Esquema con Controles de Estabilidad}
-\begin{algorithmic}[1]
-\Require Flujo de lotes, configuración $C$
-\State Inicializar contador de reintentos $r\gets 0$
-\For{cada paso del optimizador}
-    \State Acumular gradientes para $K=C.\texttt{gradient\_accumulation\_steps}$ micro-lotes
-    \State Aplicar recorte de norma global con $\tau=C.\texttt{grad\_clip\_max\_norm}$
-    \If{el gradiente post-recorte excede $C.\texttt{inf\_post\_clip\_threshold}$ o se detecta NaN/Inf}
-        \If{$r < C.\texttt{max\_nan\_retries}$}
-            \State restaurar estado seguro / saltar paso; $r \gets r+1$
-            \State \textbf{continue}
-        \Else
-            \State detener entrenamiento con estado de fallo
-        \EndIf
-    \EndIf
-    \State ejecutar paso del optimizador seleccionado por \texttt{optimizer\_class}
-    \State actualizar scheduler (\texttt{cosine}, \texttt{constant}, o \texttt{linear\_warmup\_then\_constant})
-    \If{paso mod \texttt{checkpoint\_every\_n\_steps}$=0$}
-        \State guardar checkpoint rodante y podar a \texttt{max\_rolling\_checkpoints}
-    \EndIf
-    \State actualizar mejores checkpoints hasta \texttt{num\_best\_checkpoints}
-    \State emitir CSV + telemetría según \texttt{gradient\_log\_interval} y \texttt{telemetry\_log\_interval}
-\EndFor
-\end{algorithmic}
-\end{algorithm}
+El pseudocódigo completo del paso de entrenamiento guiado por esquema---incluyendo acumulación de gradientes, recorte de norma global, guardas de explosión post-recorte, reintentos acotados de NaN/Inf, despacho del scheduler y rotación de checkpoints rodantes/mejores---se difiere al Apéndice~\ref{sec:annex-norm-bitnet-mod}.
 
-\subsection{Variantes de Normalización: RMSNorm, Tanh Dinámico y Erf Dinámico}
+\subsection{Variantes de Normalización}
 \label{sec:normalization}
 
-La normalización determina cómo se controla la escala de activación a través de la profundidad. En este repositorio, la normalización no es solo una elección de modelado sino también una cuestión de compatibilidad con el esquema, porque solo ciertos valores son actualmente aceptados por \texttt{norm\_type}. Las tres formulaciones más relevantes para este código base son:
-
-\subsection{RMSNorm}
-RMSNorm elimina la centralización de la media y solo reescala por la magnitud de la raíz cuadrada media \citep{zhang_root_2019}:
-\[
-\mathrm{RMS}(x)=\sqrt{\frac{1}{d}\sum_{i=1}^{d}x_i^2+\epsilon},\qquad
-y_i=\gamma_i\frac{x_i}{\mathrm{RMS}(x)}
-\]
-En comparación con LayerNorm, RMSNorm es computacionalmente más simple (sin resta de la media de características) y se usa a menudo cuando es importante reducir la sobrecarga de normalización.
-
-\subsection{Tanh Dinámico (DyT)}
-El Tanh Dinámico propone reemplazar la normalización explícita con un mapeo elemento a variable acotado \citep{zhu_transformers_2025}:
-\[
-\mathrm{DyT}(x)=\tanh(\alpha x)
-\]
-donde $\alpha$ se aprende. La idea central es que la contracción no lineal acotada puede proporcionar un escalado de señal estable sin calcular explícitamente estadísticas de normalización por token.
-
-\subsection{Erf Dinámico (Derf)}
-Derf extiende la misma dirección libre de normalización usando un mapeo basado en la función error \citep{chen_stronger_2025}:
-\[
-\mathrm{Derf}(x)=\mathrm{erf}(\alpha x+s)
-\]
-con escala/desplazamiento aprendibles. Los resultados reportados en el trabajo citado indican un rendimiento superior al de DyT y las líneas base de normalización comunes en múltiples dominios.
-
-\subsection{Implicaciones del Esquema}
-El contrato de configuración actual en este repositorio permite:
-\[
-\texttt{norm\_type}\in\{\texttt{layer\_norm},\texttt{dynamic\_tanh},\texttt{derf}\}
-\]
-por lo que DyT y Derf están directamente disponibles en ejecuciones guiadas por esquema, mientras que RMSNorm no es actualmente un valor de enumeración aceptado y requeriría extensión de código/esquema.
-
-\scriptsize
-\begin{longtable}{p{2.2cm}p{3.4cm}p{2.0cm}p{4.0cm}}
-\toprule
-\textbf{Método} & \textbf{Fórmula} & \textbf{Estadísticas Necesarias} & \textbf{Notas} \\
-\midrule
-\endhead
-RMSNorm & $\gamma_i x_i/\sqrt{\frac{1}{d}\sum_j x_j^2+\epsilon}$ & Solo RMS & Menor sobrecarga; línea base ampliamente usada \citep{zhang_root_2019}. \\
-Tanh Dinámico & $\tanh(\alpha x)$ & ninguna & Transformación acotada libre de normalización; reemplazo directo \citep{zhu_transformers_2025}. \\
-Erf Dinámico & $\mathrm{erf}(\alpha x+s)$ & ninguna & Alternativa libre de normalización; mejora sobre DyT \citep{chen_stronger_2025}. \\
-\bottomrule
-\end{longtable}
-\normalsize
+La normalización controla la escala de activación a través de la profundidad y es también una cuestión de compatibilidad con el esquema, ya que solo \texttt{layer\_norm}, \texttt{dynamic\_tanh} y \texttt{derf} son valores aceptados de \texttt{norm\_type}; \texttt{rms\_norm} no es actualmente un valor de esquema válido. Las formulaciones matemáticas de LayerNorm, RMSNorm, Tanh Dinámico (DyT) \citep{zhu_transformers_2025} y Erf Dinámico (Derf) \citep{chen_stronger_2025}, junto con una tabla comparativa, se detallan en el Apéndice~\ref{sec:annex-norm-bitnet-mod}.
 

@@ -18,25 +18,5 @@ The deploy stack uses ternary weight packing plus INT8 activation quantization f
 \label{fig:deploy-flow}
 \end{figure}
 
-\subsection{Ternary Quantization}
-Given weight tensor $W$, a practical scaling is:
-\[
-s=\text{mean}(|W|),\qquad
-\tilde{W}=\text{clip}\left(\text{round}\left(\frac{W}{s}\right),-1,1\right)
-\]
-which approximates BitNet-style low-bit updates \citep{wang_bitnet_2023}. The packed mapping uses two bits per weight symbol for storage efficiency.
-
-\subsection{Activation Quantization}
-For activations $x$:
-\[
-q=\text{round}\left(x\cdot\frac{127}{\max(|x|)+\epsilon}\right),\qquad q\in[-128,127]
-\]
-with dequantization $x\approx q/\alpha$.
-
-\subsection{Size Estimates}
-For $N$ parameters:
-\[
-\text{FP32 size}\approx 4N,\quad \text{FP16 size}\approx 2N,\quad \text{1.58-bit size}\approx \frac{1.58}{8}N
-\]
-before metadata and packing overhead. This aligns with lightweight deployment goals \citep{samson_lightweight_2026,bravin_embbert_2026}.
-
+\subsection{Ternary Quantization and Activation Scaling}
+The deploy-stage transforms a trained checkpoint into a compact artifact via BitNet-style ternary weight packing \citep{wang_bitnet_2023}, INT8 activation scaling, and 1.58-bit storage approximation aligned with lightweight deployment goals \citep{samson_lightweight_2026,bravin_embbert_2026}. The mathematical formulations of the ternary weight scaling, the INT8 activation quantization/dequantization, and the FP32/FP16/1.58-bit size estimates are deferred to Appendix~\ref{sec:annex-norm-bitnet-mod}.

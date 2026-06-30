@@ -28,7 +28,7 @@ con subcomandos para flujos de trabajo de codificador y decodificador:
 El comando \texttt{web-server} lanza un constructor de configuración basado en Streamlit que proporciona:
 \begin{itemize}[leftmargin=*]
     \item Campos de formulario impulsados por esquemas con títulos de parámetros y descripciones detalladas
-    \uta Información sobre herramientas en tiempo real y texto de ayuda para cada opción de configuración
+    \item Información sobre herramientas en tiempo real y texto de ayuda para cada opción de configuración
     \item Vista previa YAML en vivo y funcionalidad de descarga
     \item Comandos CLI generados para entrenamiento, despliegue, inferencia y flujos de trabajo SBERT
 \end{itemize}
@@ -54,7 +54,7 @@ Este documento está organizado como una referencia técnica que aborda cuatro p
 \begin{enumerate}[leftmargin=*]
     \item \textbf{Requisitos Previos}: El Apéndice~\ref{sec:annex-tutorial} proporciona una introducción accesible a los transformers y mecanismos de atención para lectores nuevos en el campo.
     \item \textbf{Contrato de Configuración}: La Sección~\ref{sec:config-centric-architecture} describe el esquema YAML que garantiza experimentos válidos y la Sección~\ref{sec:schema-validation} explica las reglas de validación.
-    \item \textbf{Selección de Arquitectura}: La Sección~\ref{sec:normalization} cubre las opciones de normalización; la Sección~\ref{sec:attention-families} proporciona una comparación exhaustiva de las familias de mezcladores de secuencia; los Apéndices~\ref{sec:annex-transformer}, \ref{sec:annex-sparse} y \ref{sec:annex-gated} sintetizan la literatura de respaldo.
+    \item \textbf{Selección de Arquitectura}: La Sección~\ref{sec:attention-families} proporciona una comparación exhaustiva de las familias de mezcladores de secuencia; los Apéndices~\ref{sec:annex-transformer}, \ref{sec:annex-latent}, \ref{sec:annex-sparse} y \ref{sec:annex-gated} sintetizan la literatura de respaldo; el Apéndice~\ref{sec:annex-norm-bitnet-mod} detalla las variantes de normalización, la cuantización BitNet, el enrutamiento Mixture-of-Depths y la memoria condicional Engram.
     \item \textbf{Dinámica de Optimización}: La Sección~\ref{sec:optimizer-families} detalla el enrutamiento de optimizadores y la dinámica de entrenamiento; el Apéndice~\ref{sec:annex-optimizers} proporciona un análisis exhaustivo de las familias de optimizadores.
     \item \textbf{Despliegue e Inferencia}: Las Secciones~\ref{sec:quantization} y~\ref{sec:sbert} describen el despliegue cuantizado y los flujos de trabajo de incrustación de oraciones.
 \end{enumerate}
@@ -76,7 +76,7 @@ Este enfoque basado en web aborda barreras de usabilidad comunes en la experimen
     \item Reduce la necesidad de memorizar la estructura YAML y los nombres de los campos
     \item Previene errores tipográficos mediante la validación del esquema
     \item Proporciona contexto educativo a través de documentación en línea
-    \uta Permite la experimentación rápida con ajuste guiado de parámetros
+    \item Permite la experimentación rápida con ajuste guiado de parámetros
     \item Sirve tanto como herramienta de configuración como recurso de aprendizaje
 \end{itemize}
 

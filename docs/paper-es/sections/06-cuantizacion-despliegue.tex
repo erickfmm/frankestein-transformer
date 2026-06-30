@@ -18,25 +18,5 @@ El stack de despliegue utiliza empaquetado ternario de pesos más cuantización 
 \label{fig:deploy-flow}
 \end{figure}
 
-\subsection{Cuantización Ternaria}
-Dado el tensor de pesos $W$, un escalado práctico es:
-\[
-s=\text{mean}(|W|),\qquad
-\tilde{W}=\text{clip}\left(\text{round}\left(\frac{W}{s}\right),-1,1\right)
-\]
-que aproxima las actualizaciones de bajo bit estilo BitNet \citep{wang_bitnet_2023}. El mapeo empaquetado utiliza dos bits por símbolo de peso para eficiencia de almacenamiento.
-
-\subsection{Cuantización de Activaciones}
-Para las activaciones $x$:
-\[
-q=\text{round}\left(x\cdot\frac{127}{\max(|x|)+\epsilon}\right),\qquad q\in[-128,127]
-\]
-con des-cuantización $x\approx q/\alpha$.
-
-\subsection{Estimaciones de Tamaño}
-Para $N$ parámetros:
-\[
-\text{Tamaño FP32}\approx 4N,\quad \text{Tamaño FP16}\approx 2N,\quad \text{Tamaño 1.58-bit}\approx \frac{1.58}{8}N
-\]
-antes de metadatos y sobrecarga de empaquetado. Esto se alinea con objetivos de despliegue ligero \citep{samson_lightweight_2026,bravin_embbert_2026}.
-
+\subsection{Cuantización Ternaria y Escalado de Activaciones}
+La etapa de despliegue transforma un checkpoint entrenado en un artefacto compacto mediante empaquetado ternario de pesos estilo BitNet \citep{wang_bitnet_2023}, escalado de activaciones INT8 y aproximación de almacenamiento de 1.58 bits alineada con objetivos de despliegue ligero \citep{samson_lightweight_2026,bravin_embbert_2026}. Las formulaciones matemáticas del escalado ternario de pesos, la cuantización/des-cuantización de activaciones INT8 y las estimaciones de tamaño FP32/FP16/1.58 bits se difieren al Apéndice~\ref{sec:annex-norm-bitnet-mod}.
