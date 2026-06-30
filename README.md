@@ -134,7 +134,7 @@ frankestein-transformer --help
 
 ## Quick Training Example
 
-Minimal YAML config (`my_config.yaml`):
+Minimal YAML config (`my_config.yaml`) — only the 5 required model fields plus task; everything else uses UltraConfig/TrainingConfig defaults:
 
 ```yaml
 model_class: mini
@@ -142,37 +142,17 @@ model:
   vocab_size: 30522
   hidden_size: 256
   num_layers: 4
-  num_loops: 1
   num_heads: 8
-  retention_heads: 8
-  num_experts: 1
-  top_k_experts: 1
-  dropout: 0.1
   layer_pattern: [standard_attn, standard_attn, standard_attn, standard_attn]
-  ode_solver: rk4
-  ode_steps: 4
-  use_bitnet: false
-  norm_type: layer_norm
-  use_factorized_embedding: false
-  factorized_embedding_dim: 128
-  use_embedding_conv: false
-  embedding_conv_kernel: 3
-  use_hope: false
-  use_moe: false
-  ffn_hidden_size: 1024
-  ffn_activation: gelu
 training:
   task: mlm
   batch_size: 8
-  dataloader_workers: 2
   max_length: 128
   mlm_probability: 0.15
   max_samples: 100000
   dataset_batch_size: 10000
   num_workers: 4
   cache_dir: "./temp_data/cache"
-  use_amp: false
-  gradient_accumulation_steps: 1
   optimizer:
     optimizer_class: adamw
     parameters:
@@ -205,34 +185,9 @@ training:
       adamw-eps_attention: 1e-8
       adamw-eps_other: 1e-8
   scheduler_total_steps: 1000
-  scheduler_warmup_ratio: 0.1
-  scheduler_type: cosine
-  grad_clip_max_norm: 5.0
-  inf_post_clip_threshold: 100.0
-  max_nan_retries: 3
-  checkpoint_every_n_steps: 500
-  max_rolling_checkpoints: 3
-  num_best_checkpoints: 2
-  nan_check_interval: 10
-  log_gradient_stats: true
-  gradient_log_interval: 10
-  csv_log_path: "training_metrics.csv"
-  csv_rotate_on_schema_change: true
-  gpu_metrics_backend: nvml
-  nvml_device_index: 0
-  enable_block_grad_norms: true
-  telemetry_log_interval: 1
-  gpu_temp_guard_enabled: false
-  gpu_temp_pause_threshold_c: 90.0
-  gpu_temp_resume_threshold_c: 80.0
-  gpu_temp_critical_threshold_c: null
-  gpu_temp_poll_interval_seconds: 30.0
-  use_galore: false
-  galore_rank: 64
-  galore_update_interval: 1
-  galore_scale: 1.0
-  galore_max_dim: 4096
 ```
+
+Unspecified model fields fall back to UltraConfig defaults (`num_loops=2`, `dropout=0.1`, `norm_type=dynamic_tanh`, `use_moe=true`, `ffn_activation=silu`, etc.). Unspecified training fields fall back to TrainingConfig defaults (`scheduler_type=cosine`, `grad_clip_max_norm=5.0`, `gpu_temp_guard_enabled=true`, etc.). Override only what you need to change.
 
 Run:
 

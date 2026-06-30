@@ -29,25 +29,8 @@ required:
   - vocab_size
   - hidden_size
   - num_layers
-  - num_loops
   - num_heads
-  - retention_heads
-  - num_experts
-  - top_k_experts
-  - dropout
   - layer_pattern
-  - ode_solver
-  - ode_steps
-  - use_bitnet
-  - norm_type
-  - use_factorized_embedding
-  - factorized_embedding_dim
-  - use_embedding_conv
-  - embedding_conv_kernel
-  - use_hope
-  - use_moe
-  - ffn_hidden_size
-  - ffn_activation
 properties:
   vocab_size:
     type: integer

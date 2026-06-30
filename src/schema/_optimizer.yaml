@@ -18,7 +18,6 @@ description_es: |
 additionalProperties: false
 required:
   - optimizer_class
-  - parameters
 properties:
   optimizer_class:
     type: string
