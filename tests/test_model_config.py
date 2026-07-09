@@ -97,6 +97,22 @@ class UltraConfigDefaultsTests(unittest.TestCase):
         for lt in cfg.layer_pattern:
             self.assertIsInstance(lt, str)
 
+    def test_bitnet_routers_default_false(self):
+        cfg = UltraConfig(**_minimal_dict())
+        self.assertFalse(cfg.bitnet_routers)
+
+    def test_bitnet_routers_true_accepted(self):
+        cfg = UltraConfig(**_minimal_dict(use_bitnet=True, bitnet_routers=True))
+        self.assertTrue(cfg.bitnet_routers)
+
+    def test_use_bitnet_conv_default_false(self):
+        cfg = UltraConfig(**_minimal_dict())
+        self.assertFalse(cfg.use_bitnet_conv)
+
+    def test_use_bitnet_conv_true_accepted(self):
+        cfg = UltraConfig(**_minimal_dict(use_bitnet=True, use_bitnet_conv=True))
+        self.assertTrue(cfg.use_bitnet_conv)
+
 
 if __name__ == "__main__":
     unittest.main()

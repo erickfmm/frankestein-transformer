@@ -356,6 +356,16 @@ def _run_transformers_export(args: argparse.Namespace) -> int:
     return int(result) if isinstance(result, int) else 0
 
 
+def _run_bitnet_gguf(args: argparse.Namespace) -> int:
+    from .deploy.bitnet_gguf_export import main as bitnet_gguf_main
+
+    argv = ["--model", args.model, "--yaml", args.yaml, "--output", args.output]
+    if getattr(args, "check", False):
+        argv.append("--check")
+    result = bitnet_gguf_main(argv)
+    return int(result) if isinstance(result, int) else 0
+
+
 def _run_web_server(args: argparse.Namespace) -> int:
     """Run the Streamlit web server for building configurations."""
     import subprocess
@@ -525,6 +535,16 @@ def build_parser() -> argparse.ArgumentParser:
     transformers_export_parser.add_argument("--yaml", type=str, required=True)
     transformers_export_parser.add_argument("--output", type=str, required=True)
     transformers_export_parser.set_defaults(func=_run_transformers_export)
+
+    bitnet_gguf_parser = subparsers.add_parser(
+        "bitnet-gguf",
+        help="Best-effort GGUF (BitNet i2_s) export for standard_attn-only models",
+    )
+    bitnet_gguf_parser.add_argument("--model", type=str, required=True, help="Path to training checkpoint (*.pt)")
+    bitnet_gguf_parser.add_argument("--yaml", type=str, required=True, help="Path to YAML used during training")
+    bitnet_gguf_parser.add_argument("--output", type=str, required=True, help="Output .gguf path")
+    bitnet_gguf_parser.add_argument("--check", action="store_true", help="Only run the compatibility check and exit")
+    bitnet_gguf_parser.set_defaults(func=_run_bitnet_gguf)
 
     web_server_parser = subparsers.add_parser("web-server", help="Run Streamlit web server for building configurations")
     web_server_parser.add_argument("--server-port", type=int, default=8501, help="Port to run the Streamlit server on")

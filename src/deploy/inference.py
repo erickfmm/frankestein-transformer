@@ -15,15 +15,25 @@ from typing import List, Optional, Union
 import time
 
 try:
-    from ..model.tormented_bert_frankestein import TormentedBertFrankenstein, UltraConfig
+    from ..model.tormented_bert_frankestein import (
+        FrankensteinDecoder,
+        TormentedBertFrankenstein,
+        UltraConfig,
+    )
     from .quantization import load_quantized_checkpoint
     from ..tokenizer.spm_spa_redpajama35 import SpanishSPMTokenizer
     from ..utils.device import SUPPORTED_DEVICE_CHOICES, resolve_torch_device
+    from ..model.attention.common import BitLinear
 except ImportError:
-    from model.tormented_bert_frankestein import TormentedBertFrankenstein, UltraConfig
+    from model.tormented_bert_frankestein import (
+        FrankensteinDecoder,
+        TormentedBertFrankenstein,
+        UltraConfig,
+    )
     from deploy.quantization import load_quantized_checkpoint
     from tokenizer.spm_spa_redpajama35 import SpanishSPMTokenizer
     from utils.device import SUPPORTED_DEVICE_CHOICES, resolve_torch_device
+    from model.attention.common import BitLinear
 
 logging.basicConfig(
     level=logging.INFO,
@@ -99,8 +109,11 @@ class TormentedBertInference:
     
     def _load_model(self) -> TormentedBertFrankenstein:
         """Load and prepare model for inference."""
-        # Initialize model
-        model = TormentedBertFrankenstein(self.config)
+        # Initialize model (decoder when configured)
+        if isinstance(self.config.mode, str) and self.config.mode == "decoder":
+            model = FrankensteinDecoder(self.config)
+        else:
+            model = TormentedBertFrankenstein(self.config)
         
         # Find model file
         model_files = list(self.model_dir.glob("model*.pt"))
@@ -114,16 +127,30 @@ class TormentedBertInference:
         if 'quantized' in model_path.name:
             load_quantized_checkpoint(str(model_path), model)
         else:
-            checkpoint = torch.load(model_path, map_location='cpu')
-            model.load_state_dict(checkpoint['model_state_dict'])
+            checkpoint = torch.load(model_path, map_location='cpu', weights_only=False)
+            state_dict = (
+                checkpoint.get('model_state_dict')
+                or checkpoint.get('state_dict')
+                or checkpoint
+            )
+            model.load_state_dict(state_dict, strict=False)
         
         # Prepare for inference
         model.eval()
         model.to(self.device)
         
+        # FP16 only when no BitLinear layers are present (BitLinear's STE
+        # activation/weight quantization assumes float32 statistics).
+        has_bitlinear = any(isinstance(m, BitLinear) for m in model.modules())
         if self.use_half_precision:
-            model.half()
-            logger.info("Using FP16 precision")
+            if has_bitlinear:
+                logger.warning(
+                    "FP16 requested but model contains BitLinear layers; "
+                    "keeping FP32 to preserve ternary quantization statistics."
+                )
+            else:
+                model.half()
+                logger.info("Using FP16 precision")
         
         # Count parameters
         total_params = sum(p.numel() for p in model.parameters())

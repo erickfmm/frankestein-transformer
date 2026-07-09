@@ -157,9 +157,22 @@ class UltraConfig:
             Default: 2.
         dropout: Dropout probability applied after embeddings and within
             attention layers. Default: 0.1.
-        use_bitnet: If True, replace all ``nn.Linear`` layers with
-            :class:`BitLinear` (ternary weight quantization, BitNet b1.58).
-            Default: True.
+        use_bitnet: If True, replace all primary and gate ``nn.Linear``
+            layers with :class:`BitLinear` (ternary weight quantization,
+            BitNet b1.58). Routing/scoring projections are governed
+            separately by ``bitnet_routers``. Default: True.
+        bitnet_routers: If True (and ``use_bitnet`` is True), also quantize
+            routing/scoring projections (MoE router, Mixture-of-Depths
+            router, sparse block-index/forecast, top-k score nets) to
+            :class:`BitLinear`. Default ``False`` keeps them full-precision
+            for routing stability. Default: False.
+        use_bitnet_conv: If True (and ``use_bitnet`` is True), replace the
+            factorized-embedding Conv1d pre-projection with
+            :class:`BitConv1d` (ternary weights). Default ``False`` keeps
+            the Conv1d full-precision; the convolution operates over the
+            reduced embedding stream where ternary quantization can be noisy.
+            No effect when ``use_bitnet`` is False or the embedding conv is
+            disabled. Default: False.
         norm_type: Normalization layer type. One of ``"layer_norm"``,
             ``"dynamic_tanh"`` (DyT), or ``"derf"`` (Dynamic Erf).
             ``"rms_norm"`` is NOT valid. Default: ``"dynamic_tanh"``.
@@ -239,8 +252,9 @@ class UltraConfig:
     dropout: float = 0.1
 
     use_bitnet: bool = True
+    bitnet_routers: bool = False
+    use_bitnet_conv: bool = False
     norm_type: str = "dynamic_tanh"
-
     use_factorized_embedding: bool = False
     factorized_embedding_dim: int = 128
     use_embedding_conv: bool = True
@@ -432,6 +446,7 @@ class HybridLayer(nn.Module):
         self.last_mixture_of_depths_capacity: Optional[int] = None
 
         proj_cls = BitLinear if config.use_bitnet else nn.Linear
+        router_cls = BitLinear if (config.use_bitnet and getattr(config, "bitnet_routers", False)) else nn.Linear
 
         mixer_registry = {
             "ode": ODEAttentionBlock,
@@ -482,7 +497,7 @@ class HybridLayer(nn.Module):
         activation = nn.SiLU() if config.ffn_activation == "silu" else nn.GELU()
 
         if self.use_moe:
-            self.router = nn.Linear(config.hidden_size, config.num_experts, bias=False)
+            self.router = router_cls(config.hidden_size, config.num_experts, bias=False)
             self.experts = nn.ModuleList(
                 [
                     nn.Sequential(
@@ -504,7 +519,7 @@ class HybridLayer(nn.Module):
                 proj_cls(config.ffn_hidden_size, config.hidden_size),
             )
         self.depth_router = (
-            nn.Linear(config.hidden_size, 1, bias=False) if self.use_mixture_of_depths else None
+            router_cls(config.hidden_size, 1, bias=False) if self.use_mixture_of_depths else None
         )
 
     def _forward_dense(

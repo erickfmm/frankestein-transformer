@@ -124,8 +124,8 @@ class GatedDeltaNet2Attention(nn.Module):
         self.k_proj = proj_cls(self.hidden_size, self.total_dim, bias=False)
         self.v_proj = proj_cls(self.hidden_size, self.total_dim, bias=False)
         # Channel-wise erase (key axis) and write (value axis) gates
-        self.erase_proj = nn.Linear(self.hidden_size, self.total_dim, bias=True)
-        self.write_proj = nn.Linear(self.hidden_size, self.total_dim, bias=True)
+        self.erase_proj = proj_cls(self.hidden_size, self.total_dim, bias=True)
+        self.write_proj = proj_cls(self.hidden_size, self.total_dim, bias=True)
         # Channel-wise log-decay parameterization (KDA-style): g = a - softplus(δ)
         self.log_decay_base = nn.Parameter(torch.zeros(self.total_dim))
         self.log_decay_delta = nn.Parameter(torch.zeros(self.total_dim))

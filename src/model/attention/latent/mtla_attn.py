@@ -83,7 +83,7 @@ class MTLAAttention(nn.Module):
         self.uk_proj = proj_cls(self.latent_rank, self.num_heads * self.head_dim, bias=False)
         self.uv_proj = proj_cls(self.latent_rank, self.num_heads * self.head_dim, bias=False)
         self.q_proj = proj_cls(self.hidden_size, self.num_heads * self.head_dim, bias=False)
-        self.merge_proj = nn.Linear(self.latent_rank, self.latent_rank, bias=True)
+        self.merge_proj = proj_cls(self.latent_rank, self.latent_rank, bias=True)
         self.out_proj = proj_cls(self.num_heads * self.head_dim, self.hidden_size, bias=False)
         self.dropout = nn.Dropout(config.dropout)
         self.mode = getattr(config, "mode", "encoder")

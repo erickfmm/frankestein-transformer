@@ -86,11 +86,12 @@ class SparDAAttention(nn.Module):
         self.forecast_dim = int(getattr(config, "sparda_forecast_dim", 64))
 
         proj_cls = BitLinear if config.use_bitnet else nn.Linear
+        router_cls = BitLinear if (config.use_bitnet and getattr(config, "bitnet_routers", False)) else nn.Linear
         kv_dim = self.num_kv_heads * self.head_dim
         self.q_proj = proj_cls(self.hidden_size, self.num_heads * self.head_dim, bias=False)
         self.k_proj = proj_cls(self.hidden_size, kv_dim, bias=False)
         self.v_proj = proj_cls(self.hidden_size, kv_dim, bias=False)
-        self.forecast_proj = nn.Linear(self.hidden_size, self.num_kv_heads * self.forecast_dim, bias=False)
+        self.forecast_proj = router_cls(self.hidden_size, self.num_kv_heads * self.forecast_dim, bias=False)
         self.out_proj = proj_cls(self.num_heads * self.head_dim, self.hidden_size, bias=False)
         self.dropout = nn.Dropout(config.dropout)
         self.mode = getattr(config, "mode", "encoder")

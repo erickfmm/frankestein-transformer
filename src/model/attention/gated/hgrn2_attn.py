@@ -103,7 +103,7 @@ class HGRN2Attention(nn.Module):
         self.q_proj = proj_cls(self.hidden_size, self.total_dim, bias=False)
         self.k_proj = proj_cls(self.hidden_size, self.total_dim, bias=False)
         self.v_proj = proj_cls(self.hidden_size, self.total_dim, bias=False)
-        self.forget_proj = nn.Linear(self.hidden_size, self.total_dim, bias=True)
+        self.forget_proj = proj_cls(self.hidden_size, self.total_dim, bias=True)
         self.g_proj = proj_cls(self.hidden_size, self.total_dim, bias=False)
         self.out_proj = proj_cls(self.total_dim, self.hidden_size, bias=False)
         self.norm = nn.LayerNorm(self.total_dim)

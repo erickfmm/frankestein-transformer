@@ -426,22 +426,108 @@ properties:
     type: boolean
     title: "Enable BitNet"
     title_es: "Habilitar BitNet"
-    description: |
-      Enable BitLinear (binary quantization) layers using -1/+1 weights instead of float32.
-      Enables significant compression and speedup. **Experimental** — may affect model quality.
-      Best suited for inference deployment. Requires careful LR tuning (gradients flow through binary weights).
+    description: |-
+      Enable BitLinear (BitNet b1.58 ternary weight quantization) for all
+      primary and gate linear layers — Q/K/V/O projections, FFN up/down,
+      embeddings, LM head, and recurrent-state gates (alpha/beta/forget/
+      erase/write). Weights are quantized to ``{-1, 0, 1}`` via the
+      straight-through estimator (STE) and activations to int8.
 
-      **Impact:** Reduces memory ~32× for quantized weights but can significantly degrade quality.
-      Not recommended as an initial configuration; try first without BitNet and enable only for
-      inference optimization.
-    description_es: |
-      Habilita capas BitLinear (cuantización binaria) usando pesos -1/+1 en lugar de float32.
-      Permite compresión y aceleración significativas. **Experimental** — puede afectar calidad.
-      Ideal para despliegue de inferencia. Requiere ajuste cuidadoso del learning rate.
+      Routing/scoring projections (MoE router, Mixture-of-Depths router,
+      sparse block-index/forecast, top-k score nets) are governed separately
+      by ``bitnet_routers`` and are kept full-precision by default.
 
-      **Impacto:** Reduce memoria ~32× para pesos cuantizados pero puede degradar calidad significativamente.
-      Not recommended as an initial configuration; try first without BitNet and enable only for
-      inference optimization.
+      **Impact:** Reduces weight memory ~10x. Requires careful LR tuning.
+      Best enabled from the start of training; supports both encoder (MLM)
+      and decoder (autoregressive) modes.
+
+      Reference: Ma et al. (2024), "The Era of 1-bit LLMs", arXiv:2402.17764.
+    description_es: |-
+      Habilita BitLinear (cuantización ternaria BitNet b1.58) para todas las
+      capas lineales principales y de compuerta — proyecciones Q/K/V/O,
+      FFN up/down, embeddings, cabeza LM y compuertas de estado recurrente
+      (alpha/beta/forget/erase/write). Los pesos se cuantizan a ``{-1, 0, 1}``
+      mediante el estimador de paso directo (STE) y las activaciones a int8.
+
+      Las proyecciones de enrutamiento/scoring (router MoE, router de
+      Mixture-of-Depths, índices/forecast de bloques sparse, redes de score
+      top-k) se gobiernen por separado con ``bitnet_routers`` y se mantienen
+      en precisión completa por defecto.
+
+      **Impacto:** Reduce la memoria de pesos ~10x. Requiere ajuste cuidadoso
+      del learning rate. Se recomienda habilitar desde el inicio del
+      entrenamiento; soporta tanto modo encoder (MLM) como decoder
+      (autoregresivo).
+
+      Referencia: Ma et al. (2024), "The Era of 1-bit LLMs", arXiv:2402.17764.
+    examples: [false]
+  bitnet_routers:
+    type: boolean
+    title: "Quantize Routers/Scoring (BitNet)"
+    title_es: "Cuantizar Routers/Scoring (BitNet)"
+    description: |-
+      When ``use_bitnet`` is true, also quantize the routing/scoring linear
+      projections to BitLinear: the Mixture-of-Experts router, the
+      Mixture-of-Depths token router, the sparse block-index/forecast
+      projections (``msa_attn`` q/k index, ``sparda_attn`` forecast,
+      ``nsa_attn`` compress/gate), and the ``sparsek_attn`` top-k score net.
+
+      Default ``false`` keeps these projections full-precision. This is the
+      recommended setting: top-k routing decisions are sensitive to ternary
+      weight noise, which can flip expert/block selections and destabilize
+      training. Enable only for maximum compression when you accept the
+      routing-stability risk.
+
+      No effect when ``use_bitnet`` is false.
+    description_es: |-
+      Cuando ``use_bitnet`` es true, cuantiza también las proyecciones lineales
+      de enrutamiento/scoring a BitLinear: el router de Mixture-of-Experts, el
+      router de tokens de Mixture-of-Depths, las proyecciones de
+      índice/forecast de bloques sparse (índice q/k de ``msa_attn``, forecast
+      de ``sparda_attn``, compress/gate de ``nsa_attn``) y la red de score
+      top-k de ``sparsek_attn``.
+
+      Por defecto ``false`` mantiene estas proyecciones en precisión completa.
+      Es el ajuste recomendado: las decisiones de enrutamiento top-k son
+      sensibles al ruido de pesos ternarios, lo que puede alterar selecciones
+      de experto/bloque y desestabilizar el entrenamiento. Habilitar solo para
+      máxima compresión cuando se acepta el riesgo de estabilidad de routing.
+
+      Sin efecto cuando ``use_bitnet`` es false.
+    examples: [false]
+  use_bitnet_conv:
+    type: boolean
+    title: "Quantize Embedding Conv (BitNet)"
+    title_es: "Cuantizar Conv de Embedding (BitNet)"
+    description: |-
+      When ``use_bitnet`` is true and ``use_embedding_conv`` is true, also
+      replace the factorized-embedding Conv1d pre-projection with
+      ``BitConv1d`` (ternary weights + int8 activations, same scheme as
+      :class:`BitLinear`).
+
+      Default ``false`` keeps the Conv1d full-precision. The convolution
+      operates over the reduced embedding stream (``factorized_embedding_dim``)
+      where ternary quantization can be noisy; full precision is the safer
+      default. Enable for maximum compression when you accept the quality
+      trade-off on the embedding path.
+
+      No effect when ``use_bitnet`` is false or the embedding conv is
+      disabled.
+    description_es: |-
+      Cuando ``use_bitnet`` es true y ``use_embedding_conv`` es true, también
+      reemplaza la convolución Conv1d pre-proyección del embedding
+      factorizado por ``BitConv1d`` (pesos ternarios + activaciones int8, el
+      mismo esquema que :class:`BitLinear`).
+
+      Por defecto ``false`` mantiene el Conv1d en precisión completa. La
+      convolución opera sobre el flujo de embedding reducido
+      (``factorized_embedding_dim``) donde la cuantización ternaria puede ser
+      ruidosa; la precisión completa es el valor por defecto más seguro.
+      Habilitar para máxima compresión cuando se acepta el compromiso de
+      calidad en la ruta de embedding.
+
+      Sin efecto cuando ``use_bitnet`` es false o la convolución de embedding
+      está deshabilitada.
     examples: [false]
   norm_type:
     type: string

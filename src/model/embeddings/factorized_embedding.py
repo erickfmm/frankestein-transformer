@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ..attention.common import BitLinear
+from ..attention.common import BitConv1d, BitLinear
 
 if TYPE_CHECKING:
     from ..tormented_bert_frankestein import UltraConfig
@@ -46,8 +46,10 @@ class FactorizedEmbedding(nn.Module):
         self.embedding = nn.Embedding(config.vocab_size, self.low_dim)
         kernel = max(int(config.embedding_conv_kernel), 1)
         padding = kernel // 2
+        use_bitconv = bool(getattr(config, "use_bitnet_conv", False))
+        conv_cls = BitConv1d if (config.use_bitnet and use_bitconv) else nn.Conv1d
         self.conv = (
-            nn.Conv1d(self.low_dim, self.low_dim, kernel_size=kernel, padding=padding)
+            conv_cls(self.low_dim, self.low_dim, kernel_size=kernel, padding=padding)
             if self.use_conv
             else None
         )

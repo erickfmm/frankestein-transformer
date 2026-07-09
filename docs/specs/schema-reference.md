@@ -33,6 +33,8 @@ The schema (`src/schema.yaml`) enforces **`additionalProperties: false`** at all
 | `ode_solver` | enum | Yes | `rk4`, `euler` | — | ODE integration method |
 | `ode_steps` | int | Yes | ≥ 1 | — | ODE integration steps |
 | `use_bitnet` | bool | Yes | — | — | Enable BitLinear path |
+| `bitnet_routers` | bool | Yes | — | `false` | Also quantize routing/scoring projections |
+| `use_bitnet_conv` | bool | Yes | — | `false` | Also quantize the embedding Conv1d (opt-in) |
 | `norm_type` | enum | Yes | `layer_norm`, `dynamic_tanh`, `derf` | — | Normalization strategy |
 | `use_factorized_embedding` | bool | Yes | — | — | Enable factorized embeddings |
 | `factorized_embedding_dim` | int | Yes | ≥ 1 | — | Reduced embedding dimension |

@@ -25,6 +25,34 @@ def _field_names(cls) -> set:
     return {field.name for field in fields(cls)}
 
 
+_BITNET_BOOL_KEYS = ("use_bitnet", "bitnet_routers")
+
+
+def _validate_bitnet_flags(model_data: Dict[str, Any]) -> None:
+    """Validate that BitNet-related keys, when present, are booleans.
+
+    Args:
+        model_data: The ``model`` block from the YAML config.
+
+    Raises:
+        ValueError: If ``bitnet_routers`` is true while ``use_bitnet`` is
+            explicitly false, or if either key has a non-boolean type.
+    """
+    for key in _BITNET_BOOL_KEYS:
+        if key in model_data and not isinstance(model_data[key], bool):
+            raise ValueError(
+                f"model.{key} must be a boolean, got "
+                f"{type(model_data[key]).__name__}: {model_data[key]!r}"
+            )
+    use_bitnet = model_data.get("use_bitnet")
+    bitnet_routers = model_data.get("bitnet_routers")
+    if bitnet_routers and use_bitnet is False:
+        raise ValueError(
+            "model.bitnet_routers=true requires model.use_bitnet=true "
+            "(routing quantization is only meaningful when BitNet is enabled)."
+        )
+
+
 @dataclass
 class LoadedTrainingConfig:
     """Structured result of loading and validating a training YAML config.
@@ -105,6 +133,7 @@ def load_training_config(path: str) -> LoadedTrainingConfig:
     if not base_model:
         if not model_data:
             raise ValueError("model is required when base_model is not provided")
+        _validate_bitnet_flags(model_data)
         model_config = UltraConfig(**model_data)
         if not model_class:
             model_class = "frankenstein"

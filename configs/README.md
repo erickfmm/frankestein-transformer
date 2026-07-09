@@ -240,7 +240,15 @@ Examples:
 - Training-free policy: `sparge_attn` and `fasa_attn` are eval-only; training mode raises an explicit runtime error.
 - `ode_solver`: `rk4` or `euler`.
 - `ode_steps`: integration steps.
-- `use_bitnet`: BitLinear on/off.
+- `use_bitnet`: BitLinear on/off (BitNet b1.58). When true, all primary + gate
+  projections (Q/K/V/O, FFN, embeddings `proj`, LM head, and recurrent-state
+  gates) become ternary `{-1,0,1}`.
+- `bitnet_routers`: when `true` (and `use_bitnet`), also quantize
+  routing/scoring projections (MoE router, MoD router, sparse block-index,
+  forecast, top-k score nets). Default `false` keeps them full-precision for
+  routing stability.
+- `use_bitnet_conv`: when `true` (and `use_bitnet` and `use_embedding_conv`),
+  also quantize the embedding Conv1d to `BitConv1d`. Default `false` (opt-in).
 - `norm_type`: `dynamic_tanh`, `derf`, or `layer_norm`.
 - `use_factorized_embedding`: enable factorized embeddings.
 - `factorized_embedding_dim`: reduced embedding dimension.

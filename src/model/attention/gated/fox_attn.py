@@ -101,7 +101,7 @@ class ForgettingAttention(nn.Module):
         self.q_proj = proj_cls(self.hidden_size, self.total_dim, bias=False)
         self.k_proj = proj_cls(self.hidden_size, self.total_dim, bias=False)
         self.v_proj = proj_cls(self.hidden_size, self.total_dim, bias=False)
-        self.f_proj = nn.Linear(self.hidden_size, self.num_heads, bias=True)
+        self.f_proj = proj_cls(self.hidden_size, self.num_heads, bias=True)
         self.out_proj = proj_cls(self.total_dim, self.hidden_size, bias=False)
         self.dropout = nn.Dropout(config.dropout)
         self.mode = getattr(config, "mode", "encoder")

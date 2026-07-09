@@ -14,8 +14,14 @@ import json
 from typing import Optional
 
 try:
-    from ..model.tormented_bert_frankestein import TormentedBertFrankenstein, UltraConfig
+    from ..model.tormented_bert_frankestein import (
+        FrankensteinDecoder,
+        TormentedBertFrankenstein,
+        TormentedBertMini,
+        UltraConfig,
+    )
     from .quantization import (
+        bake_bitnet_weights,
         save_quantized_checkpoint,
         load_quantized_checkpoint,
         estimate_model_size,
@@ -23,8 +29,14 @@ try:
     )
     from ..utils.device import SUPPORTED_DEVICE_CHOICES, resolve_torch_device
 except ImportError:
-    from model.tormented_bert_frankestein import TormentedBertFrankenstein, UltraConfig
+    from model.tormented_bert_frankestein import (
+        FrankensteinDecoder,
+        TormentedBertFrankenstein,
+        TormentedBertMini,
+        UltraConfig,
+    )
     from deploy.quantization import (
+        bake_bitnet_weights,
         save_quantized_checkpoint,
         load_quantized_checkpoint,
         estimate_model_size,
@@ -62,7 +74,22 @@ class ModelDeployer:
         self.config = config
         self.device = device
         self.model = None
-        
+
+    @staticmethod
+    def _build_model(config: UltraConfig) -> "TormentedBertFrankenstein":
+        """Instantiate the model variant for the configured ``mode``.
+
+        Args:
+            config: Model configuration.
+
+        Returns:
+            A ``FrankensteinDecoder`` when ``mode == "decoder"``, else a
+            plain :class:`TormentedBertFrankenstein`.
+        """
+        if getattr(config, "mode", "encoder") == "decoder":
+            return FrankensteinDecoder(config)
+        return TormentedBertFrankenstein(config)
+
     def load_training_checkpoint(self, checkpoint_path: str) -> None:
         """
         Load model from training checkpoint.
@@ -83,18 +110,28 @@ class ModelDeployer:
                     setattr(self.config, key, value)
             logger.info("Loaded config from checkpoint")
         
-        # Initialize model
-        self.model = TormentedBertFrankenstein(self.config)
+        # Initialize model (decoder/mini when configured)
+        if isinstance(self.config.mode, str) and self.config.mode == "decoder":
+            self.model = FrankensteinDecoder(self.config)
+        else:
+            self.model = TormentedBertFrankenstein(self.config)
         self.model.to(self.device)
         
-        # Load state dict
+        # Load state dict. Decoder/Mini wrap a backbone; checkpoints may store
+        # weights under either the wrapper or the inner backbone prefix.
+        state_dict = None
         if 'model_state_dict' in checkpoint:
-            self.model.load_state_dict(checkpoint['model_state_dict'])
+            state_dict = checkpoint['model_state_dict']
         elif 'state_dict' in checkpoint:
-            self.model.load_state_dict(checkpoint['state_dict'])
-        else:
-            # Assume checkpoint is state dict
-            self.model.load_state_dict(checkpoint)
+            state_dict = checkpoint['state_dict']
+        elif all(isinstance(v, torch.Tensor) for v in checkpoint.values()):
+            state_dict = checkpoint  # raw state_dict
+        if state_dict is not None:
+            missing, unexpected = self.model.load_state_dict(state_dict, strict=False)
+            if missing:
+                logger.warning(f"Missing keys when loading checkpoint: {len(missing)}")
+            if unexpected:
+                logger.warning(f"Unexpected keys when loading checkpoint: {len(unexpected)}")
         
         logger.info("Model loaded successfully")
         
@@ -105,7 +142,8 @@ class ModelDeployer:
     def convert_to_deployment(
         self,
         output_dir: str,
-        save_format: str = 'quantized'
+        save_format: str = 'quantized',
+        bake_bitnet: bool = True,
     ) -> None:
         """
         Convert model to deployment format.
@@ -113,6 +151,9 @@ class ModelDeployer:
         Args:
             output_dir: Directory to save deployment artifacts
             save_format: 'quantized' or 'standard'
+            bake_bitnet: When ``save_format='quantized'`` and BitNet is
+                enabled, bake BitLinear weights to faithful ternary values
+                before packing (default ``True``). No effect otherwise.
         """
         output_path = Path(output_dir)
         output_path.mkdir(parents=True, exist_ok=True)
@@ -121,6 +162,15 @@ class ModelDeployer:
         
         # Set model to eval mode
         self.model.eval()
+
+        use_bitnet = bool(getattr(self.config, "use_bitnet", False))
+        bitnet_routers = bool(getattr(self.config, "bitnet_routers", False))
+
+        # Optionally bake ternary weights before quantizing so the packed
+        # representation is faithful ({-1, 0, 1} * scale).
+        packed_bitlinear = 0
+        if save_format == 'quantized' and use_bitnet and bake_bitnet:
+            packed_bitlinear = bake_bitnet_weights(self.model)
         
         # Save config
         config_path = output_path / "config.json"
@@ -137,11 +187,12 @@ class ModelDeployer:
         if save_format == 'quantized':
             model_path = output_path / "model_quantized.pt"
             
-            # Prepare additional data
             additional_data = {
                 'config': config_dict,
                 'vocab_size': self.config.vocab_size,
                 'hidden_size': self.config.hidden_size,
+                'use_bitnet': use_bitnet,
+                'bitnet_routers': bitnet_routers,
             }
             
             save_quantized_checkpoint(
@@ -164,14 +215,24 @@ class ModelDeployer:
             }, model_path)
             logger.info(f"Standard model saved to {model_path}")
         
-        # Save deployment info
+        # Save deployment info reflecting the actual quantization flags
         info_path = output_path / "deployment_info.json"
+        if use_bitnet:
+            quant_desc = (
+                f"BitNet b1.58 (ternary weights; bitnet_routers={bitnet_routers})"
+            )
+        else:
+            quant_desc = "none (full precision)"
         info = {
             'format': save_format,
-            'model_class': 'TormentedBertFrankenstein',
+            'model_class': self.model.__class__.__name__,
             'config_file': 'config.json',
             'model_file': model_path.name,
-            'quantization': 'BitNet b1.58 (Ternary weights)',
+            'use_bitnet': use_bitnet,
+            'bitnet_routers': bitnet_routers,
+            'baked_ternary_weights': bool(packed_bitlinear > 0),
+            'baked_bitlinear_layers': packed_bitlinear,
+            'quantization': quant_desc,
             'parameters': sum(p.numel() for p in self.model.parameters()),
         }
         
@@ -206,8 +267,11 @@ class ModelDeployer:
             # Create config object
             config = UltraConfig(**config_dict)
             
-            # Initialize model
-            model = TormentedBertFrankenstein(config)
+            # Initialize model (decoder/mini when configured)
+            if isinstance(config.mode, str) and config.mode == "decoder":
+                model = FrankensteinDecoder(config)
+            else:
+                model = TormentedBertFrankenstein(config)
             model.to(self.device)
             
             # Load weights

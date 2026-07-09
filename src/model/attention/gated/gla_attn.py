@@ -105,8 +105,8 @@ class GatedLinearAttention(nn.Module):
         self.v_proj = proj_cls(self.hidden_size, self.total_dim, bias=False)
         self.g_proj = proj_cls(self.hidden_size, self.total_dim, bias=False)
         self.gk_proj = nn.Sequential(
-            nn.Linear(self.hidden_size, gate_low_rank, bias=False),
-            nn.Linear(gate_low_rank, self.total_dim, bias=True),
+            proj_cls(self.hidden_size, gate_low_rank, bias=False),
+            proj_cls(gate_low_rank, self.total_dim, bias=True),
         )
         self.out_proj = proj_cls(self.total_dim, self.hidden_size, bias=False)
         self.norm = nn.LayerNorm(self.total_dim)

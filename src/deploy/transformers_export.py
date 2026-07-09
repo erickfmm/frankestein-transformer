@@ -19,6 +19,15 @@ from typing import Any, Dict, List, Tuple
 import torch
 import yaml
 
+try:
+    from .quantization import bake_bitnet_weights
+    from ..model.attention.common import BitLinear
+except ImportError:
+    # transformers_export may be invoked from a flat sys.path context; the
+    # helpers are optional for the compatibility-check path.
+    bake_bitnet_weights = None  # type: ignore
+    BitLinear = None  # type: ignore
+
 
 _CONFIGURATION_FILE = """from __future__ import annotations
 
@@ -227,6 +236,49 @@ def _extract_state_dict(checkpoint: Dict[str, Any]) -> Dict[str, torch.Tensor]:
     raise ValueError("Unable to locate model weights in checkpoint")
 
 
+def _bake_state_dict(
+    model_config: Dict[str, Any],
+    model_class: str,
+    state_dict: Dict[str, torch.Tensor],
+) -> Tuple[Dict[str, torch.Tensor], int]:
+    """Bake BitLinear weights in a state dict to faithful ternary values.
+
+    Instantiates the model, loads ``state_dict``, applies
+    :func:`bake_bitnet_weights`, and returns the resulting state dict along
+    with the number of baked BitLinear layers.
+
+    Args:
+        model_config: Model configuration dictionary (the ``model`` block).
+        model_class: Lower-cased model class string.
+        state_dict: Source weight tensors.
+
+    Returns:
+        Tuple of ``(baked_state_dict, num_baked_layers)``.
+    """
+    from src.model.tormented_bert_frankestein import (
+        FrankensteinDecoder,
+        TormentedBertFrankenstein,
+        TormentedBertMini,
+        UltraConfig,
+    )
+
+    ultra = UltraConfig(**model_config)
+    mc = str(model_class).lower()
+    if mc == "mini":
+        model = TormentedBertMini(ultra)
+    elif mc == "frankesteindecoder" or ultra.mode == "decoder":
+        if ultra.mode != "decoder":
+            ultra.mode = "decoder"
+        model = FrankensteinDecoder(ultra)
+    else:
+        model = TormentedBertFrankenstein(ultra)
+
+    model.load_state_dict(state_dict, strict=False)
+    model.eval()
+    baked = bake_bitnet_weights(model) if bake_bitnet_weights is not None else 0
+    return model.state_dict(), baked
+
+
 def _load_schema_layer_enum(schema_path: Path) -> List[str]:
     from src.utils.schema_loader import resolve_schema
     schema = resolve_schema(schema_path)
@@ -277,12 +329,25 @@ def _build_compatibility_report(
             + ", ".join(used_eval_only)
         )
 
+    use_bitnet = bool(model_config.get("use_bitnet", False))
+    bitnet_routers = bool(model_config.get("bitnet_routers", False))
+    if use_bitnet and not bitnet_routers:
+        warnings.append(
+            "use_bitnet is enabled but bitnet_routers is false: routing/scoring "
+            "projections (MoE router, Mixture-of-Depths router, sparse "
+            "block-index/forecast, top-k score nets) remain full-precision in "
+            "the exported checkpoint. This is the recommended default for "
+            "routing stability."
+        )
+
     return (len(issues) == 0), {
         "is_compatible": len(issues) == 0,
         "issues": issues,
         "warnings": warnings,
         "schema_layer_types": schema_layer_types,
         "used_layer_types": sorted(set(model_layers)),
+        "use_bitnet": use_bitnet,
+        "bitnet_routers": bitnet_routers,
     }
 
 
@@ -303,6 +368,15 @@ def _build_transformers_config(
         "AutoModelForMaskedLM": "modeling_frankestein.FrankesteinForMaskedLM",
         "AutoModelForCausalLM": "modeling_frankestein.FrankesteinForCausalLM",
     }
+    if bool(model_config.get("use_bitnet", False)):
+        payload["quantization_config"] = {
+            "quant_method": "bitnet",
+            "bits": 1.58,
+            "ternary_weights": True,
+            "activation_bits": 8,
+            "bitnet_routers": bool(model_config.get("bitnet_routers", False)),
+            "modules_to_not_convert": None,
+        }
     return payload
 
 
@@ -434,7 +508,27 @@ def export_transformers_model(model_path: str, yaml_path: str, output_dir: str) 
         json.dumps(hf_config, indent=2),
         encoding="utf-8",
     )
-    torch.save(state_dict, output_path / "pytorch_model.bin")
+
+    export_state_dict = state_dict
+    baked_layers = 0
+    if bool(model_config.get("use_bitnet", False)) and bake_bitnet_weights is not None:
+        # Instantiate the model so BitLinear layers can be baked to faithful
+        # {-1, 0, 1} * scale weights before serialization. The exported
+        # pytorch_model.bin then carries self-describing ternary values.
+        try:
+            export_state_dict, baked_layers = _bake_state_dict(
+                model_config=model_config,
+                model_class=model_class,
+                state_dict=state_dict,
+            )
+        except Exception as exc:  # pragma: no cover - defensive
+            warnings_log = compatibility.get("warnings", [])
+            warnings_log.append(
+                f"BitNet bake skipped (model instantiation failed): {exc}"
+            )
+            compatibility["warnings"] = warnings_log
+
+    torch.save(export_state_dict, output_path / "pytorch_model.bin")
 
     model_src = _repo_root() / "src" / "model"
     shutil.copytree(model_src, output_path / "model", dirs_exist_ok=True)
@@ -462,6 +556,11 @@ def export_transformers_model(model_path: str, yaml_path: str, output_dir: str) 
         "output_dir": str(output_path),
         "modeling_class": modeling_class,
         "compatibility_report": str(output_path / "compatibility_report.json"),
+        "bitnet": {
+            "enabled": bool(model_config.get("use_bitnet", False)),
+            "bitnet_routers": bool(model_config.get("bitnet_routers", False)),
+            "baked_layers": baked_layers,
+        },
     }
 
 

@@ -127,7 +127,7 @@ class KDAAttention(nn.Module):
         self.q_proj = proj_cls(self.hidden_size, self.total_dim, bias=False)
         self.k_proj = proj_cls(self.hidden_size, self.total_dim, bias=False)
         self.v_proj = proj_cls(self.hidden_size, self.total_dim, bias=False)
-        self.beta_proj = nn.Linear(self.hidden_size, self.num_heads, bias=True)
+        self.beta_proj = proj_cls(self.hidden_size, self.num_heads, bias=True)
         self.log_decay_base = nn.Parameter(torch.zeros(self.total_dim))
         self.log_decay_delta = nn.Parameter(torch.zeros(self.total_dim))
         self.g_proj = proj_cls(self.hidden_size, self.total_dim, bias=False)

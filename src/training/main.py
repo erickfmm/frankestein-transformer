@@ -192,7 +192,7 @@ def _load_legacy_tormented_model(loaded: LoadedTrainingConfig) -> Tuple[torch.nn
         config.num_layers * config.num_loops,
     )
     logging.info("  - Layer Pattern: %s", config.layer_pattern)
-    logging.info("  - BitNet: %s", config.use_bitnet)
+    logging.info("  - BitNet: %s (bitnet_routers: %s)", config.use_bitnet, getattr(config, "bitnet_routers", False))
     logging.info("  - ODE Solver: %s (%s steps)", config.ode_solver, config.ode_steps)
     logging.info("  - Norm Type: %s", config.norm_type)
 

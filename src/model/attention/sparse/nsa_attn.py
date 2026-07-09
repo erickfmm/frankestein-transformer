@@ -115,14 +115,15 @@ class NSAAttention(nn.Module):
         self.window_size = max(1, int(getattr(config, "nsa_window_size", 512)))
 
         proj_cls = BitLinear if config.use_bitnet else nn.Linear
+        router_cls = BitLinear if (config.use_bitnet and getattr(config, "bitnet_routers", False)) else nn.Linear
         self.q_proj = proj_cls(self.hidden_size, self.hidden_size, bias=False)
         self.k_proj = proj_cls(self.hidden_size, self.hidden_size, bias=False)
         self.v_proj = proj_cls(self.hidden_size, self.hidden_size, bias=False)
         self.out_proj = proj_cls(self.hidden_size, self.hidden_size, bias=False)
 
-        self.compress_k = nn.Linear(self.block_size * self.head_dim, self.head_dim)
-        self.compress_v = nn.Linear(self.block_size * self.head_dim, self.head_dim)
-        self.gate = nn.Sequential(nn.Linear(self.head_dim, 3), nn.Sigmoid())
+        self.compress_k = router_cls(self.block_size * self.head_dim, self.head_dim)
+        self.compress_v = router_cls(self.block_size * self.head_dim, self.head_dim)
+        self.gate = nn.Sequential(router_cls(self.head_dim, 3), nn.Sigmoid())
         self.dropout = nn.Dropout(config.dropout)
         self.mode = getattr(config, "mode", "encoder")
 

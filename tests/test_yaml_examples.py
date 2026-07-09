@@ -161,6 +161,14 @@ class YamlExamplesContentTests(unittest.TestCase):
         cfg = self._load("es_arch_bitnet_factorized_mars_adamw.yaml")
         self.assertTrue(cfg.model_config.use_bitnet)
 
+    def test_bitnet_decoder_uses_bitnet_and_routers_false(self):
+        cfg = self._load("bitnet_decoder.yaml")
+        self.assertTrue(cfg.model_config.use_bitnet)
+        self.assertFalse(cfg.model_config.bitnet_routers)
+        self.assertFalse(cfg.model_config.use_bitnet_conv)
+        self.assertEqual(cfg.model_config.mode, "decoder")
+        self.assertEqual(cfg.model_class, "frankesteindecoder")
+
 
 if __name__ == "__main__":
     unittest.main()
