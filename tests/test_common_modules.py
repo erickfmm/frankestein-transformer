@@ -15,6 +15,7 @@ if TORCH_AVAILABLE:
     from src.model.norm import (
         DynamicTanhNorm,
         Derf,
+        RMSNorm,
         get_norm,
     )
     from src.model.tormented_bert_frankestein import UltraConfig
@@ -167,6 +168,77 @@ class DerfTests(unittest.TestCase):
 
 
 @unittest.skipUnless(TORCH_AVAILABLE, "torch required")
+class RMSNormTests(unittest.TestCase):
+    def test_output_shape(self):
+        norm = RMSNorm(32)
+        x = torch.randn(2, 10, 32)
+        y = norm(x)
+        self.assertEqual(y.shape, x.shape)
+
+    def test_learnable_weight_no_bias(self):
+        norm = RMSNorm(16)
+        self.assertEqual(norm.weight.shape, (16,))
+        self.assertFalse(hasattr(norm, "bias"))
+
+    def test_correctness_against_manual_rms(self):
+        dim = 8
+        norm = RMSNorm(dim, eps=1e-6)
+        norm.weight.data.fill_(1.0)  # identity scale
+        x = torch.randn(4, dim)
+        rms = torch.sqrt(x.pow(2).mean(dim=-1, keepdim=True) + 1e-6)
+        expected = x / rms
+        y = norm(x)
+        self.assertTrue(torch.allclose(y, expected, atol=1e-6))
+
+    def test_scale_is_applied(self):
+        dim = 4
+        norm = RMSNorm(dim)
+        norm.weight.data.fill_(2.0)
+        x = torch.ones(1, dim)
+        y = norm(x)
+        # RMS of ones = 1, so output should be 2.0 everywhere
+        self.assertTrue(torch.allclose(y, torch.full_like(y, 2.0), atol=1e-5))
+
+    def test_gradient_flows(self):
+        norm = RMSNorm(16)
+        x = torch.randn(2, 4, 16, requires_grad=True)
+        norm(x).sum().backward()
+        self.assertIsNotNone(x.grad)
+
+    def test_partial_uses_subset_k(self):
+        dim = 32
+        ratio = 0.0625
+        norm = RMSNorm(dim, partial_ratio=ratio)
+        import math
+        expected_k = max(1, math.ceil(dim * ratio))
+        self.assertEqual(norm.k, expected_k)
+        self.assertEqual(norm.partial_ratio, ratio)
+
+    def test_partial_correctness(self):
+        dim = 16
+        ratio = 0.5
+        norm = RMSNorm(dim, eps=0.0, partial_ratio=ratio)
+        norm.weight.data.fill_(1.0)
+        x = torch.randn(4, dim)
+        k = norm.k
+        rms_partial = torch.sqrt(x[..., :k].pow(2).mean(dim=-1, keepdim=True))
+        expected = x / rms_partial
+        y = norm(x)
+        self.assertTrue(torch.allclose(y, expected, atol=1e-5))
+
+    def test_partial_ratio_zero_uses_all_dims(self):
+        norm = RMSNorm(32, partial_ratio=0.0)
+        self.assertEqual(norm.k, 32)
+
+    def test_partial_ratio_one_equals_full(self):
+        dim = 16
+        x = torch.randn(4, dim)
+        full = RMSNorm(dim, eps=1e-6)(x)
+        partial = RMSNorm(dim, eps=1e-6, partial_ratio=1.0)(x)
+        self.assertTrue(torch.allclose(full, partial, atol=1e-6))
+
+
+@unittest.skipUnless(TORCH_AVAILABLE, "torch required")
 class GetNormTests(unittest.TestCase):
     def test_dynamic_tanh_returns_correct_type(self):
         cfg = _cfg(norm_type="dynamic_tanh")
@@ -177,6 +249,27 @@ class GetNormTests(unittest.TestCase):
         cfg = _cfg(norm_type="derf")
         norm = get_norm(cfg)
         self.assertIsInstance(norm, Derf)
+
+    def test_rms_norm_returns_correct_type(self):
+        cfg = _cfg(norm_type="rms_norm")
+        norm = get_norm(cfg)
+        self.assertIsInstance(norm, RMSNorm)
+        self.assertEqual(norm.partial_ratio, 0.0)
+        self.assertEqual(norm.k, cfg.hidden_size)
+
+    def test_prms_norm_returns_correct_type(self):
+        cfg = _cfg(norm_type="prms_norm")
+        norm = get_norm(cfg)
+        self.assertIsInstance(norm, RMSNorm)
+        self.assertGreater(norm.partial_ratio, 0.0)
+        self.assertEqual(norm.partial_ratio, cfg.prms_partial_ratio)
+
+    def test_prms_norm_custom_ratio(self):
+        cfg = _cfg(norm_type="prms_norm")
+        cfg.prms_partial_ratio = 0.5
+        norm = get_norm(cfg)
+        self.assertIsInstance(norm, RMSNorm)
+        self.assertAlmostEqual(norm.partial_ratio, 0.5)
 
     def test_fallback_returns_layer_norm(self):
         cfg = _cfg(norm_type="layer_norm")

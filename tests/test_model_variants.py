@@ -206,6 +206,63 @@ class TormentedBertFrankensteinTests(unittest.TestCase):
         y = model(x)
         self.assertEqual(y.shape, (1, 4, 100))
 
+    def test_rms_norm_forward(self):
+        model = self._model(norm_type="rms_norm")
+        x = torch.randint(0, 100, (1, 4))
+        y = model(x)
+        self.assertEqual(y.shape, (1, 4, 100))
+
+    def test_prms_norm_forward(self):
+        model = self._model(norm_type="prms_norm", prms_partial_ratio=0.5)
+        x = torch.randint(0, 100, (1, 4))
+        y = model(x)
+        self.assertEqual(y.shape, (1, 4, 100))
+
+    def test_prms_norm_default_ratio(self):
+        cfg = UltraConfig(
+            vocab_size=100,
+            hidden_size=48,
+            num_layers=1,
+            num_loops=1,
+            num_heads=6,
+            retention_heads=6,
+            num_experts=2,
+            top_k_experts=1,
+            dropout=0.0,
+            norm_type="prms_norm",
+            use_bitnet=False,
+            layer_pattern=["standard_attn"],
+            use_moe=False,
+            ode_solver="rk4",
+            ode_steps=1,
+            ffn_hidden_size=96,
+            ffn_activation="gelu",
+        )
+        self.assertAlmostEqual(cfg.prms_partial_ratio, 0.0625)
+
+    def test_prms_partial_ratio_validation(self):
+        with self.assertRaises(ValueError):
+            UltraConfig(
+                vocab_size=100,
+                hidden_size=48,
+                num_layers=1,
+                num_loops=1,
+                num_heads=6,
+                retention_heads=6,
+                num_experts=2,
+                top_k_experts=1,
+                dropout=0.0,
+                norm_type="prms_norm",
+                prms_partial_ratio=0.0,
+                use_bitnet=False,
+                layer_pattern=["standard_attn"],
+                use_moe=False,
+                ode_solver="rk4",
+                ode_steps=1,
+                ffn_hidden_size=96,
+                ffn_activation="gelu",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

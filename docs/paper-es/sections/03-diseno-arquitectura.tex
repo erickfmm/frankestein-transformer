@@ -273,5 +273,5 @@ El pseudocódigo completo del paso de entrenamiento guiado por esquema---incluye
 \subsection{Variantes de Normalización}
 \label{sec:normalization}
 
-La normalización controla la escala de activación a través de la profundidad y es también una cuestión de compatibilidad con el esquema, ya que solo \texttt{layer\_norm}, \texttt{dynamic\_tanh} y \texttt{derf} son valores aceptados de \texttt{norm\_type}; \texttt{rms\_norm} no es actualmente un valor de esquema válido. Las formulaciones matemáticas de LayerNorm, RMSNorm, Tanh Dinámico (DyT) \citep{zhu_transformers_2025} y Erf Dinámico (Derf) \citep{chen_stronger_2025}, junto con una tabla comparativa, se detallan en el Apéndice~\ref{sec:annex-norm-bitnet-mod}.
+La normalización controla la escala de activación a través de la profundidad y es también una cuestión de compatibilidad con el esquema, ya que los valores aceptados de \texttt{norm\_type} son \texttt{layer\_norm}, \texttt{dynamic\_tanh}, \texttt{derf}, \texttt{rms\_norm} y \texttt{prms\_norm} (RMSNorm parcial). Las formulaciones matemáticas de LayerNorm, RMSNorm, pRMSNorm, Tanh Dinámico (DyT) \citep{zhu_transformers_2025} y Erf Dinámico (Derf) \citep{chen_stronger_2025}, junto con una tabla comparativa, se detallan en el Apéndice~\ref{sec:annex-norm-bitnet-mod}.
 

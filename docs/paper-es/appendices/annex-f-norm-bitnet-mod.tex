@@ -7,9 +7,9 @@ Este anexo recopila el detalle a nivel de implementación para las variantes de 
 
 La normalización determina cómo se controla la escala de activación a través de la profundidad. En este repositorio, la normalización no es solo una elección de modelado sino también una cuestión de compatibilidad con el esquema, porque solo ciertos valores son actualmente aceptados por \texttt{norm\_type}. El contrato del esquema es:
 \[
-\texttt{norm\_type} \in \{\texttt{layer\_norm}, \texttt{dynamic\_tanh}, \texttt{derf}\}
+\texttt{norm\_type} \in \{\texttt{layer\_norm}, \texttt{dynamic\_tanh}, \texttt{derf}, \texttt{rms\_norm}, \texttt{prms\_norm}\}
 \]
-por lo que \texttt{rms\_norm} \textbf{no} es un valor de esquema válido en el contrato actual. Las tres formulaciones más relevantes para este código base son:
+Las formulaciones más relevantes para este código base son:
 
 \subsubsection{LayerNorm (Línea Base)}
 LayerNorm \citep{ba2016layer} es el normalizador por defecto; centra y reescala cada token por su media y varianza por token:
@@ -17,13 +17,20 @@ LayerNorm \citep{ba2016layer} es el normalizador por defecto; centra y reescala 
 \mu = \frac{1}{d}\sum_{i=1}^{d} x_i, \quad \sigma^2 = \frac{1}{d}\sum_{i=1}^{d}(x_i - \mu)^2, \quad y_i = \gamma_i \frac{x_i - \mu}{\sqrt{\sigma^2 + \epsilon}} + \beta_i.
 \]
 
-\subsubsection{RMSNorm (No Aceptado por el Esquema)}
+\subsubsection{RMSNorm}
 RMSNorm elimina la centralización de la media y solo reescala por la magnitud de la raíz cuadrada media \citep{zhang_root_2019}:
 \[
 \mathrm{RMS}(x)=\sqrt{\frac{1}{d}\sum_{i=1}^{d}x_i^2+\epsilon},\qquad
 y_i=\gamma_i\frac{x_i}{\mathrm{RMS}(x)}.
 \]
-En comparación con LayerNorm, RMSNorm es computacionalmente más simple (sin resta de la media de características) y se usa a menudo cuando es importante reducir la sobrecarga de normalización. Se documenta aquí como referencia pero \textbf{no} es un valor aceptado de \texttt{norm\_type}.
+En comparación con LayerNorm, RMSNorm es computacionalmente más simple (sin resta de la media de características) y se usa a menudo cuando es importante reducir la sobrecarga de normalización (p.\,ej., Llama, GPT-NeoX). Tiene una escala $\gamma$ aprendible por dimensión pero sin término de bias.
+
+\subsubsection{RMSNorm Parcial (pRMSNorm)}
+pRMSNorm \citep{zhang_root_2019} reduce aún más la sobrecarga estimando el RMS de solo el primer $p$\% de las dimensiones ocultas:
+\[
+\mathrm{RMS}(x)=\sqrt{\frac{1}{k}\sum_{i=1}^{k}x_i^2+\epsilon},\qquad k=\lceil d\cdot p\rceil,
+\]
+explotando el supuesto de que las neuronas dentro de una capa son aproximadamente i.i.d. La misma escala $\gamma$ se aplica a todas las dimensiones. La razón parcial $p$ se controla mediante el campo de configuración \texttt{prms\_partial\_ratio} (por defecto $6.25\%$). El paper reporta que se pueden lograr resultados competitivos con tan solo el $6.25\%$ de las entradas, aunque puede surgir inestabilidad de gradiente con razones muy pequeñas.
 
 \subsubsection{Tanh Dinámico (DyT)}
 El Tanh Dinámico propone reemplazar la normalización explícita con un mapeo elemento a elemento acotado \citep{zhu_transformers_2025}:
@@ -47,7 +54,8 @@ con escala/desplazamiento aprendibles. Los resultados reportados en el trabajo c
 \midrule
 \endhead
 LayerNorm & $\gamma_i (x_i - \mu)/\sqrt{\sigma^2 + \epsilon} + \beta_i$ & media + varianza & Por defecto; centrado y reescalado completo \citep{ba2016layer}. \\
-RMSNorm & $\gamma_i x_i/\sqrt{\frac{1}{d}\sum_j x_j^2+\epsilon}$ & Solo RMS & Menor sobrecarga; línea base ampliamente usada; \textbf{no aceptado por el esquema} \citep{zhang_root_2019}. \\
+RMSNorm & $\gamma_i x_i/\sqrt{\frac{1}{d}\sum_j x_j^2+\epsilon}$ & Solo RMS & Menor sobrecarga; línea base ampliamente usada \citep{zhang_root_2019}. \\
+pRMSNorm & $\gamma_i x_i/\sqrt{\frac{1}{k}\sum_{j\le k} x_j^2+\epsilon}$ & RMS parcial & RMS del primer $p$\% de dims; \texttt{prms\_partial\_ratio} por defecto $6.25\%$ \citep{zhang_root_2019}. \\
 Tanh Dinámico & $\tanh(\alpha x)$ & ninguna & Transformación acotada libre de normalización; reemplazo directo \citep{zhu_transformers_2025}. \\
 Erf Dinámico & $\mathrm{erf}(\alpha x+s)$ & ninguna & Alternativa libre de normalización; mejora sobre DyT \citep{chen_stronger_2025}. \\
 \bottomrule

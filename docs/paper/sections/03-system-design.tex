@@ -273,5 +273,5 @@ The complete pseudocode for the schema-driven training step---including gradient
 \subsection{Normalization Variants}
 \label{sec:normalization}
 
-Normalization controls activation scale across depth and is also a schema compatibility question, since only \texttt{layer\_norm}, \texttt{dynamic\_tanh}, and \texttt{derf} are accepted \texttt{norm\_type} values; \texttt{rms\_norm} is not currently a valid schema value. The mathematical formulations of LayerNorm, RMSNorm, Dynamic Tanh (DyT) \citep{zhu_transformers_2025}, and Dynamic Erf (Derf) \citep{chen_stronger_2025}, together with a comparison table, are detailed in Appendix~\ref{sec:annex-norm-bitnet-mod}.
+Normalization controls activation scale across depth and is also a schema compatibility question, since the accepted \texttt{norm\_type} values are \texttt{layer\_norm}, \texttt{dynamic\_tanh}, \texttt{derf}, \texttt{rms\_norm}, and \texttt{prms\_norm} (partial RMSNorm). The mathematical formulations of LayerNorm, RMSNorm, pRMSNorm, Dynamic Tanh (DyT) \citep{zhu_transformers_2025}, and Dynamic Erf (Derf) \citep{chen_stronger_2025}, together with a comparison table, are detailed in Appendix~\ref{sec:annex-norm-bitnet-mod}.
 

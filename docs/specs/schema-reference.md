@@ -65,7 +65,7 @@ The schema (`src/schema.yaml`) enforces **`additionalProperties: false`** at all
 
 ### Normalization Valid Values
 
-`layer_norm`, `dynamic_tanh`, `derf` — **`rms_norm` is NOT valid.**
+`layer_norm`, `dynamic_tanh`, `derf`, `rms_norm`, `prms_norm`
 
 ## Training Fields
 
@@ -149,7 +149,7 @@ The schema (`src/schema.yaml`) enforces **`additionalProperties: false`** at all
 ## Critical Gotchas
 
 1. **`hidden_size` must be divisible by `num_heads`** — per-head dimension = `hidden_size / num_heads` should be ≥ 64.
-2. **`norm_type`** only accepts `layer_norm`, `dynamic_tanh`, `derf`. `rms_norm` is NOT valid.
+2. **`norm_type`** accepts `layer_norm`, `dynamic_tanh`, `derf`, `rms_norm`, `prms_norm`. When using `prms_norm`, set `prms_partial_ratio` (default `0.0625`, range `(0, 1]`).
 3. **`fasa_attn` and `sparge_attn`** are eval-only blocks. Training with either raises a runtime error.
 4. **Optimizer parameters** use prefixed keys: `<optimizer_class>-<group>_<param>`.
 5. **`training.task`** is required (`mlm` or `sbert`). Legacy top-level optimizer keys are not accepted.

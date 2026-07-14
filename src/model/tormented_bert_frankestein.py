@@ -174,8 +174,13 @@ class UltraConfig:
             No effect when ``use_bitnet`` is False or the embedding conv is
             disabled. Default: False.
         norm_type: Normalization layer type. One of ``"layer_norm"``,
-            ``"dynamic_tanh"`` (DyT), or ``"derf"`` (Dynamic Erf).
-            ``"rms_norm"`` is NOT valid. Default: ``"dynamic_tanh"``.
+            ``"dynamic_tanh"`` (DyT), ``"derf"`` (Dynamic Erf),
+            ``"rms_norm"`` (RMSNorm), or ``"prms_norm"`` (partial RMSNorm).
+            Default: ``"dynamic_tanh"``.
+        prms_partial_ratio: Fraction of hidden dimensions used for RMS
+            estimation when ``norm_type="prms_norm"``. The paper default is
+            6.25%. Must be in ``(0, 1]``. Ignored for other ``norm_type``
+            values. Default: ``0.0625``.
         use_factorized_embedding: If True, use :class:`FactorizedEmbedding`
             with reduced embedding dimension + projection. Default: False.
         factorized_embedding_dim: Embedding dimension when factorization is
@@ -255,6 +260,7 @@ class UltraConfig:
     bitnet_routers: bool = False
     use_bitnet_conv: bool = False
     norm_type: str = "dynamic_tanh"
+    prms_partial_ratio: float = 0.0625
     use_factorized_embedding: bool = False
     factorized_embedding_dim: int = 128
     use_embedding_conv: bool = True
@@ -380,6 +386,9 @@ class UltraConfig:
 
         if float(self.mixture_of_depths_router_aux_loss_weight) < 0.0:
             raise ValueError("mixture_of_depths_router_aux_loss_weight must be >= 0")
+
+        if not 0.0 < float(self.prms_partial_ratio) <= 1.0:
+            raise ValueError("prms_partial_ratio must be in the range (0, 1]")
 
 
 class HybridLayer(nn.Module):

@@ -7,9 +7,9 @@ This annex collects the implementation-level detail for normalization variants, 
 
 Normalization determines how activation scale is controlled across depth. In this repository, normalization is not only a modeling choice but also a schema compatibility question, because only certain values are currently accepted by \texttt{norm\_type}. The schema contract is:
 \[
-\texttt{norm\_type} \in \{\texttt{layer\_norm}, \texttt{dynamic\_tanh}, \texttt{derf}\}
+\texttt{norm\_type} \in \{\texttt{layer\_norm}, \texttt{dynamic\_tanh}, \texttt{derf}, \texttt{rms\_norm}, \texttt{prms\_norm}\}
 \]
-so \texttt{rms\_norm} is \textbf{not} a valid schema value in the current contract. The three formulations most relevant to this codebase are:
+The formulations most relevant to this codebase are:
 
 \subsubsection{LayerNorm (Baseline)}
 LayerNorm \citep{ba2016layer} is the default normalizer; it centers and rescales each token by its per-token mean and variance:
@@ -17,13 +17,20 @@ LayerNorm \citep{ba2016layer} is the default normalizer; it centers and rescales
 \mu = \frac{1}{d}\sum_{i=1}^{d} x_i, \quad \sigma^2 = \frac{1}{d}\sum_{i=1}^{d}(x_i - \mu)^2, \quad y_i = \gamma_i \frac{x_i - \mu}{\sqrt{\sigma^2 + \epsilon}} + \beta_i.
 \]
 
-\subsubsection{RMSNorm (Not Accepted by Schema)}
+\subsubsection{RMSNorm}
 RMSNorm removes mean-centering and only rescales by root mean square magnitude \citep{zhang_root_2019}:
 \[
 \mathrm{RMS}(x)=\sqrt{\frac{1}{d}\sum_{i=1}^{d}x_i^2+\epsilon},\qquad
 y_i=\gamma_i\frac{x_i}{\mathrm{RMS}(x)}.
 \]
-Compared with LayerNorm, RMSNorm is computationally simpler (no subtraction of feature mean) and is often used when reducing normalization overhead is important. It is documented here for reference but is \textbf{not} an accepted \texttt{norm\_type} value.
+Compared with LayerNorm, RMSNorm is computationally simpler (no subtraction of feature mean) and is often used when reducing normalization overhead is important (e.g., Llama, GPT-NeoX). It has a learnable per-dimension scale $\gamma$ but no bias term.
+
+\subsubsection{Partial RMSNorm (pRMSNorm)}
+pRMSNorm \citep{zhang_root_2019} further reduces overhead by estimating the RMS from only the first $p$\% of the hidden dimensions:
+\[
+\mathrm{RMS}(x)=\sqrt{\frac{1}{k}\sum_{i=1}^{k}x_i^2+\epsilon},\qquad k=\lceil d\cdot p\rceil,
+\]
+exploiting the assumption that neurons within a layer are approximately i.i.d. The same scale $\gamma$ is then applied to all dimensions. The partial ratio $p$ is controlled by the \texttt{prms\_partial\_ratio} config field (default $6.25\%$). The paper reports that competitive results are achievable with as little as $6.25\%$ of the inputs, though gradient instability can arise with very small ratios.
 
 \subsubsection{Dynamic Tanh (DyT)}
 Dynamic Tanh proposes replacing explicit normalization with a bounded elementwise map \citep{zhu_transformers_2025}:
@@ -47,7 +54,8 @@ with learnable scale/shift. Reported results in the cited work indicate stronger
 \midrule
 \endhead
 LayerNorm & $\gamma_i (x_i - \mu)/\sqrt{\sigma^2 + \epsilon} + \beta_i$ & mean + variance & Default; full centering and rescaling \citep{ba2016layer}. \\
-RMSNorm & $\gamma_i x_i/\sqrt{\frac{1}{d}\sum_j x_j^2+\epsilon}$ & RMS only & Lower overhead; widely used baseline; \textbf{not accepted by schema} \citep{zhang_root_2019}. \\
+RMSNorm & $\gamma_i x_i/\sqrt{\frac{1}{d}\sum_j x_j^2+\epsilon}$ & RMS only & Lower overhead; widely used baseline \citep{zhang_root_2019}. \\
+pRMSNorm & $\gamma_i x_i/\sqrt{\frac{1}{k}\sum_{j\le k} x_j^2+\epsilon}$ & Partial RMS & RMS from first $p$\% of dims; \texttt{prms\_partial\_ratio} default $6.25\%$ \citep{zhang_root_2019}. \\
 Dynamic Tanh & $\tanh(\alpha x)$ & none & Normalization-free bounded transform; drop-in replacement \citep{zhu_transformers_2025}. \\
 Dynamic Erf & $\mathrm{erf}(\alpha x+s)$ & none & Normalization-free alternative; improves over DyT \citep{chen_stronger_2025}. \\
 \bottomrule

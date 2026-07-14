@@ -113,8 +113,8 @@ When `use_embedding_conv=true`, a 1D convolution is applied over token embedding
 | `layer_norm` | Standard LayerNorm (subtract mean, divide by std) | Mean + std | Stable, widely used baseline |
 | `dynamic_tanh` | `tanh(α·x)` with learned α | None | Normalization-free bounded transform (DyT) |
 | `derf` | `erf(α·x + s)` with learned α, s | None | Normalization-free; improves over DyT |
-
-**`rms_norm` is NOT a valid schema value.**
+| `rms_norm` | `g_i · x_i / √(mean(x²) + ε)` | RMS only | No mean subtraction; 7%–64% faster than LayerNorm (arXiv:1910.07467) |
+| `prms_norm` | `g_i · x_i / √(mean(x[:k]²) + ε)`, `k=⌈n·p⌉` | Partial RMS | RMS from first `p`% of dims via `prms_partial_ratio` (default 6.25%; arXiv:1910.07467 §5) |
 
 ## Positional Encodings
 

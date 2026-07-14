@@ -24,7 +24,7 @@
 - **Schema (source of truth)**: `src/schema.yaml` is the JSON-Schema entry; it `$ref`s into the **modular** `src/schema/` directory (`_model.yaml`, `_training.yaml`, `_optimizer.yaml`, `_model_class.yaml`, `_tokenizer.yaml`, `_sbert.yaml`, `_base_model.yaml`, `_conditional_rules.yaml`, `_examples.yaml`). ⚠️ There is **no** `configs/schema.yaml` — older docs reference it; the real file is `src/schema.yaml`.
 - **Strict schema**: `additionalProperties: false` at top level. Adding a config key without extending the schema → validation failure.
 - **Training presets**: `configs/*.yaml` (named: `mini`, `frankenstein`, `frankesteindecoder`, `standard`, `tinybert`, `embbert`, …) and `configs/examples/*.yaml` (optimizer × architecture combos).
-- **Norm layers**: `src/model/norm/` — `factory.py` dispatches on `norm_type`; implementations in `derf.py`, `dynamic_tanh.py`.
+- **Norm layers**: `src/model/norm/` — `factory.py` dispatches on `norm_type`; implementations in `derf.py`, `dynamic_tanh.py`, `rms.py` (RMSNorm + pRMSNorm).
 - **Optimizers**: `src/model/optimizer/` — `factory.py` builds the optimizer; one file per family.
 - **Attention mixers**: `src/model/attention/` — families live in subpackages `gated/`, `latent/`, `sparse/` plus top-level modules (`standard.py`, `sigmoid.py`, `titan.py`, `retnet.py`, `ode.py`, `engram.py`, `grouped_query_attention.py`, `common.py`). `common.py` hosts `BitLinear`/`BitConv1d`.
 
@@ -38,7 +38,7 @@
    - `base_model` path requires `training.task` and, for MLM, `tokenizer.name_or_path`.
    - `task: mlm` requires `training.optimizer`; `task: sbert` requires `training.sbert`.
 3. **Respect BitNet.** `use_bitnet` **defaults to `True`** — primary/gate `nn.Linear` are replaced by `BitLinear` (ternary weights) unless explicitly disabled. `bitnet_routers=true` **requires** `use_bitnet=true` (enforced in `config_loader._validate_bitnet_flags`). `use_bitnet_conv` only applies when both `use_bitnet` and `use_embedding_conv` are true. Changing BitNet wiring touches `src/model/attention/common.py`, `tormented_bert_frankestein.py`, and `src/deploy/quantization.py` + `bitnet_gguf_export.py`.
-4. **`norm_type` enum is `[layer_norm, dynamic_tanh, derf]`.** `rms_norm` is **currently rejected** by both the schema (`_model.yaml` enum) and `norm/factory.py`. It is **planned** — implementing it requires: (a) add `rms_norm` to the enum in `src/schema/_model.yaml`, (b) create `src/model/norm/rms.py`, (c) register it in `src/model/norm/factory.py` + `__init__.py`. Do not enable it piecemeal.
+4. **`norm_type` enum is `[layer_norm, dynamic_tanh, derf, rms_norm, prms_norm]`.** `rms_norm` (RMSNorm) and `prms_norm` (partial RMSNorm, arXiv:1910.07467) are implemented in `src/model/norm/rms.py` and dispatched by `norm/factory.py`. `prms_norm` uses the `prms_partial_ratio` config field (default `0.0625`, range `(0, 1]`) — validated in `UltraConfig.__post_init__`.
 5. **`fasa_attn` and `sparge_attn` are eval-only.** They raise `RuntimeError` during training (`TRAINING_FREE_LAYERS` set in `tormented_bert_frankestein.py`). Never put them in a training `layer_pattern`.
 6. **`model_class: frankesteindecoder` forces `mode: decoder`** at runtime (preset in `tormented_bert_frankestein.py`). Don't set `mode: encoder` with this class.
 7. **Optimizer parameters use prefixed keys**: `<optimizer_class>-<group>_<param>` (e.g. `adamw-lr_embeddings`, `muon-ns_steps`, `sgd_momentum-momentum`). The prefix list lives in `src/schema/_optimizer.yaml` under `by_optimizer`. A new optimizer must add a `prefix` entry there.
@@ -61,7 +61,7 @@ Read recent commits on these paths first (`git log --oneline -20 -- <path>`).
 | Modify **CLI / entrypoint** | `src/cli.py`, `pyproject.toml` (scripts entry), `tests/test_cli_parser.py`, `tests/test_cli_gpu_temp_flags.py` |
 | Add/modify **GPU thermal guard** | `src/utils/gpu_temp_guard.py`, `src/training/trainer.py`, `src/cli.py`, `tests/test_gpu_temp_guard*.py` |
 | Modify **positional encodings** | `src/model/attention/rope.py`, `src/model/attention/hope.py`, `src/model/attention/common.py`, `src/schema/_model.yaml` (`positional_encoding` enum), `tests/test_positional_encodings.py` |
-| Modify **normalization layers** | `src/model/norm/factory.py`, `src/model/norm/<impl>.py`, `src/schema/_model.yaml` (`norm_type` enum) |
+| Modify **normalization layers** | `src/model/norm/factory.py`, `src/model/norm/<impl>.py` (`rms.py`, `derf.py`, `dynamic_tanh.py`), `src/schema/_model.yaml` (`norm_type` enum), `tests/test_common_modules.py` |
 | Modify **streaming dataset** | `src/training/streaming_mlm_dataset.py`, `src/utils/storage_manager.py` |
 | Modify **Streamlit web interface** | `src/streamlit_gui/app.py` |
 | Update **paper / docs** | `docs/paper.tex`, `docs/paper-es.tex`, `docs/bibliography/*.bib`, `docs/bibliography/*.md`, `docs/specs/*.md` |

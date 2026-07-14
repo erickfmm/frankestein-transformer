@@ -10,21 +10,23 @@ import torch.nn as nn
 
 from .derf import Derf
 from .dynamic_tanh import DynamicTanhNorm
+from .rms import RMSNorm
 
 
 def get_norm(config):
     """Factory function that returns a normalization module based on config.
 
-    Selects among ``LayerNorm``, ``DynamicTanhNorm``, and ``Derf`` based on
-    the ``norm_type`` field in the configuration.
-
-    Note:
-        ``rms_norm`` is intentionally NOT supported. See ``configs/schema.yaml``.
+    Selects among ``LayerNorm``, ``DynamicTanhNorm``, ``Derf``, ``RMSNorm``,
+    and ``pRMSNorm`` (partial RMSNorm) based on the ``norm_type`` field in the
+    configuration.
 
     Args:
         config: Model configuration object with attributes ``norm_type``
-            (one of ``"layer_norm"``, ``"dynamic_tanh"``, ``"derf"``) and
-            ``hidden_size``.
+            (one of ``"layer_norm"``, ``"dynamic_tanh"``, ``"derf"``,
+            ``"rms_norm"``, ``"prms_norm"``) and ``hidden_size``. When
+            ``norm_type == "prms_norm"``, the optional ``prms_partial_ratio``
+            attribute (default ``0.0625``) controls the fraction of dimensions
+            used for RMS estimation.
 
     Returns:
         A normalization ``nn.Module`` instance appropriate for the requested
@@ -38,4 +40,9 @@ def get_norm(config):
         return DynamicTanhNorm(config.hidden_size)
     if config.norm_type == "derf":
         return Derf(config.hidden_size)
+    if config.norm_type == "rms_norm":
+        return RMSNorm(config.hidden_size)
+    if config.norm_type == "prms_norm":
+        partial_ratio = float(getattr(config, "prms_partial_ratio", 0.0625))
+        return RMSNorm(config.hidden_size, partial_ratio=partial_ratio)
     return nn.LayerNorm(config.hidden_size)
