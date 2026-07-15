@@ -1,32 +1,52 @@
 \section{Related Work}
 
-This work sits at the intersection of three active research areas: alternative attention architectures, sparse attention mechanisms, and advanced optimization algorithms. This section provides a concise survey; detailed mathematical formulations and algorithmic descriptions are deferred to the appendices.
+This work sits at the intersection of deep learning frameworks, training tooling, and configuration-driven experimentation. While Sections~\ref{sec:attention-families} and~\ref{sec:optimizer-families} survey the architectural and optimization literature in depth, this section focuses on the software ecosystem for building, training, and configuring transformer models.
 
-\subsection{Sequence Mixer Architectures}
+\subsection{Base Deep Learning Frameworks}
 
-\subsubsection{Dense Attention Baselines}
-Standard softmax attention \citep{vaswani_attention_2017} achieves full global context through $n^2$ pairwise interactions but incurs prohibitive memory and compute costs for long sequences. Sigmoid attention \citep{ramapuram_theory_2024} replaces row-wise softmax with element-wise sigmoid, yielding faster convergence and up to 17\% kernel speedup, though requiring hybrid-norm stabilization at scale. Both serve as dense baselines in this toolkit.
+The modern transformer research ecosystem rests on several foundational frameworks that provide automatic differentiation, GPU acceleration, and high-level model-building APIs.
 
-\subsubsection{Recurrent and Retentive Architectures}
-RetNet \citep{sun_retentive_2023} resolves the ``impossible triangle'' of parallel training, $\mathcal{O}(1)$ inference, and strong performance via a dual attention--retention formulation. Mamba \citep{gu_mamba_2023} introduces input-dependent selectivity into state-space models, achieving linear complexity with hardware-aware scan algorithms. ODE-style transformers \citep{zhang_continuous_2021} treat depth as numerical integration over a continuous dynamical system. Titans \citep{behrouz_titans_2025} augments inference with test-time neural memorization for extremely long contexts. Detailed formulations are provided in Appendix~\ref{sec:annex-transformer}.
+\textbf{PyTorch} \citep{paszke_pytorch_2019} has become the dominant framework for transformer research. Its imperative programming model and dynamic computation graphs enable flexible debugging and rapid prototyping of novel architectures. The \texttt{torch.nn.Module} abstraction, automatic mixed-precision training via \texttt{torch.cuda.amp}, and the \texttt{torch.compile} JIT compiler form the backbone of most contemporary transformer implementations. Frankestein Transformer is built entirely on PyTorch, leveraging its module system for composable architecture definitions.
 
-\subsubsection{Sparse Attention Mechanisms}
-Sparse attention methods reduce the quadratic bottleneck by restricting token interactions: Sparse Transformer \citep{child_sparse_transformer_2019} uses factorized strided and fixed patterns ($\mathcal{O}(n\sqrt{n})$); Longformer \citep{beltagy_longformer_2020} employs sliding windows with global tokens ($\mathcal{O}(n \cdot w)$); BigBird \citep{zaheer_bigbird_2020} combines local, random, and global paths; SparseK \citep{lou_sparsek_2024} applies differentiable top-$k$ selection; NSA \citep{yuan_nsa_2025} uses a three-branch hierarchical design; SpargeAttn \citep{zhang_spargeattn_2025} performs two-stage block-level pruning; and FASA \citep{wang_fasa_2026} leverages RoPE frequency features for token selection. Complete descriptions are in Appendix~\ref{sec:annex-sparse}.
+\textbf{TensorFlow} \citep{abadi_tensorflow_2016} pioneered production-oriented deep learning with its static computation graph paradigm and the Keras high-level API. While its influence in transformer research has waned relative to PyTorch, TensorFlow's serving infrastructure (\texttt{TF Serving}, \texttt{TF Lite}) and the \texttt{tensorflow-text} library remain relevant for deployment scenarios.
 
-\subsubsection{Gated Attention Mechanisms}
-Gated architectures control information flow through learnable gates: GLA \citep{yang_gla_2023} adds data-dependent diagonal gating to linear attention; DeltaNet \citep{yang_deltanet_2024} applies the delta learning rule to recurrent state updates; Gated DeltaNet \citep{yang_gated_deltanet_2024} synthesizes both mechanisms; Gated DeltaNet-2 \citep{hatamizadeh_gated_deltanet2_2026} decouples the scalar delta gate into channel-wise erase (key axis) and write (value axis) gates; HGRN2 \citep{qin_hgrn2_2024} introduces hierarchical forget gates with outer-product state expansion; FoX \citep{lin_forgetting_transformer_2025} embeds forget gates directly into softmax attention; and Gated Softmax \citep{qiu_gated_attention_2025} applies post-SDPA channel gating. Full mathematical derivations appear in Appendix~\ref{sec:annex-gated}.
+\textbf{JAX} \citep{bradbury_jax_2018} offers a functional programming model built around composable transformations (\texttt{jit}, \texttt{vmap}, \texttt{grad}) and XLA compilation. Its design enables clean implementations of complex algorithms and has been adopted by several recent transformer libraries (e.g., Flax, Haiku). JAX's stateless design and automatic vectorization are particularly well-suited for research on novel attention mechanisms and optimization algorithms.
 
-\subsection{Optimization Algorithms}
+\textbf{scikit-learn} \citep{pedregosa_scikit-learn_2011} provides classical machine learning algorithms and utilities (preprocessing, metrics, model selection) that serve as baselines and complementary tools in transformer workflows. While not designed for deep learning, its consistent API and extensive documentation make it a standard reference point for comparing transformer-based approaches against traditional methods.
 
-Optimization of highly parameterized transformer architectures requires navigating non-convex loss landscapes with heterogeneous Hessian spectra. The literature has diversified into several families beyond the classical AdamW baseline \citep{loshchilov_decoupled_2017}:
+\subsection{Out-of-the-Box Training Frameworks}
+
+Several libraries provide complete training pipelines that abstract away the complexity of distributed training, data loading, and hyperparameter management.
+
+\textbf{Hugging Face Transformers} \citep{wolf_huggingface_2020} is the de facto standard for accessing, fine-tuning, and sharing pretrained transformer models. Its \texttt{Trainer} API, model hub with over 500,000 models, and tight integration with the \texttt{datasets} and \texttt{tokenizers} libraries have made it the primary entry point for transformer-based NLP. However, its architecture is optimized for fine-tuning existing pretrained models rather than experimenting with novel sequence mixer designs or training from scratch with custom optimization strategies.
+
+\textbf{Oumi} (\texttt{\url{https://github.com/oumi-ai/oumi}}, 2025) is an open-source end-to-end platform for training, fine-tuning, evaluating, and deploying foundation models. It provides a unified interface across multiple cloud providers and supports both supervised fine-tuning and preference optimization (DPO, RLHF). Oumi emphasizes production readiness with built-in monitoring, checkpointing, and deployment tooling.
+
+\textbf{LLaMA Factory} (\texttt{\url{https://github.com/hiyouga/LLaMA-Factory}}, 2024) offers a unified framework for efficient fine-tuning of over 100 large language models. It provides both a web-based UI and a CLI, supporting LoRA, QLoRA, full-parameter fine-tuning, and various alignment techniques. Its focus is on adapting existing pretrained LLMs to downstream tasks rather than architectural experimentation.
+
+\textbf{Axolotl} (\texttt{\url{https://github.com/axolotl-ai-cloud/axolotl}}, 2024) is a streamlined fine-tuning tool supporting LoRA, QLoRA, DeepSpeed, and FSDP. It emphasizes configuration-driven workflows via YAML files and has become popular in the open-source LLM fine-tuning community. Like LLaMA Factory, it targets fine-tuning of pretrained models rather than training novel architectures from scratch.
+
+\subsection{Low-Code and Efficiency-Oriented Tools}
+
+A growing category of tools prioritizes accessibility and computational efficiency, lowering the barrier to transformer training.
+
+\textbf{Unsloth} (\texttt{\url{https://github.com/unslothai/unsloth}}, 2024) provides low-code fine-tuning with 2--5$\times$ speedup and significantly reduced VRAM requirements through hand-written CUDA kernels and optimized Triton operations. It supports GGUF export for quantized deployment and integrates with the Hugging Face ecosystem. Unsloth's focus is on making fine-tuning faster and more memory-efficient, not on architectural exploration.
+
+\textbf{dashAI} (\texttt{\url{https://www.dash-ai.com}}, 2024) is a desktop application for no-code machine learning training with a schema-driven UI. It allows users to configure datasets, models, and training parameters through a graphical interface without writing code. While dashAI demonstrates the value of schema-driven configuration for accessibility, it targets classical ML workflows rather than transformer architecture experimentation.
+
+\subsection{Configuration-Driven Experimentation}
+
+A common thread across the tools surveyed above is their focus on fine-tuning existing pretrained models. Hugging Face Transformers, LLaMA Factory, Axolotl, and Unsloth all assume a pretrained checkpoint as the starting point. Oumi supports training from scratch but targets standard architectures. None of these tools provide a systematic framework for experimenting with novel sequence mixer architectures, comparing diverse optimization algorithms under controlled conditions, or exploring the interaction between architectural choices and training dynamics.
+
+\textbf{Frankestein Transformer} fills this gap by providing a schema-first configuration system purpose-built for architecture experimentation. Its key differentiators include:
 
 \begin{itemize}[leftmargin=*]
-    \item \textbf{Variance reduction and momentum}: RAdam \citep{liu_variance_2019}, Adan \citep{xie_adan_2022}, ADOPT \citep{taniguchi_adopt_2024}, AdEMAMix \citep{pagliardini_ademamix_2024}, MARS \citep{yuan_mars_2024}, and Cautious optimizers \citep{liang_cautious_2024} address early-step instability, convergence guarantees, and dual-EMA history mixing.
-    \item \textbf{Memory-efficient}: Adafactor \citep{shazeer_adafactor_2018}, GaLore \citep{zhao_galore_2024}, Lion \citep{chen_symbolic_2023}, and APOLLO \citep{zhu2025apollosgdlikememoryadamwlevel} reduce optimizer-state memory through factorization, low-rank projection, or sign-based updates.
-    \item \textbf{Schedule-free and parameter-free}: Schedule-Free AdamW \citep{defazio_road_2024} and Prodigy \citep{mishchenko_prodigy_2023} absorb scheduler or learning-rate tuning into the optimizer dynamics.
-    \item \textbf{Second-order and curvature-aware}: Shampoo \citep{gupta_shampoo_2018}, SOAP \citep{vyas_soap_2024}, and Sophia \citep{liu_sophia_2023} incorporate approximate second-order information.
-    \item \textbf{Geometry-oriented}: Muon \citep{shen_convergence_2025} and Turbo-Muon \citep{boissin_turbo-muon_2025} reshape update geometry through orthogonalization.
+    \item \textbf{35+ sequence mixers} spanning dense attention, recurrent/retentive blocks, sparse attention patterns, gated mechanisms, adaptive depth routing, and conditional memory layers, all selectable via a single YAML field.
+    \item \textbf{23 optimizer families} with a prefixed hyperparameter routing system that enables per-parameter-group control across embeddings, normalization layers, attention blocks, and feed-forward networks.
+    \item \textbf{Dual training modes} supporting both encoder-style masked language modeling (MLM) and decoder-style autoregressive (AR) next-token prediction, with specialized fine-tuning workflows for each.
+    \item \textbf{Strict schema validation} via \texttt{additionalProperties: false} constraints that prevent configuration errors before training begins, ensuring reproducibility across experiments.
+    \item \textbf{End-to-end workflows} spanning quantized deployment (ternary weight packing, INT8 activations) and sentence-embedding training inspired by SBERT \citep{reimers_sentence-bert_2019}.
+    \item \textbf{Web-based configuration interface} providing schema-driven form rendering with inline documentation, real-time validation, and CLI command generation.
 \end{itemize}
 
-Detailed algorithmic descriptions, pseudocode, and a comprehensive complexity comparison are provided in Appendix~\ref{sec:annex-optimizers}.
-
+By decoupling architecture definition from training infrastructure through a validated configuration contract, Frankestein Transformer enables systematic comparison of sequence mixer families and optimization strategies under identical training conditions---a capability not provided by any existing tool in the ecosystem.

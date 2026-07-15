@@ -567,27 +567,6 @@ S_{i,b} = \mathbf{F}_i \cdot \mathbf{r}_b, \qquad \mathcal{I}_i = \mathrm{TopK}(
     \item \textbf{Limitation}: Requires a CPU--GPU offload pipeline and a frozen base selector; the lookahead benefit is contingent on next-layer block demand being predictable from the current Forecast.
 \end{itemize}
 
-\subsection{Comparative Summary}
-
-\footnotesize
-\begin{longtable}{p{1.9cm}p{1.7cm}p{1.6cm}p{1.6cm}p{1.1cm}p{3.5cm}}
-\toprule
-\textbf{Method} & \textbf{Complexity} & \textbf{Trainable} & \textbf{Unit} & \textbf{Year} & \textbf{Primary Contribution} \\
-\midrule
-\endhead
-Sparse Transformer & $O(n\sqrt{n}d)$ & Y & Token pattern & 2019 & Factorized strided + fixed masks \\
-Longformer & $O(nwd)$ & Y & Local + global & 2020 & Linear scaling with dilation \\
-BigBird & $O(n)$ & Y & Graph sparse & 2020 & Theoretical completeness proof \\
-SparseK & $O(nd)$ & Y & Top-$k$ tokens & 2024 & Differentiable selection \\
-NSA & $O((t/d+nl'+w)d)$ & Y & Multi-branch & 2025 & Hardware-aligned 3-branch design \\
-FASA & $O(tN_{\text{tip}}+N_{\text{fac}}d)$ & N & Freq chunks & 2026 & RoPE frequency insight \\
-SpargeAttn & $O(n^2 s \cdot d)$ & N & Block filter & 2025 & Two-stage universal filtering \\
-MSA & $O(H_{\text{kv}}d_{\text{idx}}N^2 + H_q d_h N k B_k)$ & Y & Block top-$k$ & 2026 & Index-branch block sparse (deployed 109B) \\
-SparDA & $O(H_{\text{kv}}d_f N N_b + H_q d_h N k B_k)$ & Y & Forecast block & 2026 & Lookahead prefetch decoupled selection \\
-\bottomrule
-\end{longtable}
-\normalsize
-
 \subsection{Design Space and Selection Criteria}
 
 The seven sparse attention methods occupy complementary positions in a multidimensional design space:

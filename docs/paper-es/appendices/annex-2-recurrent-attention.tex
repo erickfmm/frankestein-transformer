@@ -207,23 +207,4 @@ El código base selecciona un mezclador por bloque a partir del \texttt{layer\_p
 \end{algorithmic}
 \end{algorithm}
 
-\subsection{Comparación y Síntesis Arquitectónica}
-
-\small
-\begin{longtable}{p{2.0cm}p{1.8cm}p{1.6cm}p{1.6cm}p{4.5cm}}
-\toprule
-\textbf{Arquitectura} & \textbf{Entrenar} & \textbf{Inferir} & \textbf{Estado} & \textbf{Característica Clave} \\
-\midrule
-\endhead
-Atención Estándar & $O(n^2 d)$ & $O(n)$ caché & $O(nd)$ & Expresividad perfecta, enrutamiento completo de tokens, cuello de botella KV. \\
-GQA & $O(n^2 d)$ & $O(n)$ caché & $O(h_k \cdot n \cdot d_h)$ & Compresión KV ajustable, probado a escala, reducción de caché en factor $G \times$. \\
-Atención Sigmoide & $O(n^2 d)$ & $O(n)$ caché & $O(nd)$ & Compuerta elemento a elemento, eficiente en hardware, estable a escala con norma híbrida. \\
-RetNet & $O(n^2 d)$ & $O(1)$ & $O(d^2)$ & Decaimiento multi-escala, triple modo de cómputo, patrón de olvido fijo. \\
-Mamba & $O(nd)$ & $O(1)$ & $O(d)$ & Dinámica selectiva dependiente de la entrada, entrenamiento e inferencia lineales, escaneo de hardware. \\
-Transformer EDO & $O(kn^2 d)$ & $O(kn)$ & $O(nd)$ & Refinamiento por integración numérica, uso compartido de pesos por etapas, mayor precisión. \\
-Titans & $O(c^2 + nf)$ & $O(c^2 + 1)$ & $O(1)$ & Adaptación de memoria en tiempo de prueba, contexto extremo, actualizaciones de parámetros durante inferencia. \\
-\bottomrule
-\end{longtable}
-\normalsize
-
 El campo exhibe una progresión clara a lo largo de dos ejes: (i) \textbf{eficiencia computacional}, pasando de $O(n^2)$ a $O(n)$ u $O(1)$, y (ii) \textbf{adaptabilidad de memoria}, pasando de pesos estáticos a modelos dinámicos actualizados en tiempo de prueba. La atención estándar sigue siendo la línea base de expresividad; Mamba y RetNet representan la frontera práctica de eficiencia; Titans introduce un eje de innovación ortogonal (aprendizaje en tiempo de prueba). La elección de arquitectura refleja la restricción fundamental de ingeniería: expresividad versus costo de despliegue. La familia de atención latente, que comprime el caché KV en un latente de rango bajo, se cubre en el Apéndice~\ref{sec:annex-latent}.

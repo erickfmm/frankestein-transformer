@@ -501,69 +501,6 @@ Memory & Constant $\mathcal{O}(d^2)$ inference state (matrix recurrent). & Log-d
 
 \normalsize
 
-\subsection{Comparative Analysis: Taxonomy of Gated Mechanisms}
-
-\footnotesize
-\begin{longtable}{p{1.8cm}p{1.7cm}p{1.8cm}p{1.6cm}p{2.0cm}p{2.4cm}p{1.3cm}}
-\toprule
-\textbf{Architecture} & \textbf{Publication Year} & \textbf{State Representation} & \textbf{Gate Type} & \textbf{Training Complexity} & \textbf{Inference Complexity} & \textbf{Ref} \\
-\midrule
-\endhead
-GLA & 2023 & Matrix (recurrent) & Diagonal decay & $\mathcal{O}(Ld^2)$ & $\mathcal{O}(d^2)$ memory & \citep{yang_gla_2023} \\
-DeltaNet & 2024 & Matrix (recurrent) & Scalar write ($\beta$) & $\mathcal{O}(Ld^2)$ & $\mathcal{O}(d^2)$ memory & \citep{yang_deltanet_2024} \\
-Gated DeltaNet & 2024 & Matrix (recurrent) & Decay + write & $\mathcal{O}(Ld^2)$ & $\mathcal{O}(d^2)$ memory & \citep{yang_gated_deltanet_2024} \\
-RetNet & 2023 & Matrix (recurrent) & Fixed exponential & $\mathcal{O}(Ld^2)$ & $\mathcal{O}(d)$ per-step & \citep{sun_retentive_2023} \\
-HGRN2 & 2024 & Matrix (recurrent) & Diagonal (bounded) & $\mathcal{O}(Ld^2)$ & $\mathcal{O}(d^2)$ memory & \citep{qin_hgrn2_2024} \\
-FoX & 2025 & Full attention & Logit-space bias & $\mathcal{O}(L^2d)$ & $\mathcal{O}(L)$ KV cache & \citep{lin_forgetting_transformer_2025} \\
-Gated Softmax & 2025 & Full attention & Post-SDPA sigmoid & $\mathcal{O}(L^2d)$ & $\mathcal{O}(L)$ KV cache & \citep{qiu_gated_attention_2025} \\
-Gated DeltaNet-2 & 2026 & Matrix (recurrent) & Decoupled erase + write (channel-wise) & $\mathcal{O}(Ld^2)$ & $\mathcal{O}(d^2)$ memory & \citep{hatamizadeh_gated_deltanet2_2026} \\
-KDA & 2025 & Matrix (recurrent) & Channel-wise decay + scalar write & $\mathcal{O}(Ld^2)$ & $\mathcal{O}(d^2)$ memory & \citep{kimi_kda_2025} \\
-\bottomrule
-\end{longtable}
-\normalsize
-
-\medskip
-
-\footnotesize
-\begin{longtable}{p{1.8cm}p{2.0cm}p{2.2cm}p{2.2cm}p{2.2cm}p{1.8cm}}
-\toprule
-\textbf{Architecture} & \textbf{Trainable} & \textbf{In-Context Recall} & \textbf{Associative Recall} & \textbf{Length Extrapolation} & \textbf{Key Advantage} \\
-\midrule
-\endhead
-GLA & Yes & Moderate & Weak & Good (20K) & Hardware efficiency; chunkwise parallelism \\
-DeltaNet & Yes & Strong & Perfect (MQAR) & Good & Error-correcting semantics; strong retrieval \\
-Gated DeltaNet & Yes & Very strong & Perfect & Excellent & Balanced: forgetting + targeted updates \\
-RetNet & Yes & Weak & Weak & Good & Simplicity; no KV cache needed \\
-HGRN2 & Yes & Moderate & Weak & Moderate & Multi-scale temporal modeling \\
-FoX & Yes & Very strong & Very strong (near-perfect) & Excellent & Preserve softmax; minimal overhead \\
-Gated Softmax & Yes & Strong & Good & Good & Simplicity; no replacement of SDPA \\
-Gated DeltaNet-2 & Yes & Very strong & Very strong & Excellent & Decoupled channel-wise erase/write; best RULER multi-key \\
-KDA & Yes & Very strong & Very strong & Excellent & Channel-wise decay; deployed in Kimi Linear (75\% KV reduction, $6\times$ decode) \\
-\bottomrule
-\end{longtable}
-\normalsize
-
-\medskip
-
-\footnotesize
-\begin{longtable}{p{2.0cm}p{2.4cm}p{2.8cm}p{3.4cm}}
-\toprule
-\textbf{Architecture} & \textbf{Typical Throughput} & \textbf{Memory per-Inference} & \textbf{Primary Use Case} \\
-\midrule
-\endhead
-GLA & High (chunkwise CUDA) & $O(d^2)$ constant & Long-context with memory constraints \\
-DeltaNet & Medium-High & $O(d^2)$ constant & Retrieval and associative reasoning \\
-Gated DeltaNet & Medium & $O(d^2)$ constant & Production: Qwen3-Next, balanced performance \\
-RetNet & High & $O(d)$ per-step & Extremely fast inference; simple models \\
-HGRN2 & Medium-High & $O(d^2)$ constant & Multi-scale temporal patterns \\
-FoX & Moderate (quadratic) & $O(Ld)$ KV cache & Length extrapolation; long-context generation \\
-Gated Softmax & High (minimal overhead) & $O(Ld)$ KV cache & Drop-in improvement for existing models \\
-Gated DeltaNet-2 & High (near-flat scaling) & $O(d^2)$ constant & Long-context retrieval; multi-key NIAH \\
-KDA & High (up to $6\times$ decode at 1M) & $O(d^2)$ constant & Production hybrid (Kimi Linear); long-context decode \\
-\bottomrule
-\end{longtable}
-\normalsize
-
 \subsection{Unified Gating Principle}
 
 All eight architectures share a common principle: \textbf{gating is a mechanism to control information flow and selective memory retention}. The specific design choices diverge along several dimensions:

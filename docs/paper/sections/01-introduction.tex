@@ -10,7 +10,7 @@ The practical consequence is a fragmented research ecosystem where experimental 
 
 This work addresses these challenges through a unified, configuration-driven experimentation toolkit available at \url{https://github.com/erickfmm/frankestein-transformer} that provides:
 \begin{enumerate}[leftmargin=*]
-    \item \textbf{Schema-First Design}: A strict, validated configuration contract that enforces reproducibility while supporting seventeen distinct sequence mixer architectures and twenty-three optimizer families.
+    \item \textbf{Schema-First Design}: A strict, validated configuration contract that enforces reproducibility while supporting thirty-five sequence mixer variants across six families and twenty-three optimizer families.
     \item \textbf{Architecture Agnostic Training}: Common training infrastructure supporting dense attention baselines (standard, sigmoid), recurrent alternatives (RetNet, Mamba, ODE-style blocks), adaptive depth routing (Mixture-of-Depths) \citep{zhu2026mixtureofdepthsattention}, conditional memory blocks (Engram) \citep{cheng2026conditionalmemoryscalablelookup}, sparse attention patterns (Sparse Transformer, Longformer, BigBird, SparseK, NSA, SpargeAttn, FASA), and gated mechanisms (GLA, DeltaNet, Gated DeltaNet, Gated DeltaNet-2, HGRN2, FoX, Gated Softmax).
     \item \textbf{Optimizer Routing Framework}: Prefixed hyperparameter groups enabling fine-grained control over embeddings, normalization layers, recurrent blocks, attention blocks, and other parameter subsets across diverse optimizers, including the APOLLO family (Apollo, Apollo-Mini, Q-Apollo) \citep{zhu2025apollosgdlikememoryadamwlevel}.
     \item \textbf{End-to-End Workflows}: Integrated deployment via quantization (ternary weight packing, INT8 activations) and sentence-embedding capabilities inspired by SBERT \citep{reimers_sentence-bert_2019}.
@@ -23,7 +23,7 @@ The project command surface is:
 \texttt{frankestein-transformer}
 \end{center}
 with subcommands for encoder and decoder workflows:
-\texttt{train}, \texttt{finetune}, \texttt{deploy}, \texttt{quantize}, \texttt{infer}, \texttt{sbert-train}, \texttt{sbert-infer}, \texttt{web-server}.
+\texttt{train}, \texttt{deploy}, \texttt{quantize}, \texttt{infer}, \texttt{sbert-train}, \texttt{sbert-infer}, \texttt{transformers-export}, \texttt{bitnet-gguf}, \texttt{web-server}.
 
 The \texttt{web-server} command launches a Streamlit-based configuration builder that provides:
 \begin{itemize}[leftmargin=*]
@@ -39,7 +39,7 @@ This interactive interface serves as an alternative to manual YAML editing, impr
 
 This work makes the following primary contributions:
 \begin{enumerate}[leftmargin=*]
-    \item \textbf{Unified Configuration Schema}: A YAML-based schema contract with strict validation that supports seventeen distinct sequence mixer architectures across four categories (dense baselines, recurrent/retentive blocks, sparse attention patterns, and gated mechanisms), alongside adaptive depth and conditional memory controls, while enforcing reproducibility through \texttt{additionalProperties: false} constraints.
+    \item \textbf{Unified Configuration Schema}: A YAML-based schema contract with strict validation that supports thirty-five sequence mixer variants across six families (dense, recurrent, sparse, gated, latent, and memory-augmented), alongside adaptive depth and conditional memory controls, while enforcing reproducibility through \texttt{additionalProperties: false} constraints.
     \item \textbf{Comprehensive Architecture Support}: Implementation of modern transformer variants including standard softmax attention \citep{vaswani_attention_2017}, sigmoid attention \citep{ramapuram_theory_2024}, RetNet \citep{sun_retentive_2023}, Mamba \citep{gu_mamba_2023}, ODE-style continuous transformers \citep{zhang_continuous_2021}, Titans memory-augmented attention \citep{behrouz_titans_2025}, Engram conditional memory layers \citep{cheng2026conditionalmemoryscalablelookup}, Mixture-of-Depths token routing \citep{zhu2026mixtureofdepthsattention}, sparse attention mechanisms \citep{child_sparse_transformer_2019,beltagy_longformer_2020,zaheer_bigbird_2020,lou_sparsek_2024,yuan_nsa_2025,zhang_spargeattn_2025,wang_fasa_2026}, and gated attention architectures \citep{yang_gla_2023,yang_deltanet_2024,yang_gated_deltanet_2024,hatamizadeh_gated_deltanet2_2026,qin_hgrn2_2024,lin_forgetting_transformer_2025,qiu_gated_attention_2025}. System supports both encoder-mode training with bidirectional attention for masked language modeling (MLM) and decoder-mode training with causal masking for autoregressive next-token prediction.
     \item \textbf{Optimizer Routing Framework}: Prefixed hyperparameter system enabling per-parameter-group control across twenty-three optimizers, including the adaptivity-tunable Anon \citep{anon2026anon}, variance-reduction methods (MARS, Adan, AdEMAMix, Cautious AdamW), memory-efficient variants (Adafactor, GaLore, Lion), schedule-free approaches (Schedule-Free AdamW), curvature-aware methods (Sophia), second-order preconditioners (Shampoo, SOAP), orthogonality-oriented optimizers (Muon, Turbo-Muon), large-batch scaling (LAMB), and the APOLLO family (Apollo, Apollo-Mini, Q-Apollo) \citep{zhu2025apollosgdlikememoryadamwlevel}.
     \item \textbf{Quantization and Deployment}: Integrated deployment pipeline supporting ternary weight packing and INT8 activation quantization with size estimates following $1.58$-bit storage approximation.
@@ -61,41 +61,5 @@ This document is organized as a technical reference addressing four operational 
 
 \subsection{Web-Based Configuration Builder}
 
-In addition to direct YAML editing, this project provides a Streamlit-based web interface (accessed via \texttt{web-server} command) that improves configuration accessibility and discoverability. The interface presents schema fields with:
-
-\begin{itemize}[leftmargin=*]
-    \item \textbf{Schema-driven form rendering} --- All fields are dynamically generated from the authoritative schema, ensuring consistency and validation.
-    \item \textbf{Inline parameter documentation} --- Each form field displays a \emph{title} from the schema as its label, with the \emph{description} shown as a help tooltip on hover.
-    \item \textbf{Real-time configuration preview} --- Users see live YAML output as they modify form fields, enabling immediate validation feedback.
-    \item \textbf{CLI command generation} --- The interface generates complete CLI commands for training, deployment, inference, and SBERT workflows based on current configuration.
-    \item \textbf{Accessibility improvements} --- Tooltips and structured forms make configuration options easier to understand, especially for users new to the project or exploring novel architectures.
-\end{itemize}
-
-This web-based approach addresses common usability barriers in configuration-driven experimentation:
-\begin{itemize}[leftmargin=*]
-    \item Reduces need to memorize YAML structure and field names
-    \item Prevents typos through schema validation
-    \item Provides educational context through inline documentation
-    \item Enables rapid experimentation with guided parameter tuning
-    \item Serves as both a configuration tool and a learning resource
-\end{itemize}
-
-The web interface implementation uses Streamlit's form widgets with:
-\begin{itemize}[leftmargin=*]
-    \item \texttt{st.checkbox()} for binary toggles with help text
-    \item \texttt{st.number\_input()} for numeric fields with step size and format
-    \item \texttt{st.selectbox()} for enum choices with options display
-    \item \texttt{st.multiselect()} for array selections from defined options
-    \item \texttt{st.text\_input()} for string fields
-    \item \texttt{st.info()}, \texttt{st.caption()} for supplementary information
-\end{itemize}
-
-Schema metadata (title and description fields) are extracted and rendered systematically across all form sections, including:
-\begin{itemize}[leftmargin=*]
-    \item Model architecture parameters (hidden size, layers, attention heads, etc.)
-    \item Training runtime settings (batch size, accumulation, scheduler)
-    \item Optimizer configuration with per-parameter-group hyperparameters
-    \item Deployment and quantization options
-    \item SBERT-specific training and inference parameters
-\end{itemize}
+In addition to direct YAML editing, this project provides a Streamlit-based web interface (accessed via \texttt{web-server} command) that improves configuration accessibility and discoverability. The interface dynamically generates schema-driven forms with inline parameter documentation, real-time YAML preview, and automatic CLI command generation for training, deployment, inference, and SBERT workflows. Schema metadata (titles and descriptions) are rendered systematically across all configuration sections, including model architecture, training runtime, optimizer hyperparameters, deployment, and SBERT-specific parameters. This approach reduces the need to memorize YAML structure, prevents typos through schema validation, and serves as both a configuration tool and a learning resource for users exploring novel architectures.
 

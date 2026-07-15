@@ -44,7 +44,7 @@ Este trabajo no está afiliado \\
 \maketitle
 
 \begin{abstract}
-Frankestein Transformer presenta un conjunto de herramientas unificado y basado en configuración para la experimentación sistemática con arquitecturas modernas de transformers, abarcando diecisiete variantes de mezcladores de secuencia y veintitrés familias de optimizadores. El sistema admite tanto el modelado de lenguaje enmascarado (MLM) tipo codificador como la predicción autorregresiva (AR) del siguiente token tipo decodificador mediante una configuración flexible de clase de modelo y modo, con flujos de trabajo de ajuste fino especializados para ambas arquitecturas. Las contribuciones de investigación son tres: (i) un contrato de configuración estricto basado en esquemas que permite la experimentación reproducible a través de diversos mecanismos de atención, incluyendo atención softmax estándar, atención sigmoide, redes retentivas, modelos selectivos de espacio de estados, transformers de profundidad continua, enrutamiento adaptativo de profundidad (Mixture-of-Depths) \citep{zhu2026mixtureofdepthsattention}, aumento de memoria condicional (Engram) \citep{cheng2026conditionalmemoryscalablelookup}, patrones de atención dispersa y mecanismos con compuerta; (ii) un marco integral de enrutamiento de optimizadores que admite métodos de reducción de varianza (MARS, Adan, AdEMAMix), variantes eficientes en memoria (Adafactor, GaLore, Lion), enfoques sin programación de tasa de aprendizaje, precondicionadores de segundo orden (Shampoo, SOAP, Sophia) y optimizadores de bajo rango de la familia APOLLO (Apollo, Apollo-Mini, Q-Apollo) \citep{zhu2025apollosgdlikememoryadamwlevel}; y (iii) flujos de trabajo de extremo a extremo que abarcan el despliegue cuantizado mediante empaquetado ternario de pesos y el entrenamiento de incrustaciones de oraciones inspirado en SBERT, respaldados por una pila de aseguramiento de calidad ampliada con amplia cobertura de pruebas unitarias, validación de ejemplos YAML y ejecución de integración continua. El conjunto de herramientas implementa una interfaz de configuración basada en web que proporciona renderizado de formularios impulsado por esquemas con documentación en línea y validación en tiempo real. Este documento de referencia técnica incluye diagramas arquitectónicos, visualizaciones de flujo de ejecución, tablas de decisión y apéndices completos que sintetizan la literatura sobre arquitecturas de transformers, mecanismos de atención dispersa, arquitecturas con compuerta y familias de optimizadores.
+Las arquitecturas de transformers se han convertido en el paradigma dominante para el modelado de secuencias en el procesamiento del lenguaje natural, la visión por computadora y la biología computacional. Los últimos años han sido testigos de una rápida diversificación de los mecanismos de atención y las estrategias de optimización, con innovaciones que abarcan variantes densas de softmax, alternativas recurrentes y retentivas, patrones de atención dispersa, mecanismos lineales con compuerta, proyecciones en espacio latente y bloques con aumento de memoria. Paralelamente, el panorama de optimizadores se ha expandido más allá del AdamW clásico para incluir métodos de reducción de varianza, variantes eficientes en memoria, enfoques sin programación de tasa de aprendizaje, precondicionadores de segundo orden y aproximaciones de bajo rango. A pesar de esta riqueza de avances arquitectónicos y algorítmicos, el ecosistema de investigación permanece fragmentado: comparar mezcladores de secuencia y optimizadores bajo condiciones de entrenamiento consistentes requiere un esfuerzo de ingeniería sustancial, lo que dificulta la reproducibilidad y ralentiza el progreso científico. En este trabajo proponemos Frankestein Transformer, un conjunto de herramientas CLI basado en configuración (\texttt{frankestein-transformer}) que unifica la definición, el entrenamiento y el despliegue de modelos transformer mediante un esquema YAML estricto. El conjunto de herramientas soporta treinta y cinco variantes de mezcladores de secuencia en seis familias (densa, recurrente, dispersa, con compuerta, latente y con aumento de memoria) y veintitrés familias de optimizadores con control de hiperparámetros por grupo de parámetros mediante prefijos. Proporciona subcomandos para entrenamiento (\texttt{train}), despliegue (\texttt{deploy}), cuantización (\texttt{quantize}), inferencia (\texttt{infer}), entrenamiento e inferencia de incrustaciones de oraciones estilo SBERT (\texttt{sbert-train}, \texttt{sbert-infer}), exportación compatible con HuggingFace (\texttt{transformers-export}), exportación GGUF con soporte BitNet (\texttt{bitnet-gguf}) y un constructor de configuración basado en web (\texttt{web-server}). El sistema impone la reproducibilidad mediante un contrato de esquema estricto con restricciones \texttt{additionalProperties: false}, ofrece una interfaz web basada en Streamlit para la construcción de configuraciones guiada por esquema e incluye tuberías de despliegue de extremo a extremo con cuantización ternaria de pesos y flujos de trabajo de incrustación de oraciones inspirados en SBERT. Las pruebas automatizadas integrales con suites de pruebas unitarias, validación de presets YAML y ejecución de CI en múltiples versiones de Python garantizan la confiabilidad.
 \end{abstract}
 
 \tableofcontents
@@ -57,7 +57,6 @@ Frankestein Transformer presenta un conjunto de herramientas unificado y basado 
 \input{sections/05-familias-optimizadores}
 \input{sections/06-cuantizacion-despliegue}
 \input{sections/07-tareas-sbert}
-\input{sections/08-tablas-resumen}
 \input{sections/09-discusion}
 \input{sections/10-conclusion}
 
@@ -69,12 +68,14 @@ Frankestein Transformer presenta un conjunto de herramientas unificado y basado 
 \addtocontents{toc}{\bigskip\noindent\textbf{Anexos}\par}
 \setcounter{section}{0}
 
+\input{appendices/annex-6-tutorial}
+\input{appendices/annex-schema}
+\input{appendices/annex-summary-tables}
 \input{appendices/annex-1-optimizadores}
 \input{appendices/annex-2-recurrent-attention}
 \input{appendices/annex-3-latent-attention}
 \input{appendices/annex-4-sparse-attention}
 \input{appendices/annex-5-gated-attention}
-\input{appendices/annex-6-tutorial}
 \input{appendices/annex-7-norm-bitnet-mod}
 
 \end{document}

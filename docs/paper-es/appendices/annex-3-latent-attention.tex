@@ -301,25 +301,4 @@ La Atención Convolucional Comprimida por Consultas Agrupadas (CCGQA, por sus si
     \item \textbf{Limitaciones}: Misma cuadrática $S^2$ (sólo reducida por $C_1$); se necesita kernel fusionado; dos proyecciones de valor añaden complejidad.
 \end{itemize}
 
-\subsection{Comparación y Síntesis Arquitectónica}
-
-\small
-\begin{longtable}{p{2.0cm}p{1.8cm}p{1.6cm}p{1.6cm}p{4.5cm}}
-\toprule
-\textbf{Arquitectura} & \textbf{Entrenar} & \textbf{Inferir} & \textbf{Estado} & \textbf{Característica Clave} \\
-\midrule
-\endhead
-MLA & $O(n^2 d)$ & $O(n)$ caché & $O(r_{kv} n)$ & KV latente de rango $r_{kv}\!\approx\!d/2$, reduce a la mitad el caché, iguala calidad MHA. \\
-GQLA & $O(n^2 d)$ & $O(n)$ caché & $O(r_{kv} n)$ & Mismos pesos MLA, dos rutas de decodificación algebraicamente equivalentes adaptativas al hardware. \\
-MLRA & $O(n^2 d)$ & $O(n)$ caché & $O(r_{kv} n)$ particionado & Latente dividido en $L$ sub-cabezas para decodificación tensor-paralela de 4 vías, 2.8$\times$ de aceleración. \\
-Tucker & $O(n^2 d)$ & $O(n)$ caché & $O(k_{\text{rank}} n)$ & Factorización Tucker unifica MHA/GQA/MLA, un orden de magnitud menos parámetros. \\
-IHA & $O(n^2 H^2)$ & $O(n)$ caché & $O(H n d_h)$ & Pseudo-cabezas como mezclas aprendidas de cabezas, $\Theta(\sqrt{k})$ parámetros, +10--20\% RULER. \\
-GTA & $O(n^2 G d_h)$ & $O(n)$ caché & $O(r_v n)$ & Mapa compartido por grupo + decodificador de valores SiLU, 62.5\% menos FLOPs, 70\% menos caché. \\
-MTLA & $O(n^2 d / m)$ & $O(n/m)$ & $O(r_{kv} n/m)$ & Fusión temporal de $m$ slots KV, 5.3$\times$ decodificación, 8.3$\times$ reducción de memoria. \\
-CCA & $O(n^2 d / C)$ & $O(n)$ caché & $O(\tilde{d} n)$ & Atención completa en latente comprimido, $C{\times}$ menos FLOPs + params + caché; convs + qk-mean + value-shift. \\
-CCGQA & $O(n^2 d / C_1)$ & $O(n)$ caché & $O(\tilde{d}_{kv} n)$ & CCA + GQA desacoplada en latente; compresión $C_2 \geq C_1$; mejor pérdida a 8$\times$ reducción de caché. \\
-\bottomrule
-\end{longtable}
-\normalsize
-
 La familia latente muestra una progresión clara a lo largo de dos ejes: (i) \textbf{compresión de rango}, pasando de cabezas completas (MHA) a un latente compartido (MLA) a sub-cabezas latentes particionadas (MLRA), y (ii) \textbf{adaptividad de despliegue}, pasando de una sola ruta de decodificación a despacho adaptativo al hardware (GQLA) y fusión temporal de caché (MTLA). La Atención Tucker proporciona el marco algebraico unificador: MHA, GQA y MLA son todos casos especiales de una factorización Tucker con elecciones de rango apropiadas. CCA y CCGQA toman un enfoque fundamentalmente diferente: en lugar de comprimir el caché KV y luego up-proyectar para atención a ancho completo (MLA/GQLA/MLRA), realizan atención \emph{completamente dentro} del espacio latente comprimido, reduciendo no sólo el caché sino también los FLOPs de atención por el factor de compresión. CCGQA además desacopla las tasas de compresión de query y KV, logrando la mejor pérdida reportada a 8$\times$ reducción de caché KV.

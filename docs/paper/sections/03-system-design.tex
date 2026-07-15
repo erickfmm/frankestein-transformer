@@ -30,31 +30,7 @@ The \texttt{model.mode} field controls attention masking behavior across the mod
 
 This dual architecture support enables the system to handle both encoder-style pre-training (MLM on bidirectional contexts) and decoder-style generation (causal autoregressive prediction) through a unified configuration interface.
 
-The \texttt{model.layer\_pattern} supports legacy, sparse, and gated blocks:
-\begin{itemize}[leftmargin=*]
-    \item \textbf{Retentive Network (RetNet)} --- internal reference: \texttt{sun\_retentive\_2023} --- code name: \texttt{retnet}, \texttt{retnet\_attn}
-    \item \textbf{Mamba (Selective State Space Model)} --- internal reference: \texttt{gu\_mamba\_2023} --- code name: \texttt{mamba}
-    \item \textbf{ODE-style Continuous Depth Block} --- internal reference: \texttt{zhang\_continuous\_2021} --- code name: \texttt{ode}
-    \item \textbf{Titans Memory-Augmented Attention} --- internal reference: \texttt{behrouz\_titans\_2025} --- code name: \texttt{titan\_attn}
-    \item \textbf{Standard Softmax Attention} --- internal reference: \texttt{vaswani\_attention\_2017} --- code name: \texttt{standard\_attn}
-    \item \textbf{Sigmoid Self-Attention} --- internal reference: \texttt{ramapuram\_theory\_2024} --- code name: \texttt{sigmoid\_attn}
-    \item \textbf{Sparse Transformer} --- internal reference: \texttt{child\_sparse\_transformer\_2019} --- code name: \texttt{sparse\_transformer\_attn}
-    \item \textbf{Longformer} --- internal reference: \texttt{beltagy\_longformer\_2020} --- code name: \texttt{longformer\_attn}
-    \item \textbf{BigBird} --- internal reference: \texttt{zaheer\_bigbird\_2020} --- code name: \texttt{bigbird\_attn}
-    \item \textbf{SparseK Attention} --- internal reference: \texttt{lou\_sparsek\_2024} --- code name: \texttt{sparsek\_attn}
-    \item \textbf{Native Sparse Attention (NSA)} --- internal reference: \texttt{yuan\_nsa\_2025} --- code name: \texttt{nsa\_attn}
-    \item \textbf{SpargeAttn} --- internal reference: \texttt{zhang\_spargeattn\_2025} --- code name: \texttt{sparge\_attn}
-    \item \textbf{FASA (Frequency-aware Sparse Attention)} --- internal reference: \texttt{wang\_fasa\_2026} --- code name: \texttt{fasa\_attn}
-    \item \textbf{Gated Linear Attention (GLA)} --- internal reference: \texttt{yang\_gla\_2023} --- code name: \texttt{gla\_attn}
-    \item \textbf{DeltaNet} --- internal reference: \texttt{yang\_deltanet\_2024} --- code name: \texttt{deltanet\_attn}
-    \item \textbf{Gated DeltaNet} --- internal reference: \texttt{yang\_gated\_deltanet\_2024} --- code name: \texttt{gated\_deltanet\_attn}
-    \item \textbf{Gated DeltaNet-2} --- internal reference: \texttt{hatamizadeh\_gated\_deltanet2\_2026} --- code name: \texttt{gated\_deltanet2\_attn}
-    \item \textbf{HGRN2} --- internal reference: \texttt{qin\_hgrn2\_2024} --- code name: \texttt{hgrn2\_attn}
-    \item \textbf{Forgetting Transformer (FoX)} --- internal reference: \texttt{lin\_forgetting\_transformer\_2025} --- code name: \texttt{fox\_attn}
-    \item \textbf{Gated Softmax Attention} --- internal reference: \texttt{qiu\_gated\_attention\_2025} --- code name: \texttt{gated\_softmax\_attn}
-\end{itemize}
-
-which corresponds to current attention and sequence-mixer literature \citep{sun_retentive_2023,gu_mamba_2023,zhang_continuous_2021,behrouz_titans_2025,ramapuram_theory_2024,vaswani_attention_2017,child_sparse_transformer_2019,beltagy_longformer_2020,zaheer_bigbird_2020,lou_sparsek_2024,yuan_nsa_2025,zhang_spargeattn_2025,wang_fasa_2026,yang_gla_2023,yang_deltanet_2024,yang_gated_deltanet_2024,hatamizadeh_gated_deltanet2_2026,qin_hgrn2_2024,lin_forgetting_transformer_2025,qiu_gated_attention_2025}
+\textbf{Sequence Mixer Pattern Selection}: The \texttt{layer\_pattern} field accepts an ordered list of mixer identifiers spanning six families: dense baselines (\texttt{standard\_attn}, \texttt{sigmoid\_attn}, \texttt{gqa}), recurrent/retentive (\texttt{retnet}, \texttt{retnet\_attn}, \texttt{mamba}, \texttt{ode}, \texttt{titan\_attn}), sparse attention (\texttt{sparse\_transformer\_attn}, \texttt{longformer\_attn}, \texttt{bigbird\_attn}, \texttt{sparsek\_attn}, \texttt{nsa\_attn}, \texttt{sparge\_attn}, \texttt{fasa\_attn}, \texttt{msa\_attn}, \texttt{sparda\_attn}), gated mechanisms (\texttt{gla\_attn}, \texttt{deltanet\_attn}, \texttt{gated\_deltanet\_attn}, \texttt{gated\_deltanet2\_attn}, \texttt{hgrn2\_attn}, \texttt{fox\_attn}, \texttt{gated\_softmax\_attn}, \texttt{kda\_attn}), latent compression (\texttt{mla\_attn}, \texttt{gqla\_attn}, \texttt{mlra\_attn}, \texttt{tucker\_attn}, \texttt{iha\_attn}, \texttt{gta\_attn}, \texttt{mtla\_attn}, \texttt{cca\_attn}, \texttt{ccgqa\_attn}), and conditional memory (\texttt{engram\_attn}). The complete taxonomy with references is provided in Section~\ref{sec:architecture-taxonomy} and Appendix~\ref{sec:annex-summary-tables}.
 
 The \texttt{training.optimizer.optimizer\_class} supports a broad optimizer family:
 \texttt{sgd\_momentum}, \texttt{adamw}, \texttt{adafactor}, \texttt{galore\_adamw}, \texttt{prodigy}, \texttt{lion}, \texttt{sophia}, \texttt{muon}, \texttt{turbo\_muon}, \texttt{radam}, \texttt{adan}, \texttt{adopt}, \texttt{ademamix}, \texttt{mars\_adamw}, \texttt{cautious\_adamw}, \texttt{lamb}, \texttt{schedulefree\_adamw}, \texttt{shampoo}, \texttt{soap}, \texttt{anon}, \texttt{apollo}, \texttt{apollo\_mini}, and \texttt{q\_apollo}.
@@ -69,11 +45,11 @@ box/.append style={inner sep=4pt, minimum height=0.62cm}
 \node[box, fill=green!10, minimum width=1.9cm] (yaml) at (0,0) {\textbf{YAML Config}};
 \node[box, fill=green!8, minimum width=2.0cm] (validation) at (0,-1.55) {\textbf{Validation}\\\texttt{schema + rules}};
 \node[box, fill=blue!10, minimum width=1.9cm] (web) at (-3.9,-2.95) {\textbf{Web}\\\texttt{Streamlit}};
-\node[box, fill=blue!8, minimum width=2.1cm] (cli) at (3.9,-2.95) {\textbf{CLI}\\\texttt{train/deploy/infer}};
+\node[box, fill=blue!8, minimum width=2.1cm] (cli) at (3.9,-2.95) {\textbf{CLI}\\\texttt{train / deploy / quantize / infer / sbert-train / sbert-infer / transformers-export / bitnet-gguf / web-server}};
 % Main blocks
-\node[box, fill=orange!12, minimum width=1.9cm] (model) at (-2.6,-4.3) {\textbf{Model}\\17 mixers};
+\node[box, fill=orange!12, minimum width=1.9cm] (model) at (-2.6,-4.3) {\textbf{Model}\\35+ mixers};
 \node[box, fill=yellow!15, minimum width=2.0cm] (train) at (0,-4.3) {\textbf{Training}\\AMP + scheduler};
-\node[box, fill=red!12, minimum width=1.9cm] (opt) at (2.6,-4.3) {\textbf{Optimizer}\\22 families};
+\node[box, fill=red!12, minimum width=1.9cm] (opt) at (2.6,-4.3) {\textbf{Optimizer}\\23 families};
 % Outcomes
 \node[box, fill=purple!12, minimum width=2.0cm] (modelout) at (-2.6,-5.95) {\textbf{Model Build}\\pattern + loops};
 \node[box, fill=purple!10, minimum width=2.0cm] (trainout) at (0,-5.95) {\textbf{Train Loop}\\checks + logs};
@@ -81,6 +57,7 @@ box/.append style={inner sep=4pt, minimum height=0.62cm}
 % Deployment
 \node[box, fill=cyan!12, minimum width=2.0cm] (deploy) at (0,-7.75) {\textbf{Deploy}\\quantization};
 \node[box, fill=cyan!10, minimum width=2.0cm] (sbert) at (2.6,-7.75) {\textbf{SBERT}\\search/cluster};
+\node[box, fill=cyan!8, minimum width=2.0cm] (export) at (-2.6,-7.75) {\textbf{Export}\\transformers-export / bitnet-gguf};
 % Arrows
 \draw[line] (yaml) -- (validation);
 \draw[line] (validation) -- (web);
@@ -95,6 +72,7 @@ box/.append style={inner sep=4pt, minimum height=0.62cm}
 \draw[line] (optout) -- (sbert);
 \draw[line, dashed] (modelout) -- (trainout);
 \draw[line, dashed] (optout.south) |- (deploy.east);
+\draw[line] (cli) -- (export);
 \end{tikzpicture}}
 \caption{System architecture: configuration flows through validation, partitions into model/training/optimizer, executes runtime, produces deployment/SBERT artifacts.}
 \label{fig:system-architecture}
@@ -107,47 +85,11 @@ The schema is strict: top-level and nested objects set \texttt{additionalPropert
 
 Normalization values currently accepted by schema are:
 \[
-\texttt{norm\_type} \in \{\texttt{layer\_norm}, \texttt{dynamic\_tanh}, \texttt{derf}\}
+\texttt{norm\_type} \in \{\texttt{layer\_norm}, \texttt{dynamic\_tanh}, \texttt{derf}, \texttt{rms\_norm}, \texttt{prms\_norm}\}
 \]
-Thus, \texttt{rms\_norm} is \textbf{not} a valid schema value in the current contract.
 
-\subsection{Complete Model Feature Inventory}
-
-\small
-\begin{longtable}{p{5.1cm}p{2.4cm}p{7.0cm}}
-\toprule
-\textbf{Field} & \textbf{Type/Range} & \textbf{Meaning} \\
-\midrule
-\endhead
-\texttt{model\_class} & enum & Architecture variant: \texttt{frankenstein} (mixed-architecture encoder), \texttt{mini} (simplified encoder), \texttt{frankesteindecoder} (autoregressive decoder). \\
-\texttt{model.mode} & enum & Attention mode: \texttt{encoder} (bidirectional, for MLM) or \texttt{decoder} (causal, for AR). When \texttt{model\_class='frankesteindecoder'}, forces \texttt{mode='decoder'}. \\
-\texttt{vocab\_size} & int $\ge 1$ & Vocabulary size. \\
-\texttt{hidden\_size} & int $\ge 1$ & Hidden dimension. \\
-\texttt{num\_layers} & int $\ge 1$ & Physical layer count. \\
-\texttt{num\_loops} & int $\ge 1$ & Logical loop count (looped blocks). \\
-\texttt{num\_heads} & int $\ge 1$ & Attention heads. \\
-\texttt{retention\_heads} & int $\ge 1$ & Retention heads for RetNet-style mixers. \\
-\texttt{num\_experts} & int $\ge 1$ & MoE expert count. \\
-\texttt{top\_k\_experts} & int $\ge 1$ & Top-$k$ expert routing in MoE. \\
-\texttt{dropout} & float $[0,1]$ & Global dropout. \\
-\texttt{layer\_pattern} & array enum & Ordered block list: legacy (\texttt{retnet}, \texttt{retnet\_attn}, \texttt{mamba}, \texttt{ode}, \texttt{titan\_attn}, \texttt{standard\_attn}, \texttt{sigmoid\_attn}), sparse (\texttt{sparse\_transformer\_attn}, \texttt{longformer\_attn}, \texttt{bigbird\_attn}, \texttt{sparsek\_attn}, \texttt{nsa\_attn}, \texttt{sparge\_attn}, \texttt{fasa\_attn}), and gated (\texttt{gla\_attn}, \texttt{deltanet\_attn}, \texttt{gated\_deltanet\_attn}, \texttt{gated\_deltanet2\_attn}, \texttt{hgrn2\_attn}, \texttt{fox\_attn}, \texttt{gated\_softmax\_attn}). \\
-\texttt{ode\_solver} & enum & \texttt{rk4} or \texttt{euler}. \\
-\texttt{ode\_steps} & int $\ge 1$ & ODE integration steps. \\
-\texttt{use\_bitnet} & bool & Enable low-bit BitLinear path. \\
-\texttt{norm\_type} & enum & \texttt{layer\_norm}, \texttt{dynamic\_tanh}, \texttt{derf}. \\
-\texttt{use\_factorized\_embedding} & bool & Enable factorized embeddings. \\
-\texttt{factorized\_embedding\_dim} & int $\ge 1$ & Reduced embedding dimension for factorization. \\
-\texttt{use\_embedding\_conv} & bool & Enable Conv1d over embedding stream. \\
-\texttt{embedding\_conv\_kernel} & int $\ge 1$ & Conv1d kernel size. \\
-\texttt{hope\_base} & float $\ge 0$ & HoPE base value (optional in schema). \\
-\texttt{hope\_damping} & float $\ge 0$ & HoPE damping (optional in schema). \\
-\texttt{use\_hope} & bool & Apply HoPE in \texttt{titan\_attn}. \\
-\texttt{use\_moe} & bool & Enable MoE FFN routing path. \\
-\texttt{ffn\_hidden\_size} & int $\ge 1$ & FFN intermediate width. \\
-\texttt{ffn\_activation} & enum & \texttt{silu} or \texttt{gelu}. \\
-\bottomrule
-\end{longtable}
-\normalsize
+\subsection{Configuration Schema}
+The complete model and training configuration schema, including all fields, types, ranges, and validation rules, is documented in Appendix~\ref{sec:annex-schema}. The schema enforces \texttt{additionalProperties: false} at all levels, guaranteeing that unknown keys fail fast.
 
 Looped depth induced by schema is:
 \[
@@ -177,83 +119,9 @@ The \texttt{training.task} field determines the training objective, working in c
 
 This dual task support enables unified experimentation across both encoder-style pre-training (MLM for bidirectional understanding) and decoder-style generation (AR for sequential text production) within the same codebase.
 
-\subsection{Complete Training Feature Inventory}
 
-\small
-\begin{longtable}{p{5.1cm}p{2.4cm}p{7.0cm}}
-\toprule
-\textbf{Field} & \textbf{Type/Range} & \textbf{Meaning} \\
-\midrule
-\endhead
-\texttt{batch\_size} & int $\ge 1$ & Loader batch size. \\
-\texttt{dataloader\_workers} & int $\ge 0$ & PyTorch dataloader workers. \\
-\texttt{max\_length} & int $\ge 1$ & Sequence length cap. \\
-\texttt{task} & enum & Training objective: \texttt{mlm} (masked language modeling) or \texttt{sbert} (sentence embedding). \\
-\texttt{mlm\_probability} & float $[0,1]$ & MLM masking probability (applies only when \texttt{task='mlm'}). \\
-\texttt{max\_samples} & int $\ge 1$ & Maximum streamed samples. \\
-\texttt{dataset\_batch\_size} & int $\ge 1$ & Internal streaming dataset chunk size. \\
-\texttt{num\_workers} & int $\ge 0$ & Streaming dataset workers. \\
-\texttt{cache\_dir} & string & Dataset cache directory. \\
-\texttt{local\_parquet\_dir} & string & Optional local parquet path. \\
-\texttt{prefer\_local\_cache} & bool & Prefer local cache when available. \\
-\texttt{stream\_local\_parquet} & bool & Stream from local parquet mode. \\
-\texttt{use\_amp} & bool & Mixed precision toggle. \\
-\texttt{gradient\_accumulation\_steps} & int $\ge 1$ & Effective batch through accumulation. \\
-\texttt{optimizer} & object & Contains \texttt{optimizer\_class} and prefixed \texttt{parameters}. \\
-\texttt{scheduler\_total\_steps} & int $\ge 1$ & Scheduler horizon. \\
-\texttt{scheduler\_warmup\_ratio} & float $[0,1]$ & Warmup ratio. \\
-\texttt{scheduler\_type} & enum & \texttt{cosine}, \texttt{constant}, \texttt{linear\_warmup\_then\_constant}. \\
-\texttt{grad\_clip\_max\_norm} & float $\ge 0$ & Global norm clipping threshold. \\
-\texttt{inf\_post\_clip\_threshold} & float $\ge 0$ & Exploding-gradient guard threshold after clipping. \\
-\texttt{max\_nan\_retries} & int $\ge 0$ & Retry budget for NaN/Inf instability. \\
-\texttt{checkpoint\_every\_n\_steps} & int $\ge 1$ & Rolling checkpoint frequency. \\
-\texttt{max\_rolling\_checkpoints} & int $\ge 1$ & Number of rolling checkpoints to keep. \\
-\texttt{num\_best\_checkpoints} & int $\ge 1$ & Number of best checkpoints tracked. \\
-\texttt{nan\_check\_interval} & int $\ge 1$ & NaN/Inf check cadence. \\
-\texttt{log\_gradient\_stats} & bool & Enable gradient statistics logging. \\
-\texttt{gradient\_log\_interval} & int $\ge 1$ & Gradient logging cadence. \\
-\texttt{csv\_log\_path} & string & Step-level CSV output path. \\
-\texttt{csv\_rotate\_on\_schema\_change} & bool & Rotate CSV if logging schema changes. \\
-\texttt{gpu\_metrics\_backend} & enum & \texttt{nvml} or \texttt{none}. \\
-\texttt{nvml\_device\_index} & int $\ge 0$ & Device index for NVML telemetry. \\
-\texttt{enable\_block\_grad\_norms} & bool & Include per-block gradient norm telemetry. \\
-\texttt{telemetry\_log\_interval} & int $\ge 1$ & Heavy telemetry interval (optimizer steps). \\
-\texttt{use\_galore} & bool & Enable GaLore strategy. \\
-\texttt{galore\_rank} & int $\ge 1$ & GaLore low-rank projection dimension. \\
-\texttt{galore\_update\_interval} & int $\ge 1$ & Projection refresh interval. \\
-\texttt{galore\_scale} & float $\ge 0$ & Gradient scaling in projected space. \\
-\texttt{galore\_max\_dim} & int $\ge 1$ & Maximum tensor dimension for GaLore projection. \\
-\bottomrule
-\end{longtable}
-\normalsize
-
-\subsection{Optimizer Prefix Contract (Full)}
-
-Supported \texttt{optimizer\_class} values are:
-\texttt{sgd\_momentum}, \texttt{adamw}, \texttt{adafactor}, \texttt{galore\_adamw}, \texttt{prodigy}, \texttt{lion}, \texttt{sophia}, \texttt{muon}, \texttt{turbo\_muon}, \texttt{radam}, \texttt{adan}, \texttt{adopt}, \texttt{ademamix}, \texttt{mars\_adamw}, \texttt{cautious\_adamw}, \texttt{lamb}, \texttt{schedulefree\_adamw}, \texttt{shampoo}, \texttt{soap}, \texttt{apollo}, \texttt{apollo\_mini}, \texttt{q\_apollo}.
-
-Shared per-group suffix families (all prefixed by optimizer name) are:
-\begin{itemize}[leftmargin=*]
-    \item LR groups: \texttt{lr\_embeddings}, \texttt{lr\_norms}, \texttt{lr\_ode}, \texttt{lr\_retnet}, \texttt{lr\_mamba}, \texttt{lr\_attention}, \texttt{lr\_other}
-    \item Weight decay groups: \texttt{wd\_embeddings}, \texttt{wd\_norms}, \texttt{wd\_ode}, \texttt{wd\_retnet}, \texttt{wd\_mamba}, \texttt{wd\_attention}, \texttt{wd\_other}
-    \item Beta groups: \texttt{betas\_embeddings}, \texttt{betas\_norms}, \texttt{betas\_ode}, \texttt{betas\_retnet}, \texttt{betas\_mamba}, \texttt{betas\_attention}, \texttt{betas\_other}
-    \item Epsilon groups: \texttt{eps\_embeddings}, \texttt{eps\_norms}, \texttt{eps\_ode}, \texttt{eps\_retnet}, \texttt{eps\_mamba}, \texttt{eps\_attention}, \texttt{eps\_other}
-\end{itemize}
-
-Optimizer-specific global suffixes:
-\begin{itemize}[leftmargin=*]
-    \item \texttt{sgd\_momentum}: \texttt{momentum}, \texttt{nesterov}
-    \item \texttt{adafactor}: \texttt{beta2\_decay}, \texttt{clip\_threshold}, \texttt{eps1}, \texttt{eps2}
-    \item \texttt{galore\_adamw}: \texttt{rank}, \texttt{update\_proj\_gap}
-    \item \texttt{prodigy}: \texttt{d\_coef}
-    \item \texttt{sophia}: \texttt{rho}, \texttt{update\_k}
-    \item \texttt{muon} / \texttt{turbo\_muon}: \texttt{momentum}, \texttt{nesterov}, \texttt{ns\_steps}, \texttt{ns\_eps}
-    \item \texttt{cautious\_adamw}: \texttt{cautious\_clip}
-    \item \texttt{apollo}: \texttt{rank}, \texttt{update\_proj\_gap}, \texttt{scale}, \texttt{scale\_type}, \texttt{proj\_type}, \texttt{scale\_front}, \texttt{disable\_nl}
-    \item \texttt{apollo\_mini}: \texttt{update\_proj\_gap}, \texttt{scale}, \texttt{proj\_type}, \texttt{scale\_front}, \texttt{disable\_nl}
-    \item \texttt{q\_apollo}: \texttt{rank}, \texttt{update\_proj\_gap}, \texttt{scale}, \texttt{scale\_type}, \texttt{proj\_type}, \texttt{scale\_front}, \texttt{disable\_nl}, \texttt{quant\_bits}
-\end{itemize}
-All other classes in the list above accept only prefixed shared groups.
+\subsection{Optimizer Configuration}
+The \texttt{training.optimizer} object selects among 23 optimizer families via \texttt{optimizer\_class} and provides per-parameter-group hyperparameter control through a prefixed naming convention. The complete optimizer prefix contract and supported families are documented in Appendix~\ref{sec:annex-schema}.
 
 \subsection{Training Safety and Runtime Semantics}
 

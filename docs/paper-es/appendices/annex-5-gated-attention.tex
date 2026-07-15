@@ -504,69 +504,6 @@ Memoria & Estado de inferencia constante $\mathcal{O}(d^2)$ (recurrente matricia
 
 \normalsize
 
-\subsection{Análisis Comparativo: Taxonomía de Mecanismos con Compuerta}
-
-\footnotesize
-\begin{longtable}{p{1.8cm}p{1.7cm}p{1.8cm}p{1.6cm}p{2.0cm}p{2.4cm}p{1.3cm}}
-\toprule
-\textbf{Arquitectura} & \textbf{Año de Publicación} & \textbf{Representación de Estado} & \textbf{Tipo de Compuerta} & \textbf{Complejidad de Entrenamiento} & \textbf{Complejidad de Inferencia} & \textbf{Ref} \\
-\midrule
-\endhead
-GLA & 2023 & Matriz (recurrente) & Decaimiento diagonal & $\mathcal{O}(Ld^2)$ & $\mathcal{O}(d^2)$ memoria & \citep{yang_gla_2023} \\
-DeltaNet & 2024 & Matriz (recurrente) & Escritura escalar ($\beta$) & $\mathcal{O}(Ld^2)$ & $\mathcal{O}(d^2)$ memoria & \citep{yang_deltanet_2024} \\
-Gated DeltaNet & 2024 & Matriz (recurrente) & Decaimiento + escritura & $\mathcal{O}(Ld^2)$ & $\mathcal{O}(d^2)$ memoria & \citep{yang_gated_deltanet_2024} \\
-RetNet & 2023 & Matriz (recurrente) & Exponencial fija & $\mathcal{O}(Ld^2)$ & $\mathcal{O}(d)$ por paso & \citep{sun_retentive_2023} \\
-HGRN2 & 2024 & Matriz (recurrente) & Diagonal (acotada) & $\mathcal{O}(Ld^2)$ & $\mathcal{O}(d^2)$ memoria & \citep{qin_hgrn2_2024} \\
-FoX & 2025 & Atención completa & Sesgo en espacio de logits & $\mathcal{O}(L^2d)$ & $\mathcal{O}(L)$ caché KV & \citep{lin_forgetting_transformer_2025} \\
-Gated Softmax & 2025 & Atención completa & Sigmoide post-SDPA & $\mathcal{O}(L^2d)$ & $\mathcal{O}(L)$ caché KV & \citep{qiu_gated_attention_2025} \\
-Gated DeltaNet-2 & 2026 & Matriz (recurrente) & Borrado + escritura decouplados (canalizado) & $\mathcal{O}(Ld^2)$ & $\mathcal{O}(d^2)$ memoria & \citep{hatamizadeh_gated_deltanet2_2026} \\
-KDA & 2025 & Matriz (recurrente) & Decaimiento canalizado + escritura escalar & $\mathcal{O}(Ld^2)$ & $\mathcal{O}(d^2)$ memoria & \citep{kimi_kda_2025} \\
-\bottomrule
-\end{longtable}
-\normalsize
-
-\medskip
-
-\footnotesize
-\begin{longtable}{p{1.8cm}p{2.0cm}p{2.2cm}p{2.2cm}p{2.2cm}p{1.8cm}}
-\toprule
-\textbf{Arquitectura} & \textbf{Entrenable} & \textbf{Recuperación en Contexto} & \textbf{Recuperación Asociativa} & \textbf{Extrapolación de Longitud} & \textbf{Ventaja Clave} \\
-\midrule
-\endhead
-GLA & Sí & Moderada & Débil & Buena (20K) & Eficiencia en hardware; paralelismo por fragmentos \\
-DeltaNet & Sí & Fuerte & Perfecta (MQAR) & Buena & Semántica de corrección de errores; recuperación sólida \\
-Gated DeltaNet & Sí & Muy fuerte & Perfecta & Excelente & Equilibrada: olvido + actualizaciones dirigidas \\
-RetNet & Sí & Débil & Débil & Buena & Simplicidad; no necesita caché KV \\
-HGRN2 & Sí & Moderada & Débil & Moderada & Modelado temporal multi-escala \\
-FoX & Sí & Muy fuerte & Muy fuerte (casi perfecta) & Excelente & Preserva softmax; sobrecarga mínima \\
-Gated Softmax & Sí & Fuerte & Buena & Buena & Simplicidad; no reemplaza SDPA \\
-Gated DeltaNet-2 & Sí & Muy fuerte & Muy fuerte & Excelente & Borrado/escritura canalizados decouplados; mejor RULER multi-key \\
-KDA & Sí & Muy fuerte & Muy fuerte & Excelente & Decaimiento canalizado; desplegado en Kimi Linear (75\% reducción KV, $6\times$ decodificación) \\
-\bottomrule
-\end{longtable}
-\normalsize
-
-\medskip
-
-\footnotesize
-\begin{longtable}{p{2.0cm}p{2.4cm}p{2.8cm}p{3.4cm}}
-\toprule
-\textbf{Arquitectura} & \textbf{Rendimiento Típico} & \textbf{Memoria por Inferencia} & \textbf{Caso de Uso Principal} \\
-\midrule
-\endhead
-GLA & Alto (CUDA por fragmentos) & $O(d^2)$ constante & Contexto largo con restricciones de memoria \\
-DeltaNet & Medio-Alto & $O(d^2)$ constante & Recuperación y razonamiento asociativo \\
-Gated DeltaNet & Medio & $O(d^2)$ constante & Producción: Qwen3-Next, rendimiento equilibrado \\
-RetNet & Alto & $O(d)$ por paso & Inferencia extremadamente rápida; modelos simples \\
-HGRN2 & Medio-Alto & $O(d^2)$ constante & Patrones temporales multi-escala \\
-FoX & Moderado (cuadrático) & $O(Ld)$ caché KV & Extrapolación de longitud; generación de contexto largo \\
-Gated Softmax & Alto (sobrecarga mínima) & $O(Ld)$ caché KV & Mejora directa para modelos existentes \\
-Gated DeltaNet-2 & Alto (escalado casi plano) & $O(d^2)$ constante & Recuperación de contexto largo; multi-key NIAH \\
-KDA & Alto (hasta $6\times$ decodificación a 1M) & $O(d^2)$ constante & Producción híbrida (Kimi Linear); decodificación de contexto largo \\
-\bottomrule
-\end{longtable}
-\normalsize
-
 \subsection{Principio Unificado de Compuerta}
 
 Las ocho arquitecturas comparten un principio común: \textbf{la compuerta es un mecanismo para controlar el flujo de información y la retención selectiva de memoria}. Las decisiones de diseño específicas divergen a lo largo de varias dimensiones:

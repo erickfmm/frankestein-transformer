@@ -207,23 +207,4 @@ The codebase selects a mixer per block from the configured \texttt{layer\_patter
 \end{algorithmic}
 \end{algorithm}
 
-\subsection{Architectural Comparison and Synthesis}
-
-\small
-\begin{longtable}{p{2.0cm}p{1.8cm}p{1.6cm}p{1.6cm}p{4.5cm}}
-\toprule
-\textbf{Architecture} & \textbf{Train} & \textbf{Infer} & \textbf{State} & \textbf{Key Characteristic} \\
-\midrule
-\endhead
-Standard Attention & $O(n^2 d)$ & $O(n)$ cache & $O(nd)$ & Perfect expressiveness, full token routing, KV bottleneck. \\
-GQA & $O(n^2 d)$ & $O(n)$ cache & $O(h_k \cdot n \cdot d_h)$ & Tunable KV compression, proven at scale, $G \times$ cache reduction. \\
-Sigmoid Attention & $O(n^2 d)$ & $O(n)$ cache & $O(nd)$ & Element-wise gating, hardware-efficient, stable at scale with hybrid-norm. \\
-RetNet & $O(n^2 d)$ & $O(1)$ & $O(d^2)$ & Multi-scale decay, triple computation mode, fixed forgetting pattern. \\
-Mamba & $O(nd)$ & $O(1)$ & $O(d)$ & Selective input-dependent dynamics, linear training and inference, hardware scan. \\
-ODE Transformer & $O(kn^2 d)$ & $O(kn)$ & $O(nd)$ & Numerical integration refinement, weight sharing via stages, higher accuracy. \\
-Titans & $O(c^2 + nf)$ & $O(c^2 + 1)$ & $O(1)$ & Test-time memory adaptation, extreme context, on-inference parameter updates. \\
-\bottomrule
-\end{longtable}
-\normalsize
-
 The field exhibits a clear progression along two axes: (i) \textbf{computational efficiency}, moving from $O(n^2)$ to $O(n)$ or $O(1)$, and (ii) \textbf{memory adaptivity}, shifting from static weights to dynamic, test-time updated models. Standard attention remains the expressiveness baseline; Mamba and RetNet represent the practical efficiency frontier; Titans introduces an orthogonal innovation axis (test-time learning). The choice of architecture reflects the fundamental engineering constraint: expressiveness versus deployment cost. The latent-attention family, which compresses the KV cache into a low-rank latent, is covered in Appendix~\ref{sec:annex-latent}.

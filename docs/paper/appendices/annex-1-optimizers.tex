@@ -1,51 +1,6 @@
 \section{Optimizer Families}
 \label{sec:annex-optimizers}
 
-\subsection{Memory and Complexity Comparison}
-
-Table~\ref{tab:optimizer-complexity} summarizes the memory overhead (number of state buffers per parameter), per-step computational complexity, and key hyperparameters for all supported optimizers. Memory overhead is expressed in terms of the number of state tensors maintained per model parameter, where each tensor has the same shape as the parameter.
-
-\begin{longtable}{llcl}
-\toprule
-\textbf{Optimizer} & \textbf{State Buffers} & \textbf{Per-Step Cost} & \textbf{Key Hyperparams} \\
-\midrule
-\endfirsthead
-\toprule
-\textbf{Optimizer} & \textbf{State Buffers} & \textbf{Per-Step Cost} & \textbf{Key Hyperparams} \\
-\midrule
-\endhead
-\midrule
-\multicolumn{4}{r}{\textit{continued on next page}} \\
-\endfoot
-\bottomrule
-\caption{Memory and complexity comparison of all supported optimizers. $n$ = number of parameters, $d$ = tensor dimensionality, $r$ = low-rank dimension, $k$ = Newton--Schulz iteration count. State buffers lists the number of optimizer state tensors maintained per parameter group. Per-step cost focuses on the dominant additional cost beyond the gradient computation itself.}
-\label{tab:optimizer-complexity}
-\endlastfoot
-SGD+Momentum & 1 ($m$) & $\mathcal{O}(n)$ & lr, momentum, wd \\
-AdamW & 2 ($m$, $v$) & $\mathcal{O}(n)$ & lr, $\beta_1$, $\beta_2$, eps, wd \\
-RAdam & 2 ($m$, $v$) & $\mathcal{O}(n)$ & lr, $\beta_1$, $\beta_2$, eps, wd \\
-Adan & 3 ($m$, $v$, $s$) & $\mathcal{O}(n)$ & lr, $\beta_1$, $\beta_2$, $\beta_3$, eps, wd \\
-ADOPT & 2 ($m$, $v$) & $\mathcal{O}(n)$ & lr, $\beta_1$, $\beta_2$, eps, wd \\
-AdEMAMix & 3 ($m_1$, $m_2$, $v$) & $\mathcal{O}(n)$ & lr, $\beta_1$, $\beta_2$, $\beta_3$, eps, wd \\
-MARS & 3 ($m$, $v$, $z$) & $\mathcal{O}(n)$ & lr, $\beta_1$, $\beta_2$, eps, wd, $\gamma$ \\
-Cautious AdamW & 2 ($m$, $v$) & $\mathcal{O}(n)$ & lr, $\beta_1$, $\beta_2$, eps, wd \\
-LAMB & 2 ($m$, $v$) & $\mathcal{O}(n)$ & lr, $\beta_1$, $\beta_2$, eps, wd \\
-Schedule-Free & 3 ($z$, $x$, $n$) & $\mathcal{O}(n)$ & lr, $\beta_1$, $\beta_2$, wd \\
-Adafactor & 1--2 (row/col) & $\mathcal{O}(n)$ & lr, $\beta_1$, $\beta_2$, eps, wd, factored \\
-GaLore & 2 ($m$, $v$) + SVD/proj & $\mathcal{O}(nr)$ & lr, rank $r$, $\beta_1$, $\beta_2$, eps, wd \\
-Prodigy & 3 ($m$, $v$, $d$) & $\mathcal{O}(n)$ & $\beta_1$, $\beta_2$, eps, wd, $d_0$ \\
-Lion & 1 ($m$) & $\mathcal{O}(n)$ & lr, $\beta_1$, $\beta_2$, wd \\
-Shampoo & $2d$ ($L_i$, $R_i$) & $\mathcal{O}(n^{1+2/d})$ & lr, eps, wd, matrix eps \\
-SOAP & $2d$ + 2 ($m$, $v$) & $\mathcal{O}(n^{1+1/d})$ & lr, $\beta_1$, $\beta_2$, eps, wd, shampoo eps \\
-Sophia & 3 ($m$, $v$, $h$) & $\mathcal{O}(n)$ & lr, $\beta_1$, $\beta_2$, eps, wd, $k$ \\
-Muon & 2 ($m$, $v$) & $\mathcal{O}(n \cdot k)$ & lr, momentum, wd, NS steps $k$ \\
-Turbo-Muon & 2 ($m$, $v$) & $\mathcal{O}(n \cdot k)$ & lr, momentum, wd, NS steps $k$ \\
-APOLLO & 2 low-rank ($m_R$, $v_R$) + proj & $\mathcal{O}(nr)$ & lr, rank $r$, update gap, scale, betas, eps, wd \\
-APOLLO-Mini & 2 rank-1 ($m_R$, $v_R$) + proj & $\mathcal{O}(n)$ & lr, update gap, scale, betas, eps, wd \\
-Q-APOLLO & 2 quantized low-rank + proj & $\mathcal{O}(nr)$ & lr, rank $r$, update gap, scale, quant bits, betas, eps, wd \\
-Anon & 3 ($m$, $v$, fixed\_lr) & $\mathcal{O}(n)$ & lr, $\beta_1$, $\beta_2$, eps, wd, $\gamma$ \\
-\end{longtable}
-
 \subsection{The Evolution of Optimization in Neural Networks}
 The optimizer survey frames transformer optimization as a response to three structural pressures: non-convex loss landscapes, severe curvature heterogeneity across parameter blocks, and the memory cost of storing optimizer state for very large models. The report argues that the field has diverged into several trajectories: adaptive first-order baselines, variance-reduction methods, memory-efficient methods, structured second-order preconditioners, schedule-free methods, and orthogonality-oriented updates.
 

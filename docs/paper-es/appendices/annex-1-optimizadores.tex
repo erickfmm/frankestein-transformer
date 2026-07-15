@@ -1,51 +1,6 @@
 \section{Familias de Optimizadores}
 \label{sec:annex-optimizers}
 
-\subsection{Comparación de Memoria y Complejidad}
-
-La Tabla~\ref{tab:optimizer-complexity} resume la sobrecarga de memoria (número de búferes de estado por parámetro), la complejidad computacional por paso y los hiperparámetros clave para todos los optimizadores soportados. La sobrecarga de memoria se expresa en términos del número de tensores de estado mantenidos por parámetro del modelo, donde cada tensor tiene la misma forma que el parámetro.
-
-\begin{longtable}{llcl}
-\toprule
-\textbf{Optimizador} & \textbf{Búferes de Estado} & \textbf{Costo por Paso} & \textbf{Hiperparámetros Clave} \\
-\midrule
-\endfirsthead
-\toprule
-\textbf{Optimizador} & \textbf{Búferes de Estado} & \textbf{Costo por Paso} & \textbf{Hiperparámetros Clave} \\
-\midrule
-\endhead
-\midrule
-\multicolumn{4}{r}{\textit{continúa en la página siguiente}} \\
-\endfoot
-\bottomrule
-\caption{Comparación de memoria y complejidad de todos los optimizadores soportados. $n$ = número de parámetros, $d$ = dimensionalidad del tensor, $r$ = dimensión de rango bajo, $k$ = número de iteraciones de Newton--Schulz. Búferes de estado indica el número de tensores de estado del optimizador mantenidos por grupo de parámetros. El costo por paso se enfoca en el costo adicional dominante más allá del propio cálculo del gradiente.}
-\label{tab:optimizer-complexity}
-\endlastfoot
-SGD+Momentum & 1 ($m$) & $\mathcal{O}(n)$ & lr, momentum, wd \\
-AdamW & 2 ($m$, $v$) & $\mathcal{O}(n)$ & lr, $\beta_1$, $\beta_2$, eps, wd \\
-RAdam & 2 ($m$, $v$) & $\mathcal{O}(n)$ & lr, $\beta_1$, $\beta_2$, eps, wd \\
-Adan & 3 ($m$, $v$, $s$) & $\mathcal{O}(n)$ & lr, $\beta_1$, $\beta_2$, $\beta_3$, eps, wd \\
-ADOPT & 2 ($m$, $v$) & $\mathcal{O}(n)$ & lr, $\beta_1$, $\beta_2$, eps, wd \\
-AdEMAMix & 3 ($m_1$, $m_2$, $v$) & $\mathcal{O}(n)$ & lr, $\beta_1$, $\beta_2$, $\beta_3$, eps, wd \\
-MARS & 3 ($m$, $v$, $z$) & $\mathcal{O}(n)$ & lr, $\beta_1$, $\beta_2$, eps, wd, $\gamma$ \\
-Cautious AdamW & 2 ($m$, $v$) & $\mathcal{O}(n)$ & lr, $\beta_1$, $\beta_2$, eps, wd \\
-LAMB & 2 ($m$, $v$) & $\mathcal{O}(n)$ & lr, $\beta_1$, $\beta_2$, eps, wd \\
-Schedule-Free & 3 ($z$, $x$, $n$) & $\mathcal{O}(n)$ & lr, $\beta_1$, $\beta_2$, wd \\
-Adafactor & 1--2 (row/col) & $\mathcal{O}(n)$ & lr, $\beta_1$, $\beta_2$, eps, wd, factored \\
-GaLore & 2 ($m$, $v$) + SVD/proj & $\mathcal{O}(nr)$ & lr, rank $r$, $\beta_1$, $\beta_2$, eps, wd \\
-Prodigy & 3 ($m$, $v$, $d$) & $\mathcal{O}(n)$ & $\beta_1$, $\beta_2$, eps, wd, $d_0$ \\
-Lion & 1 ($m$) & $\mathcal{O}(n)$ & lr, $\beta_1$, $\beta_2$, wd \\
-Shampoo & $2d$ ($L_i$, $R_i$) & $\mathcal{O}(n^{1+2/d})$ & lr, eps, wd, matrix eps \\
-SOAP & $2d$ + 2 ($m$, $v$) & $\mathcal{O}(n^{1+1/d})$ & lr, $\beta_1$, $\beta_2$, eps, wd, shampoo eps \\
-Sophia & 3 ($m$, $v$, $h$) & $\mathcal{O}(n)$ & lr, $\beta_1$, $\beta_2$, eps, wd, $k$ \\
-Muon & 2 ($m$, $v$) & $\mathcal{O}(n \cdot k)$ & lr, momentum, wd, NS steps $k$ \\
-Turbo-Muon & 2 ($m$, $v$) & $\mathcal{O}(n \cdot k)$ & lr, momentum, wd, NS steps $k$ \\
-APOLLO & 2 bajo rango ($m_R$, $v_R$) + proy & $\mathcal{O}(nr)$ & lr, rank $r$, update gap, scale, betas, eps, wd \\
-APOLLO-Mini & 2 rango-1 ($m_R$, $v_R$) + proy & $\mathcal{O}(n)$ & lr, update gap, scale, betas, eps, wd \\
-Q-APOLLO & 2 bajo rango cuantizados + proy & $\mathcal{O}(nr)$ & lr, rank $r$, update gap, scale, quant bits, betas, eps, wd \\
-Anon & 3 ($m$, $v$, fixed\_lr) & $\mathcal{O}(n)$ & lr, $\beta_1$, $\beta_2$, eps, wd, $\gamma$ \\
-\end{longtable}
-
 \subsection{La Evolución de la Optimización en Redes Neuronales}
 El estudio de optimizadores enmarca la optimización de transformadores como una respuesta a tres presiones estructurales: paisajes de pérdida no convexos, heterogeneidad severa de curvatura entre bloques de parámetros y el costo de memoria de almacenar el estado del optimizador para modelos muy grandes. El informe sostiene que el campo se ha diversificado en varias trayectorias: líneas base adaptativas de primer orden, métodos de reducción de varianza, métodos eficientes en memoria, precondicionadores estructurados de segundo orden, métodos sin programación de tasa de aprendizaje y actualizaciones orientadas a ortogonalidad.
 

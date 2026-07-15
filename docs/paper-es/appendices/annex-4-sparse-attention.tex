@@ -567,27 +567,6 @@ S_{i,b} = \mathbf{F}_i \cdot \mathbf{r}_b, \qquad \mathcal{I}_i = \mathrm{TopK}(
     \item \textbf{Limitación}: Requiere un pipeline de offload CPU--GPU y un selector base congelado; el beneficio anticipado depende de que la demanda de bloques de la siguiente capa sea predecible a partir del Pronóstico actual.
 \end{itemize}
 
-\subsection{Resumen Comparativo}
-
-\footnotesize
-\begin{longtable}{p{1.9cm}p{1.7cm}p{1.6cm}p{1.6cm}p{1.1cm}p{3.5cm}}
-\toprule
-\textbf{Método} & \textbf{Complejidad} & \textbf{Entrenable} & \textbf{Unidad} & \textbf{Año} & \textbf{Contribución Principal} \\
-\midrule
-\endhead
-Sparse Transformer & $O(n\sqrt{n}d)$ & Sí & Patrón de token & 2019 & Máscaras fijas y estrideadas factorizadas \\
-Longformer & $O(nwd)$ & Sí & Local + global & 2020 & Escalado lineal con dilatación \\
-BigBird & $O(n)$ & Sí & Grafo disperso & 2020 & Prueba de completitud teórica \\
-SparseK & $O(nd)$ & Sí & Tokens top-$k$ & 2024 & Selección diferenciable \\
-NSA & $O((t/d+nl'+w)d)$ & Sí & Multi-rama & 2025 & Diseño de 3 ramas alineado con hardware \\
-FASA & $O(tN_{\text{tip}}+N_{\text{fac}}d)$ & No & Fragmentos de frecuencia & 2026 & Conocimiento de frecuencia RoPE \\
-SpargeAttn & $O(n^2 s \cdot d)$ & No & Filtro de bloques & 2025 & Filtrado universal de dos etapas \\
-MSA & $O(H_{\text{kv}}d_{\text{idx}}N^2 + H_q d_h N k B_k)$ & Sí & Bloques top-$k$ & 2026 & Bloques dispersos con rama índice (desplegado 109B) \\
-SparDA & $O(H_{\text{kv}}d_f N N_b + H_q d_h N k B_k)$ & Sí & Pronóstico de bloques & 2026 & Selección desacoplada con prefetch anticipado \\
-\bottomrule
-\end{longtable}
-\normalsize
-
 \subsection{Espacio de Diseño y Criterios de Selección}
 
 Los siete métodos de atención dispersa ocupan posiciones complementarias en un espacio de diseño multidimensional:

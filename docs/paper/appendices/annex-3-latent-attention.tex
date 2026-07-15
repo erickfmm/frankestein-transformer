@@ -332,25 +332,4 @@ Same pipeline as CCA, with decoupled latents:
     \item \textbf{Limitations}: Same quadratic $S^2$ (only reduced by $C_1$); fused kernel needed; two value projections add complexity.
 \end{itemize}
 
-\subsection{Architectural Comparison and Synthesis}
-
-\small
-\begin{longtable}{p{2.0cm}p{1.8cm}p{1.6cm}p{1.6cm}p{4.5cm}}
-\toprule
-\textbf{Architecture} & \textbf{Train} & \textbf{Infer} & \textbf{State} & \textbf{Key Characteristic} \\
-\midrule
-\endhead
-MLA & $O(n^2 d)$ & $O(n)$ cache & $O(r_{kv} n)$ & Latent KV of rank $r_{kv}\!\approx\!d/2$, halves cache, matches MHA quality. \\
-GQLA & $O(n^2 d)$ & $O(n)$ cache & $O(r_{kv} n)$ & Same MLA weights, two algebraically equivalent hardware-adaptive decode paths. \\
-MLRA & $O(n^2 d)$ & $O(n)$ cache & $O(r_{kv} n)$ partitioned & Latent split into $L$ sub-heads for 4-way tensor-parallel decode, 2.8$\times$ speedup. \\
-Tucker & $O(n^2 d)$ & $O(n)$ cache & $O(k_{\text{rank}} n)$ & Tucker factorisation unifies MHA/GQA/MLA, order-of-magnitude fewer parameters. \\
-IHA & $O(n^2 H^2)$ & $O(n)$ cache & $O(H n d_h)$ & Pseudo-heads as learned head mixes, $\Theta(\sqrt{k})$ params, +10--20\% RULER retrieval. \\
-GTA & $O(n^2 G d_h)$ & $O(n)$ cache & $O(r_v n)$ & Shared per-group map + SiLU value decoder, 62.5\% FLOP cut, 70\% cache shrink. \\
-MTLA & $O(n^2 d / m)$ & $O(n/m)$ & $O(r_{kv} n/m)$ & Temporal merge of $m$ KV slots, 5.3$\times$ decode, 8.3$\times$ memory reduction. \\
-CCA & $O(n^2 d / C)$ & $O(n)$ cache & $O(\tilde{d} n)$ & Attention fully in compressed latent, $C{\times}$ fewer FLOPs + params + cache; convs + qk-mean + value-shift. \\
-CCGQA & $O(n^2 d / C_1)$ & $O(n)$ cache & $O(\tilde{d}_{kv} n)$ & CCA + decoupled GQA in latent; $C_2 \geq C_1$ compression; best loss at 8$\times$ cache reduction. \\
-\bottomrule
-\end{longtable}
-\normalsize
-
 The latent family shows a clear progression along two axes: (i) \textbf{rank compression}, moving from full heads (MHA) to a shared latent (MLA) to partitioned sub-head latents (MLRA), and (ii) \textbf{deployment adaptivity}, moving from a single decode path to hardware-adaptive dispatch (GQLA) and temporal cache merging (MTLA). Tucker Attention provides the unifying algebraic frame: MHA, GQA, and MLA are all special cases of a Tucker factorisation with appropriate rank choices. CCA and CCGQA take a fundamentally different approach: rather than compressing the KV-cache and then up-projecting for full-width attention (MLA/GQLA/MLRA), they perform attention \emph{entirely inside} the compressed latent space, reducing not just the cache but also the attention FLOPs by the compression factor. CCGQA further decouples query and KV compression rates, achieving the best reported loss at 8$\times$ KV-cache compression.
