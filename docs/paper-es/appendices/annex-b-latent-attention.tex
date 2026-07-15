@@ -258,6 +258,51 @@ donde $s$ es el stride y $m$ la ventana de fusión. Las consultas atienden sobre
 
 \subsection{Comparación y Síntesis Arquitectónica}
 
+\subsection{Atención Convolucional Comprimida (CCA)}
+La Atención Convolucional Comprimida (CCA, por sus siglas en inglés) \citep{figliola_cca_2025} adopta un enfoque fundamentalmente diferente para la atención latente: en lugar de comprimir el caché KV y luego up-proyectar al ancho completo antes de atender (como MLA/GQLA/MLRA), CCA proyecta consultas, claves y valores a un latente compartido y realiza la operación de atención \emph{completa} dentro de él. No hay matrices de up-proyección para Q/K/V --- sólo una única up-proyección de salida $W̃_O$ mapea la salida latente de vuelta al flujo residual. Esto reduce simultáneamente parámetros, caché KV, \textbf{y} FLOPs de atención por el factor de compresión $C = E/\tilde{e}$, mientras que MLA sólo reduce el caché.
+
+Para hacer viable la atención en el latente comprimido, CCA introduce tres innovaciones: (1) dos convoluciones causales sobre el tensor empaquetado q/k (una convolución de secuencia depth-wise y una convolución agrupada de canales por cabeza), (2) q-k-mean (añade la media pre-convolución de q y k a los valores post-convolución), y (3) value-shift (cada cabeza recibe la mitad de sus valores del token actual y la mitad del token anterior mediante dos proyecciones independientes). Tras estos pasos, se aplica normalización L2 de QK y una temperatura de clave aprendible $\beta$, RoPE se aplica \emph{directamente en el latente} (sin cabeza RoPE separada), y se computa la atención softmax estándar.
+
+\subsubsection{Formulación Matemática}
+\[
+\tilde{q}_{\text{pre}} = \tilde{W}_Q\, x, \qquad \tilde{k}_{\text{pre}} = \tilde{W}_K\, x, \qquad \tilde{e} = E / C.
+\]
+\[
+\tilde{q} = \text{Conv}(\tilde{q}_{\text{pre}}) + \tfrac{1}{2}(\tilde{q}_{\text{pre}} + \tilde{k}_{\text{pre}}), \qquad
+\tilde{k} = \text{Conv}(\tilde{k}_{\text{pre}}) + \tfrac{1}{2}(\tilde{q}_{\text{pre}} + \tilde{k}_{\text{pre}}).
+\]
+\[
+\tilde{v} = [\tilde{W}_{V_1}\, x_t \;\|\; \tilde{W}_{V_2}\, x_{t-1}], \qquad
+\hat{q} = \frac{\tilde{q} \sqrt{d_h}}{\|\tilde{q}\|}, \quad \hat{k} = \frac{\tilde{k} \sqrt{d_h}}{\|\tilde{k}\|} e^{\beta}.
+\]
+\[
+\text{atencion} = \texttt{softmax}\!\left(\frac{\text{RoPE}(\hat{q})\, \text{RoPE}(\hat{k})^\top}{\sqrt{d_h}}\right) \tilde{v}, \qquad
+\mathbf{Y} = W̃_O\, \text{atencion}.
+\]
+
+\subsubsection{Características Clave}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Complejidad de entrenamiento}: $\mathcal{O}(n^2 \cdot d / C)$ (atención en latente comprimido, $C{\times}$ menos FLOPs que MHA).
+    \item \textbf{Complejidad de inferencia}: $\mathcal{O}(n)$ por token, espacio de caché KV $\mathcal{O}(\tilde{e} \cdot n)$.
+    \item \textbf{Entrenable}: $C$, tamaños de kernel de conv, y los tres trucos (convs, qk-mean, value-shift) son configurables.
+    \item \textbf{Fortalezas}: Reduce params, caché Y FLOPs simultáneamente; RoPE se integra nativamente; $>$2$\times$ menos params que MLA a igual compresión.
+    \item \textbf{Limitaciones}: No elimina la cuadrática $S^2$ (sólo la divide por $C$); conv/qk-mean/v-shift añaden sesgo inductivo; se necesita kernel fusionado para la aceleración teórica.
+\end{itemize}
+
+\subsection{Atención Convolucional Comprimida por Consultas Agrupadas (CCGQA)}
+La Atención Convolucional Comprimida por Consultas Agrupadas (CCGQA, por sus siglas en inglés) \citep{figliola_cca_2025} extiende CCA con compartición de cabezas clave/valor estilo GQA aplicada \emph{dentro} del latente comprimido, y \textbf{desacopla} las tasas de compresión de query y KV: las consultas se comprimen por $C_1$ y las claves/valores por $C_2 \geq C_1$. La dimensión latente por cabeza $d_h$ debe coincidir entre cabezas de query y clave, imponiendo la restricción $C_2 / C_1 = n_h / n_{kv}$. Las cabezas KV se comparten por grupo (replicadas para coincidir con las cabezas de query), y el sesgo qk-mean usa operadores de broadcast/reducción $B_{\text{group}}$ (replicar cabezas KV a cabezas query) y $E_{\text{group}}$ (promediar cabezas query dentro de cada grupo). CCGQA logra la mejor pérdida reportada a 8$\times$ reducción de caché KV sin pérdida de calidad frente a MHA.
+
+\subsubsection{Características Clave}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Complejidad de entrenamiento}: $\mathcal{O}(n^2 \cdot d / C_1)$ (el término $S^2$ escala por $1/C_1$; los términos de proyección por $1/C_1 + 1/C_2$).
+    \item \textbf{Complejidad de inferencia}: $\mathcal{O}(n)$ por token, espacio de caché KV $\mathcal{O}(\tilde{e}_{kv} \cdot n)$ (comprimido por $C_2$, compartido por grupo).
+    \item \textbf{Entrenable}: $C_1$, $C_2$, $n_{kv}$, y todos los trucos CCA son configurables. Restricción: $C_2/C_1 = n_h/n_{kv}$.
+    \item \textbf{Fortalezas}: Compresión desacoplada permite frontera de Pareto suave; misma intensidad aritmética que GQA; mejor pérdida a 8$\times$ reducción de caché.
+    \item \textbf{Limitaciones}: Misma cuadrática $S^2$ (sólo reducida por $C_1$); se necesita kernel fusionado; dos proyecciones de valor añaden complejidad.
+\end{itemize}
+
+\subsection{Comparación y Síntesis Arquitectónica}
+
 \small
 \begin{longtable}{p{2.0cm}p{1.8cm}p{1.6cm}p{1.6cm}p{4.5cm}}
 \toprule
@@ -271,8 +316,10 @@ Tucker & $O(n^2 d)$ & $O(n)$ caché & $O(k_{\text{rank}} n)$ & Factorización Tu
 IHA & $O(n^2 H^2)$ & $O(n)$ caché & $O(H n d_h)$ & Pseudo-cabezas como mezclas aprendidas de cabezas, $\Theta(\sqrt{k})$ parámetros, +10--20\% RULER. \\
 GTA & $O(n^2 G d_h)$ & $O(n)$ caché & $O(r_v n)$ & Mapa compartido por grupo + decodificador de valores SiLU, 62.5\% menos FLOPs, 70\% menos caché. \\
 MTLA & $O(n^2 d / m)$ & $O(n/m)$ & $O(r_{kv} n/m)$ & Fusión temporal de $m$ slots KV, 5.3$\times$ decodificación, 8.3$\times$ reducción de memoria. \\
+CCA & $O(n^2 d / C)$ & $O(n)$ caché & $O(\tilde{d} n)$ & Atención completa en latente comprimido, $C{\times}$ menos FLOPs + params + caché; convs + qk-mean + value-shift. \\
+CCGQA & $O(n^2 d / C_1)$ & $O(n)$ caché & $O(\tilde{d}_{kv} n)$ & CCA + GQA desacoplada en latente; compresión $C_2 \geq C_1$; mejor pérdida a 8$\times$ reducción de caché. \\
 \bottomrule
 \end{longtable}
 \normalsize
 
-La familia latente muestra una progresión clara a lo largo de dos ejes: (i) \textbf{compresión de rango}, pasando de cabezas completas (MHA) a un latente compartido (MLA) a sub-cabezas latentes particionadas (MLRA), y (ii) \textbf{adaptividad de despliegue}, pasando de una sola ruta de decodificación a despacho adaptativo al hardware (GQLA) y fusión temporal de caché (MTLA). La Atención Tucker proporciona el marco algebraico unificador: MHA, GQA y MLA son todos casos especiales de una factorización Tucker con elecciones de rango apropiadas.
+La familia latente muestra una progresión clara a lo largo de dos ejes: (i) \textbf{compresión de rango}, pasando de cabezas completas (MHA) a un latente compartido (MLA) a sub-cabezas latentes particionadas (MLRA), y (ii) \textbf{adaptividad de despliegue}, pasando de una sola ruta de decodificación a despacho adaptativo al hardware (GQLA) y fusión temporal de caché (MTLA). La Atención Tucker proporciona el marco algebraico unificador: MHA, GQA y MLA son todos casos especiales de una factorización Tucker con elecciones de rango apropiadas. CCA y CCGQA toman un enfoque fundamentalmente diferente: en lugar de comprimir el caché KV y luego up-proyectar para atención a ancho completo (MLA/GQLA/MLRA), realizan atención \emph{completamente dentro} del espacio latente comprimido, reduciendo no sólo el caché sino también los FLOPs de atención por el factor de compresión. CCGQA además desacopla las tasas de compresión de query y KV, logrando la mejor pérdida reportada a 8$\times$ reducción de caché KV.

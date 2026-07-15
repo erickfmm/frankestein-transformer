@@ -1,6 +1,6 @@
 """Latent and KV-compression attention family.
 
-This subpackage groups seven dense-attention variants that reduce the
+This subpackage groups nine dense-attention variants that reduce the
 Key-Value cache footprint or mix information across attention heads,
 generalising Grouped-Query Attention (GQA) along complementary axes:
 
@@ -33,6 +33,15 @@ generalising Grouped-Query Attention (GQA) along complementary axes:
   hyper-network that dynamically merges temporally adjacent KV cache
   vectors and a stride-aware causal mask that keeps parallel training
   consistent with inference.
+* :class:`CCAAttention` -- Compressed Convolutional Attention,
+  arXiv:2510.04476. Down-projects q/k/v into a shared latent and
+  performs the entire attention operation inside that latent (no
+  up-projections), with causal convolutions, q-k-mean, and value-shift
+  to recover quality. Reduces parameters, KV-cache, **and** FLOPs by
+  the compression factor.
+* :class:`CCGQAAttention` -- Compressed Convolutional Grouped Query
+  Attention, arXiv:2510.04476. Extends CCA with GQA-style head sharing
+  inside the latent and decoupled query/KV compression rates.
 
 All modules follow the project attention-mixer interface:
 ``forward(x: torch.Tensor, logical_layer_idx: Optional[int] = None) ->
@@ -49,6 +58,7 @@ from .tucker_attn import TuckerAttention
 from .iha_attn import IHAAttention
 from .gta_attn import GTAAttention
 from .mtla_attn import MTLAAttention
+from .cca_attn import CCAAttention, CCGQAAttention
 
 __all__ = [
     "MLAAttention",
@@ -58,4 +68,6 @@ __all__ = [
     "IHAAttention",
     "GTAAttention",
     "MTLAAttention",
+    "CCAAttention",
+    "CCGQAAttention",
 ]

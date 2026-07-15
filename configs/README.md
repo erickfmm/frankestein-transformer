@@ -237,6 +237,8 @@ Examples:
   - `iha_attn` — Interleaved Head Attention, cross-head pseudo-heads (arXiv:2602.21371).
   - `gta_attn` — Grouped-head laTenT Attention, shared map + latent values (arXiv:2506.17286).
   - `mtla_attn` — Multi-head Temporal Latent Attention, temporal KV merge (arXiv:2505.13544).
+  - `cca_attn` — Compressed Convolutional Attention, attention in compressed latent + convs (arXiv:2510.04476).
+  - `ccgqa_attn` — Compressed Convolutional Grouped Query Attention, CCA + decoupled GQA in latent (arXiv:2510.04476).
 - Training-free policy: `sparge_attn` and `fasa_attn` are eval-only; training mode raises an explicit runtime error.
 - `ode_solver`: `rk4` or `euler`.
 - `ode_steps`: integration steps.
@@ -280,6 +282,20 @@ Examples:
 - `mtla_latent_rank`: feature-axis latent rank for `mtla_attn` (default `hidden_size // 2`).
 - `mtla_merge_factor`: consecutive KV entries merged per temporal slot (default 2).
 - `mtla_stride`: stride between merged slots (default `mtla_merge_factor`).
+- `cca_latent_rank`: latent width ẽ for `cca_attn` (default `hidden_size // 4`, i.e. C=4).
+- `cca_num_conv_layers`: 0, 1, or 2 convolution layers for `cca_attn` (default 2).
+- `cca_conv_kernel_seq`: depth-wise causal seq conv kernel for `cca_attn` (default 4).
+- `cca_conv_kernel_ch`: head-wise grouped channel conv kernel for `cca_attn` (default 3).
+- `cca_qk_mean`: enable q-k-mean bias for `cca_attn` (default true).
+- `cca_value_shift`: enable value-shift for `cca_attn` (default true; requires even `num_heads`).
+- `ccgqa_query_latent_rank`: query latent width E/C₁ for `ccgqa_attn` (default `hidden_size // 2`).
+- `ccgqa_kv_latent_rank`: KV latent width E/C₂ for `ccgqa_attn` (default `hidden_size // 8`).
+- `ccgqa_num_kv_heads`: number of KV group heads for `ccgqa_attn` (default `num_heads // 4`).
+- `ccgqa_num_conv_layers`: 0, 1, or 2 conv layers for `ccgqa_attn` (default 2).
+- `ccgqa_conv_kernel_seq`: seq conv kernel for `ccgqa_attn` (default 4).
+- `ccgqa_conv_kernel_ch`: channel conv kernel for `ccgqa_attn` (default 3).
+- `ccgqa_qk_mean`: enable q-k-mean with B_group/E_group for `ccgqa_attn` (default true).
+- `ccgqa_value_shift`: enable value-shift for `ccgqa_attn` (default true).
 
 ### MiniMax Sparse Attention & SparDA (optional)
 

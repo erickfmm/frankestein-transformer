@@ -28,6 +28,8 @@ from .gated import (
     RetNetAttention,
 )
 from .latent import (
+    CCAAttention,
+    CCGQAAttention,
     GTAAttention,
     GQLAAttention,
     IHAAttention,
@@ -73,4 +75,6 @@ __all__ = [
     "IHAAttention",
     "GTAAttention",
     "MTLAAttention",
+    "CCAAttention",
+    "CCGQAAttention",
 ]

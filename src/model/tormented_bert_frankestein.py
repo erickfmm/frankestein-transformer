@@ -40,14 +40,16 @@ Supported attention mixer families (20+):
   ``fox_attn``, ``gated_softmax_attn``.
 * ``engram_attn`` — Engram conditional memory via scalable lookup.
 * ``gqa_attn`` — Grouped-Query Attention (GQA; Ainslie et al. 2023).
-* Latent family (7 variants): ``mla_attn`` (Multi-Head Latent
+* Latent family (9 variants): ``mla_attn`` (Multi-Head Latent
   Attention + RoPE, arXiv:2506.09342), ``gqla_attn`` (Group-Query
   Latent Attention, arXiv:2605.15250), ``mlra_attn`` (Multi-Head
   Low-Rank Attention, arXiv:2603.02188), ``tucker_attn`` (Tucker
   Attention, arXiv:2603.30033), ``iha_attn`` (Interleaved Head
   Attention, arXiv:2602.21371), ``gta_attn`` (Grouped-head laTenT
   Attention, arXiv:2506.17286), ``mtla_attn`` (Multi-head Temporal
-  Latent Attention, arXiv:2505.13544).
+  Latent Attention, arXiv:2505.13544), ``cca_attn`` (Compressed
+  Convolutional Attention, arXiv:2510.04476), ``ccgqa_attn``
+  (Compressed Convolutional Grouped Query Attention, arXiv:2510.04476).
 * Extended sparse family: ``msa_attn`` (MiniMax Sparse Attention,
   arXiv:2606.13392), ``sparda_attn`` (SparDA, arXiv:2606.04511).
 * Extended gated family: ``kda_attn`` (Kimi Delta Attention,
@@ -99,6 +101,8 @@ from .attention.standard import StandardAttention
 from .attention.titan import TitanAttention
 from .attention.gated import KDAAttention
 from .attention.latent import (
+    CCAAttention,
+    CCGQAAttention,
     GTAAttention,
     GQLAAttention,
     IHAAttention,
@@ -141,7 +145,8 @@ class UltraConfig:
             ``"engram_attn"``, ``"gqa_attn"``,
             ``"mla_attn"``, ``"gqla_attn"``, ``"mlra_attn"``,
             ``"tucker_attn"``, ``"iha_attn"``, ``"gta_attn"``,
-            ``"mtla_attn"``, ``"msa_attn"``, ``"sparda_attn"``.
+            ``"mtla_attn"``, ``"cca_attn"``, ``"ccgqa_attn"``,
+            ``"msa_attn"``, ``"sparda_attn"``.
             Default: ``["retnet", "ode", "mamba", "titan_attn"] * 3``.
         ode_solver: ODE solver for ``ode`` mixer layers. One of ``"rk4"``
             (Runge-Kutta 4th order) or ``"euler"``. Default: ``"rk4"``.
@@ -318,6 +323,23 @@ class UltraConfig:
     mtla_merge_factor: int = 2
     mtla_stride: Optional[int] = None
 
+    # ---- CCA / CCGQA (arXiv:2510.04476) ----
+    cca_latent_rank: Optional[int] = None
+    cca_num_conv_layers: int = 2
+    cca_conv_kernel_seq: int = 4
+    cca_conv_kernel_ch: int = 3
+    cca_qk_mean: bool = True
+    cca_value_shift: bool = True
+
+    ccgqa_query_latent_rank: Optional[int] = None
+    ccgqa_kv_latent_rank: Optional[int] = None
+    ccgqa_num_kv_heads: Optional[int] = None
+    ccgqa_num_conv_layers: int = 2
+    ccgqa_conv_kernel_seq: int = 4
+    ccgqa_conv_kernel_ch: int = 3
+    ccgqa_qk_mean: bool = True
+    ccgqa_value_shift: bool = True
+
     # ---- MSA / MiniMax Sparse Attention (arXiv:2606.13392) ----
     msa_block_size: int = 128
     msa_topk_blocks: int = 16
@@ -368,6 +390,16 @@ class UltraConfig:
             self.mtla_latent_rank = half
         if self.mtla_stride is None:
             self.mtla_stride = self.mtla_merge_factor
+
+        # ---- Resolve CCA / CCGQA defaults ----
+        if self.cca_latent_rank is None:
+            self.cca_latent_rank = max(1, self.hidden_size // 4)
+        if self.ccgqa_query_latent_rank is None:
+            self.ccgqa_query_latent_rank = half
+        if self.ccgqa_kv_latent_rank is None:
+            self.ccgqa_kv_latent_rank = max(1, self.hidden_size // 8)
+        if self.ccgqa_num_kv_heads is None:
+            self.ccgqa_num_kv_heads = max(1, self.num_heads // 4)
 
         if self.positional_encoding is None:
             self.positional_encoding = "hope" if bool(self.use_hope) else "rope"
@@ -488,6 +520,8 @@ class HybridLayer(nn.Module):
             "iha_attn": IHAAttention,
             "gta_attn": GTAAttention,
             "mtla_attn": MTLAAttention,
+            "cca_attn": CCAAttention,
+            "ccgqa_attn": CCGQAAttention,
             "msa_attn": MSAAttention,
             "sparda_attn": SparDAAttention,
         }

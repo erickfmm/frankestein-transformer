@@ -4,7 +4,7 @@
 
 ## Taxonomy Overview
 
-The system implements **20 sequence mixer architectures** organized into five functional categories. The taxonomy figure from the paper:
+The system implements **20 sequence mixer architectures** organized into five functional categories, with two additional latent attention variants documented for reference. The taxonomy figure from the paper:
 
 ```
 Sequence Mixer Registry (20 variants)
@@ -13,8 +13,9 @@ Sequence Mixer Registry (20 variants)
 ├── Recurrent (5): retnet/retnet_attn, mamba, ode, titan_attn, engram_attn
 ├── Sparse (7): sparse_transformer_attn, longformer_attn, bigbird_attn,
 │                sparsek_attn, nsa_attn, sparge_attn, fasa_attn
-└── Gated (6): gla_attn, deltanet_attn, gated_deltanet_attn,
-               hgrn2_attn, fox_attn, gated_softmax_attn
+├── Gated (6): gla_attn, deltanet_attn, gated_deltanet_attn,
+│              hgrn2_attn, fox_attn, gated_softmax_attn
+└── Latent (documented): cca_attn, ccgqa_attn
 ```
 
 ## Training-Free Policy
@@ -300,6 +301,34 @@ Previous state S_{t−1} → Gate(s) α_t, β_t, G_t, f_t → New key/value or S
 | Pros | Eliminates attention sink; improves training stability; <2% latency overhead; drop-in improvement |
 | Cons | Still O(n²) quadratic; marginal benefit for short-context tasks |
 
+## Latent Attention Mechanisms (2)
+
+### `cca_attn` — Compressed Convolutional Attention
+
+| Attribute | Value |
+|---|---|
+| Paper | Figliola et al. (2025) — arXiv:2510.04476 |
+| Core Equation | q̃=W̃_Q x, k̃=W̃_K x, v=[W̃_V1 x_t ‖ W̃_V2 x_{t−1}]; dual causal convs; qk-mean; QK L2-norm + learnable β; RoPE in latent; Y=W̃_O·softmax(q̂k̂^⊤/√d_h)v |
+| Training Complexity | O(n²·d/C) — C× fewer FLOPs than MHA |
+| Inference Complexity | O(n) per step, O(ẽ·n) KV cache (ẽ = E/C) |
+| Key Characteristics | Attention performed ENTIRELY in compressed latent (no Q/K/V up-projections, only W̃_O); dual causal convs (depthwise seq + grouped channel); query-key mean; value-shift; QK L2-norm + learnable temperature β; RoPE native in latent |
+| Config Knobs | `compression_factor` (C ≥ 1), `cca_qk_mean` (bool), `cca_value_shift` (bool), `cca_learnable_temp` (bool), `cca_conv_kernel_size`, `cca_conv_groups` |
+| Pros | Reduces params + KV cache + FLOPs simultaneously; native RoPE; >2× fewer params than MLA |
+| Cons | Does not remove quadratic S² (divides by C); conv/qk-mean/v-shift add inductive bias; fused kernel needed |
+
+### `ccgqa_attn` — Compressed Convolutional Grouped Query Attention
+
+| Attribute | Value |
+|---|---|
+| Paper | Figliola et al. (2025) — arXiv:2510.04476 |
+| Core Equation | CCA + GQA head-sharing in latent; decoupled Q compression C₁ and KV compression C₂ (C₂ ≥ C₁); grouped qk-mean via B_group (replicate KV→Q) and E_group (average Q→KV) |
+| Training Complexity | O(n²·d/C₁) |
+| Inference Complexity | O(n) per step, O(ẽ_kv·n) KV cache (ẽ_kv = E/C₂) |
+| Key Characteristics | CCA extended with GQA-style head sharing inside the latent; decoupled query (C₁) and KV (C₂) compression; constraint C₂/C₁ = num_heads/num_kv_heads; grouped qk-mean with B_group/E_group mixing matrices; best reported loss at 8× cache reduction |
+| Config Knobs | `query_compression` (C₁), `kv_compression` (C₂), `num_kv_heads` (must satisfy C₂/C₁ = num_heads/num_kv_heads), `cca_qk_mean`, `cca_value_shift`, `cca_learnable_temp`, `cca_conv_kernel_size`, `cca_conv_groups` |
+| Pros | Decoupled compression; smooth Pareto; same arithmetic intensity as GQA; best loss at 8× cache reduction |
+| Cons | Still quadratic in S²; fused kernel required; C₂/C₁ ratio constraint on num_heads/num_kv_heads |
+
 ## Comprehensive Comparison Table
 
 | Mixer | Category | Train Complexity | Infer Complexity | Trainable | Key Strength |
@@ -325,3 +354,5 @@ Previous state S_{t−1} → Gate(s) α_t, β_t, G_t, f_t → New key/value or S
 | `hgrn2_attn` | Gated | O(Ld²) | O(d²) memory | Yes | Hierarchical forget gates |
 | `fox_attn` | Gated | O(n²d) | O(n)/step | Yes | Forget gate in softmax logits |
 | `gated_softmax_attn` | Gated | O(n²d) | O(n)/step | Yes | Post-SDPA sigmoid gating |
+| `cca_attn` | Latent | O(n²d/C) | O(n)/step | Yes | Latent-space attention, C× FLOP reduction |
+| `ccgqa_attn` | Latent | O(n²d/C₁) | O(n)/step | Yes | Decoupled latent compression + GQA head sharing |

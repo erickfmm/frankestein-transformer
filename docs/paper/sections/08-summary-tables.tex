@@ -14,6 +14,8 @@ RetNet & $(QK^\top\odot D)V$ & $\mathcal{O}(n^2d)$ or chunkwise & $\mathcal{O}(1
 Mamba & $h_t=\bar{A}_t h_{t-1}+\bar{B}_t x_t$ & $\mathcal{O}(nd)$ & $\mathcal{O}(1)$/step & Selective state-space with hardware-aware scan \citep{gu_mamba_2023}. \\
 ODE-style block & $\frac{dh}{dt}=f_\theta(h,t)$ & solver-dependent & solver-dependent & Continuous-depth interpretation; RK integration \citep{zhang_continuous_2021}. \\
 Titans memory & $M_t=(1-\alpha_t)M_{t-1}+S_t$ & approx.\ $\mathcal{O}(nd)$ & retrieval-centric & Test-time memory updates with surprise-driven dynamics \citep{behrouz_titans_2025}. \\
+CCA & $\text{softmax}(\hat Q\hat K^\top/\sqrt{d_h})\tilde V$ in latent & $\mathcal{O}(n^2d/C)$ & $\mathcal{O}(n)$/step & Attention fully in compressed latent; convs + qk-mean + value-shift; $C{\times}$ fewer FLOPs+params+cache \citep{figliola_cca_2025}. \\
+CCGQA & Same as CCA + decoupled GQA & $\mathcal{O}(n^2d/C_1)$ & $\mathcal{O}(n)$/step & CCA with $C_2\geq C_1$ KV compression and group-shared latent heads; best loss at $8{\times}$ cache cut \citep{figliola_cca_2025}. \\
 \bottomrule
 \end{longtable}
 \normalsize
