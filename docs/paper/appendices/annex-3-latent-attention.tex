@@ -1,4 +1,4 @@
-\section{Annex B: Latent and Low-Rank Attention Families}
+\section{Latent and Low-Rank Attention Families}
 \label{sec:annex-latent}
 
 This annex covers the latent / low-rank KV compression family of attention mechanisms. These architectures compress the per-token key--value state into a low-rank latent vector that is the only quantity materialised in the KV cache during decoding, then reconstruct full multi-head keys and values on the fly. The family unifies grouped-query, latent, factorised, and temporal-latent designs under a common low-rank bottleneck.

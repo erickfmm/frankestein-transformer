@@ -1,4 +1,4 @@
-\section{Anexo B: Familias de Atención Latente y de Rango Bajo}
+\section{Familias de Atención Latente y de Rango Bajo}
 \label{sec:annex-latent}
 
 Este anexo cubre la familia de mecanismos de atención de compresión latente / de rango bajo de KV. Estas arquitecturas comprimen el estado clave--valor por token en un vector latente de rango bajo que es la única cantidad materializada en el caché KV durante la decodificación, luego reconstruyen las claves y valores completos de todas las cabezas al vuelo. La familia unifica diseños de consulta agrupada, latente, factorizado y latente temporal bajo un cuello de botella de rango bajo común.

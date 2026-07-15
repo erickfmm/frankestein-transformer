@@ -65,13 +65,16 @@ Frankestein Transformer presenta un conjunto de herramientas unificado y basado 
 \bibliography{../bibliography/other,../bibliography/optimizers,../bibliography/attention_types}
 
 \appendix
+\renewcommand{\thesection}{\arabic{section}}
+\addtocontents{toc}{\bigskip\noindent\textbf{Anexos}\par}
+\setcounter{section}{0}
 
-\input{appendices/annex-a-optimizadores}
-\input{appendices/annex-b-recurrent-attention}
-\input{appendices/annex-b-latent-attention}
-\input{appendices/annex-c-sparse-attention}
-\input{appendices/annex-d-gated-attention}
-\input{appendices/annex-e-tutorial}
-\input{appendices/annex-f-norm-bitnet-mod}
+\input{appendices/annex-1-optimizadores}
+\input{appendices/annex-2-recurrent-attention}
+\input{appendices/annex-3-latent-attention}
+\input{appendices/annex-4-sparse-attention}
+\input{appendices/annex-5-gated-attention}
+\input{appendices/annex-6-tutorial}
+\input{appendices/annex-7-norm-bitnet-mod}
 
 \end{document}

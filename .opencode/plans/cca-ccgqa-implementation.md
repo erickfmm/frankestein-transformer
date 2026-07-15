@@ -111,10 +111,10 @@ With `layer_pattern: [ccgqa_attn]`, `ccgqa_query_latent_rank: 256`, `ccgqa_kv_la
 - Add cca_attn, ccgqa_attn to latent blocks list
 - Add config knob reference entries
 
-### 11. `docs/paper/appendices/annex-b-latent-attention.tex`
+### 11. `docs/paper/appendices/annex-3-latent-attention.tex`
 Add CCA and CCGQA subsections (mathematical formulation, algorithmic pseudocode, key characteristics) + comparison table rows.
 
-### 12. `docs/paper-es/appendices/annex-b-latent-attention.tex`
+### 12. `docs/paper-es/appendices/annex-3-latent-attention.tex`
 Spanish translation of the above.
 
 ### 13. `docs/paper/sections/08-summary-tables.tex`
