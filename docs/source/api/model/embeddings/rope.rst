@@ -1,7 +1,7 @@
 RoPE Positional Encoding
-============================
+==========================
 
-.. automodule:: src.model.attention.rope
+.. automodule:: src.model.embeddings.rope
    :members:
    :undoc-members:
    :show-inheritance:

@@ -1,4 +1,4 @@
 Toolkit Reference
 =================
 
-.. mdinclude:: ../README.md
+.. mdinclude:: ../../README.md

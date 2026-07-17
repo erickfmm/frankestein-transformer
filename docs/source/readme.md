@@ -1,1 +1,0 @@
-/home/erick-merino/src/frankestein-transformer/README.md

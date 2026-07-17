@@ -6,4 +6,5 @@ Utils Package
 
    device
    gpu_temp_guard
+   schema_loader
    storage_manager

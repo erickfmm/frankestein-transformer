@@ -1,1 +1,0 @@
-/home/erick-merino/src/frankestein-transformer/docs/bibliography/SPARSE_TRANSFORMER_TYPES.md

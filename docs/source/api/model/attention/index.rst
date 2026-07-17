@@ -11,7 +11,7 @@ Attention Package
    ode
    titan
    engram
-   hope
-   rope
+   grouped_query_attention
    gated/index
+   latent/index
    sparse/index

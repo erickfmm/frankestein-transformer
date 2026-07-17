@@ -8,4 +8,5 @@ Deploy Package
    inference
    quantization
    transformers_export
+   bitnet_gguf_export
    example

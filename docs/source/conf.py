@@ -15,7 +15,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
     "sphinx.ext.intersphinx",
-    "myst_parser",
+    "sphinx_mdinclude",
 ]
 
 napoleon_google_docstring = True
@@ -59,21 +59,20 @@ autodoc_mock_imports = [
     "accelerate",
 ]
 
-myst_enable_extensions = [
-    "dollarmath",
-    "amsmath",
-    "deflist",
-    "fieldlist",
-    "html_admonition",
-    "html_image",
-    "colon_fence",
-    "smartquotes",
-    "replacements",
-    "linkify",
-    "substitution",
-    "tasklist",
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3", None),
+}
+
+source_suffix = {
+    ".rst": "restructuredtext",
+}
+
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+
+suppress_warnings = [
+    "autodoc.import_object",
+    "docutils",
 ]
-myst_heading_anchors = 3
 
 html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
@@ -84,24 +83,3 @@ html_theme_options = {
     "includehidden": True,
     "titles_only": False,
 }
-
-intersphinx_mapping = {
-    "python": ("https://docs.python.org/3", None),
-}
-
-source_suffix = {
-    ".rst": "restructuredtext",
-    ".md": "markdown",
-}
-
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
-
-suppress_warnings = [
-    "autodoc.import_object",
-    "myst.xref_missing",
-    "myst.strikethrough",
-    "docutils",
-]
-
-myst_all_links_external = True
-myst_suppress_warnings = ["myst.xref_missing"]

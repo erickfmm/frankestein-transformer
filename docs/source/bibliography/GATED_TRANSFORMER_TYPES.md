@@ -1,1 +1,0 @@
-/home/erick-merino/src/frankestein-transformer/docs/bibliography/GATED_TRANSFORMER_TYPES.md
