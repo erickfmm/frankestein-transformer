@@ -3,11 +3,11 @@ Technical Report (English)
 
 The full technical report is available as a PDF:
 
-:download:`Download PDF <../paper.pdf>`
+:download:`Download PDF <../paper/paper.pdf>`
 
 .. raw:: html
 
-   <embed src="../../paper.pdf" width="100%" height="800px" type="application/pdf" />
+   <embed src="../paper/paper.pdf" width="100%" height="800px" type="application/pdf" />
 
 Abstract
 --------

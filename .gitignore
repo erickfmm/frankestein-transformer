@@ -19,6 +19,8 @@ docs/**/*.out
 docs/**/*.toc
 docs/**/*.bbl
 docs/**/*.blg
+docs/_build/
+docs/pdoc/
 
 *.csv
 

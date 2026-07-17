@@ -3,11 +3,11 @@ Informe Tecnico (Espanol)
 
 El informe tecnico completo esta disponible como PDF:
 
-:download:`Descargar PDF <../paper-es.pdf>`
+:download:`Descargar PDF <../paper-es/paper-es.pdf>`
 
 .. raw:: html
 
-   <embed src="../../paper-es.pdf" width="100%" height="800px" type="application/pdf" />
+   <embed src="../paper-es/paper-es.pdf" width="100%" height="800px" type="application/pdf" />
 
 Resumen
 -------

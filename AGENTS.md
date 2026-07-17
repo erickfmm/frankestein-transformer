@@ -70,8 +70,8 @@ Read recent commits on these paths first (`git log --oneline -20 -- <path>`).
 
 ## Documentation
 
-- **Docstrings**: Google-style (Args, Returns, Raises, Attributes). pdoc renders to `docs/pdoc/`.
-- **Generate API docs**: `pdoc src/ -o docs/pdoc/ --docformat google`
+- **Docstrings**: Google-style (Args, Returns, Raises, Attributes). Sphinx autodoc renders them to Read the Docs (`docs/source/api/`).
+- **Generate API docs locally**: `bash docs/build_docs.sh` (Sphinx → `docs/_build/html`); Read the Docs hosts the same at https://frankestein-transformer.readthedocs.io
 - **Specs**: `docs/specs/*.md` — architecture, attention-mixers, optimizers, schema-reference, cli-reference, deployment, sbert-workflows, training-safety. Update the relevant spec when adding a mixer/optimizer.
 - **Academic refs**: `docs/paper.tex`, `docs/bibliography/*.md` contain formulations and citations for all mixers/optimizers.
 - **Config reference**: `configs/README.md` has the full optimizer parameter reference and preset walkthrough.

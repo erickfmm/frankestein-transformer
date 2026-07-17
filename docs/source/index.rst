@@ -1,34 +1,43 @@
-Frankestein Transformer Documentation
-========================================
+Frankestein Transformer
+========================
+
+Configuration-driven transformer experimentation toolkit with 35+ sequence mixer architectures and 23 optimizer families, strict schema-based configuration, quantized BitNet deployment, and SBERT sentence-embedding training.
+
+Full hosted documentation is at https://frankestein-transformer.readthedocs.io.
 
 .. toctree::
    :maxdepth: 3
-   :caption: Contents:
+   :caption: Overview:
 
    self
    readme
    configs-readme
-   api/index
-   specs/index
-   bibliography/index
-   paper-en
-   paper-es
+   transformers_compatibility
 
-Configuration-driven transformer experimentation toolkit with 17+ mixer architectures and 23 optimizer families.
+.. toctree::
+   :maxdepth: 3
+   :caption: Specifications:
+
+   specs/index
+
+.. toctree::
+   :maxdepth: 2
+   :caption: API Reference:
+
+   api/index
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Bibliography:
+
+   bibliography/index
 
 .. toctree::
    :maxdepth: 1
-   :caption: Quick Links:
+   :caption: Technical Reports:
 
-   GitHub Repository <https://github.com/erickfmm/frankestein-transformer>
-   CLI Reference <specs/cli-reference>
-   Schema Reference <specs/schema-reference>
-   Architecture <specs/architecture>
-   Attention Mixers <specs/attention-mixers>
-   Optimizers <specs/optimizers>
-   Deployment <specs/deployment>
-   SBERT Workflows <specs/sbert-workflows>
-   Training Safety <specs/training-safety>
+   paper-en
+   paper-es
 
 Indices and tables
 ==================

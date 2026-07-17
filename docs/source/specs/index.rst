@@ -6,6 +6,7 @@ Specifications
 
    architecture
    attention-mixers
+   activations
    cli-reference
    deployment
    optimizers

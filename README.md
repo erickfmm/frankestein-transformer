@@ -94,9 +94,7 @@ Parameters use prefixed keys: `<optimizer_class>-<group>_<param>` (e.g. `adamw-l
 | [docs/paper.pdf](docs/paper.pdf) | Technical report (English) |
 | [docs/paper-es.pdf](docs/paper-es.pdf) | Technical report (Spanish) |
 | [docs/specs/](docs/specs/) | Architecture and feature specifications |
-| [docs/pdoc/](docs/pdoc/) | API documentation |
-| [frankestein-transformer.readthedocs.io](https://frankestein-transformer.readthedocs.io/en/latest/) | Full hosted documentation |
-| [docs/ROADMAP.md](docs/ROADMAP.md) | Development roadmap |
+| [frankestein-transformer.readthedocs.io](https://frankestein-transformer.readthedocs.io/en/latest/) | Full hosted documentation (specs, API, papers, bibliography) |
 | [docs/transformers_compatibility.md](docs/transformers_compatibility.md) | HuggingFace export compatibility guide |
 
 ## Installation
