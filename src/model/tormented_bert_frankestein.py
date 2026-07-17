@@ -63,7 +63,7 @@ Hardware Target: Dual Xeon E5-2680v4 + Nvidia Tesla P40 (24GB).
 
 import math
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 import torch
 import torch.nn as nn
@@ -71,6 +71,12 @@ import torch.nn.functional as F
 
 from .attention.common import BitLinear
 from .norm import get_norm
+from .activation_function import (
+    ALL_ACTIVATIONS,
+    GLU_VARIANTS,
+    get_activation,
+    make_gated_ffn,
+)
 from .attention.engram import EngramLayer
 from .attention.grouped_query_attention import GroupedQueryAttention
 from .attention.gated import (
@@ -112,6 +118,77 @@ from .attention.latent import (
     TuckerAttention,
 )
 from .embeddings import FactorizedEmbedding
+
+# Allowed keys for the nested ``ffn_activation_config`` mapping. Each entry
+# maps to the validation rule applied by ``_validate_ffn_activation_config``.
+_FFN_ACTIVATION_CONFIG_KEYS = {
+    "raf_degrees", "raf_version", "raf_approx_func", "raf_trainable",
+    "raf_input_scaling", "prelu_init", "elu_alpha", "celu_alpha",
+    "swish_beta", "leaky_relu_slope", "pelu_alpha", "mpelu_alpha",
+    "mpelu_beta", "felu_alpha", "eelu_alpha", "eelu_beta", "pdelu_alpha",
+    "preu_alpha", "preu_beta", "softexp_alpha", "maxout_pieces",
+}
+_RAF_VERSIONS = {"A", "B", "C", "D", "N"}
+_RAF_APPROX_FUNCS = {
+    "gelu", "relu", "leaky_relu", "leaky_relu_0.1", "sigmoid", "tanh",
+    "swish", "silu", "identity",
+}
+
+
+def _validate_ffn_activation_config(activation: str, cfg: Dict[str, Any]) -> None:
+    """Validate the nested ``ffn_activation_config`` mapping.
+
+    Args:
+        activation: The lower-cased ``ffn_activation`` name.
+        cfg: The nested config mapping.
+
+    Raises:
+        ValueError: If an unknown key is present, a value has the wrong type,
+            or a RAF-specific constraint (degrees, version, approx_func) is
+            violated.
+    """
+    unknown = set(cfg) - _FFN_ACTIVATION_CONFIG_KEYS
+    if unknown:
+        raise ValueError(
+            f"Unknown ffn_activation_config keys: {sorted(unknown)}. "
+            f"Allowed: {sorted(_FFN_ACTIVATION_CONFIG_KEYS)}"
+        )
+    # Type checks for the boolean keys.
+    for bk in ("raf_trainable", "raf_input_scaling"):
+        if bk in cfg and not isinstance(cfg[bk], bool):
+            raise ValueError(f"ffn_activation_config.{bk} must be a boolean")
+    # Float keys.
+    for fk in (
+        "prelu_init", "elu_alpha", "celu_alpha", "swish_beta", "leaky_relu_slope",
+        "pelu_alpha", "mpelu_alpha", "mpelu_beta", "felu_alpha", "eelu_alpha",
+        "eelu_beta", "pdelu_alpha", "preu_alpha", "preu_beta", "softexp_alpha",
+    ):
+        if fk in cfg and not isinstance(cfg[fk], (int, float)):
+            raise ValueError(f"ffn_activation_config.{fk} must be a number")
+    if "maxout_pieces" in cfg:
+        if not isinstance(cfg["maxout_pieces"], int) or cfg["maxout_pieces"] < 1:
+            raise ValueError("ffn_activation_config.maxout_pieces must be an int >= 1")
+    # RAF degrees.
+    if "raf_degrees" in cfg:
+        d = cfg["raf_degrees"]
+        if (
+            not isinstance(d, (list, tuple))
+            or len(d) != 2
+            or not all(isinstance(v, int) and v >= 1 for v in d)
+        ):
+            raise ValueError(
+                "ffn_activation_config.raf_degrees must be a [m, n] pair of ints >= 1"
+            )
+    if "raf_version" in cfg and cfg["raf_version"] not in _RAF_VERSIONS:
+        raise ValueError(
+            f"ffn_activation_config.raf_version must be one of "
+            f"{sorted(_RAF_VERSIONS)}, got {cfg['raf_version']!r}"
+        )
+    if "raf_approx_func" in cfg and cfg["raf_approx_func"] not in _RAF_APPROX_FUNCS:
+        raise ValueError(
+            f"ffn_activation_config.raf_approx_func must be one of "
+            f"{sorted(_RAF_APPROX_FUNCS)}, got {cfg['raf_approx_func']!r}"
+        )
 
 
 @dataclass
@@ -218,8 +295,17 @@ class UltraConfig:
             Default: 0.0.
         ffn_hidden_size: Hidden size of the FFN intermediate layer. If None,
             defaults to ``hidden_size * 2``. Default: None.
-        ffn_activation: FFN activation function. One of ``"silu"`` (SiLU /
-            Swish) or ``"gelu"`` (GELU). Default: ``"silu"``.
+        ffn_activation: FFN activation function. One of the elementwise
+            activations (e.g. ``"silu"`` (default, SiLU / Swish), ``"gelu"``,
+            ``"relu"``, ``"mish"``, ``"prelu"``, ``"raf"`` (Rational Activation
+            Function, learnable), ...) or a gated FFN variant
+            (``"swiglu"``, ``"geglu"``, ``"reglu"``). See
+            ``src/model/activation_function/factory.py`` for the full enum.
+        ffn_activation_config: Optional nested mapping of learnable-activation
+            parameters (e.g. ``raf_degrees``, ``raf_version``,
+            ``raf_approx_func``, ``raf_trainable``, ``raf_input_scaling``,
+            ``prelu_init``, ``elu_alpha``, ``swish_beta``). Ignored for
+            stateless activations. Default: ``None``.
         embedding_conv_kernel: Kernel size for the embedding Conv1d when
             ``use_embedding_conv`` is True. Default: 3.
         mode: Model mode. ``"encoder"`` for bidirectional (MLM) or
@@ -283,6 +369,7 @@ class UltraConfig:
     mixture_of_depths_router_aux_loss_weight: float = 0.0
     ffn_hidden_size: Optional[int] = None
     ffn_activation: str = "silu"
+    ffn_activation_config: Optional[Dict[str, Any]] = None
     embedding_conv_kernel: int = 3
     mode: str = "encoder"
 
@@ -422,6 +509,21 @@ class UltraConfig:
         if not 0.0 < float(self.prms_partial_ratio) <= 1.0:
             raise ValueError("prms_partial_ratio must be in the range (0, 1]")
 
+        # ---- Validate FFN activation ----
+        ffn_act = str(self.ffn_activation).lower()
+        if ffn_act not in ALL_ACTIVATIONS:
+            raise ValueError(
+                f"ffn_activation must be one of {sorted(ALL_ACTIVATIONS)}, "
+                f"got {self.ffn_activation!r}"
+            )
+        self.ffn_activation = ffn_act
+        if self.ffn_activation_config is not None:
+            if not isinstance(self.ffn_activation_config, dict):
+                raise ValueError(
+                    "ffn_activation_config must be a mapping (dict) when provided"
+                )
+            _validate_ffn_activation_config(self.ffn_activation, self.ffn_activation_config)
+
 
 class HybridLayer(nn.Module):
     """Per-layer dispatcher: attention mixer + FFN (dense or MoE) + optional Mixture-of-Depths.
@@ -537,30 +639,37 @@ class HybridLayer(nn.Module):
             )
 
         self.norm2 = get_norm(config)
-        activation = nn.SiLU() if config.ffn_activation == "silu" else nn.GELU()
+        is_glu = config.ffn_activation in GLU_VARIANTS
+
+        def _build_ffn():
+            """Return a fresh FFN block (gated or elementwise activation)."""
+            if is_glu:
+                # Gated FFN units own their projections; use the same
+                # proj_cls (BitLinear when BitNet is on) for BitNet parity.
+                return make_gated_ffn(
+                    config.ffn_activation,
+                    hidden_size=config.hidden_size,
+                    intermediate_size=config.ffn_hidden_size,
+                    bias=False,
+                    dropout=float(getattr(config, "dropout", 0.0) or 0.0),
+                    proj_factory=proj_cls,
+                )
+            return nn.Sequential(
+                proj_cls(config.hidden_size, config.ffn_hidden_size),
+                get_activation(config, dim=config.ffn_hidden_size),
+                proj_cls(config.ffn_hidden_size, config.hidden_size),
+            )
 
         if self.use_moe:
             self.router = router_cls(config.hidden_size, config.num_experts, bias=False)
-            self.experts = nn.ModuleList(
-                [
-                    nn.Sequential(
-                        proj_cls(config.hidden_size, config.ffn_hidden_size),
-                        activation,
-                        proj_cls(config.ffn_hidden_size, config.hidden_size),
-                    )
-                    for _ in range(config.num_experts)
-                ]
-            )
+            # One FFN per expert (fresh learnable activations per expert).
+            self.experts = nn.ModuleList([_build_ffn() for _ in range(config.num_experts)])
             self.top_k = config.top_k_experts
         else:
             self.router = None
             self.experts = None
             self.top_k = 0
-            self.ffn = nn.Sequential(
-                proj_cls(config.hidden_size, config.ffn_hidden_size),
-                activation,
-                proj_cls(config.ffn_hidden_size, config.hidden_size),
-            )
+            self.ffn = _build_ffn()
         self.depth_router = (
             router_cls(config.hidden_size, 1, bias=False) if self.use_mixture_of_depths else None
         )

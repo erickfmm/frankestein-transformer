@@ -44,6 +44,7 @@
 7. **Optimizer parameters use prefixed keys**: `<optimizer_class>-<group>_<param>` (e.g. `adamw-lr_embeddings`, `muon-ns_steps`, `sgd_momentum-momentum`). The prefix list lives in `src/schema/_optimizer.yaml` under `by_optimizer`. A new optimizer must add a `prefix` entry there.
 8. **`training.task` is required** (`mlm` or `sbert`). Legacy top-level optimizer keys are gone — use `training.optimizer` (MLM) or `training.sbert` (SBERT).
 9. **Both `configs/*.yaml` and `configs/examples/*.yaml` are smoke-tested** by `tests/test_yaml_examples.py` (one injected test per file). Adding a new optimizer family or mixer **requires** an example YAML or CI breaks. The `examples.md` file is skipped (only `*.yaml`/`*.yml` are globbed).
+10. **`ffn_activation` enum is the source of truth** (43 values in `src/schema/_model.yaml`, mirrored in `src/model/activation_function/factory.py` `ALL_ACTIVATIONS`). Adding an activation requires extending the enum **and** the factory dispatch **and** `UltraConfig` validation. GLU variants (`swiglu`/`geglu`/`reglu`) are gated FFN units — `get_activation` raises on them; `HybridLayer` builds a `GatedFFN` instead. The `ffn_activation_config` nested object (`additionalProperties: false`) groups learnable-activation params (RAF degrees/version/init, PReLU init, etc.). See `docs/specs/activations.md`.
 
 ## Where to Edit by Feature Type
 
@@ -62,6 +63,7 @@ Read recent commits on these paths first (`git log --oneline -20 -- <path>`).
 | Add/modify **GPU thermal guard** | `src/utils/gpu_temp_guard.py`, `src/training/trainer.py`, `src/cli.py`, `tests/test_gpu_temp_guard*.py` |
 | Modify **positional encodings** | `src/model/attention/rope.py`, `src/model/attention/hope.py`, `src/model/attention/common.py`, `src/schema/_model.yaml` (`positional_encoding` enum), `tests/test_positional_encodings.py` |
 | Modify **normalization layers** | `src/model/norm/factory.py`, `src/model/norm/<impl>.py` (`rms.py`, `derf.py`, `dynamic_tanh.py`), `src/schema/_model.yaml` (`norm_type` enum), `tests/test_common_modules.py` |
+| Modify **activation functions** | `src/model/activation_function/factory.py`, `src/model/activation_function/<family>.py` (`common.py`, `rectified.py`, `exponential.py`, `learnable.py`, `glu.py`), `src/model/tormented_bert_frankestein.py` (`HybridLayer` FFN wiring, `_validate_ffn_activation_config`), `src/schema/_model.yaml` (`ffn_activation` enum + `ffn_activation_config` object), `configs/examples/activation_*.yaml`, `tests/test_activation_functions.py`, `docs/specs/activations.md`, paper `docs/paper*/appendices/annex-8-*.tex` + `annex-summary-tables.tex` |
 | Modify **streaming dataset** | `src/training/streaming_mlm_dataset.py`, `src/utils/storage_manager.py` |
 | Modify **Streamlit web interface** | `src/streamlit_gui/app.py` |
 | Update **paper / docs** | `docs/paper.tex`, `docs/paper-es.tex`, `docs/bibliography/*.bib`, `docs/bibliography/*.md`, `docs/specs/*.md` |

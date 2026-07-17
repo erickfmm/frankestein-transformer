@@ -1,7 +1,7 @@
 \section{Tablas de Resumen Completas}
 \label{sec:annex-summary-tables}
 
-Este anexo proporciona una referencia completa de todos los componentes implementados en el código base de Frankestein Transformer: 35 mezcladores de secuencia en seis familias, 23 optimizadores, 5 variantes de normalización y 4 métodos de embedding. Cada tabla es autocontenida y referencia la bibliografía.
+Este anexo proporciona una referencia completa de todos los componentes implementados en el código base de Frankestein Transformer: 35 mezcladores de secuencia en seis familias, 23 optimizadores, 5 variantes de normalización, 43 funciones de activación y 4 métodos de embedding. Cada tabla es autocontenida y referencia la bibliografía.
 
 \subsection{Resumen de Mezcladores de Secuencia}
 
@@ -174,6 +174,86 @@ RMSNorm & $\gamma_i x_i / \sqrt{\frac{1}{d}\sum_j x_j^2 + \epsilon}$ & solo RMS 
 pRMSNorm & $\gamma_i x_i / \sqrt{\frac{1}{k}\sum_{j \le k} x_j^2 + \epsilon}$ & RMS parcial ($p$\,\%) & \citep{zhang_root_2019} \\
 Dynamic Tanh (DyT) & $\tanh(\alpha x)$ & ninguna & \citep{zhu_transformers_2025} \\
 Dynamic Erf (Derf) & $\operatorname{erf}(\alpha x + s)$ & ninguna & \citep{chen_stronger_2025} \\
+\bottomrule
+\end{longtable}
+\normalsize
+
+\subsection{Funciones de Activación}
+
+La Tabla~\ref{tab:all-activations-es} cataloga las 43 funciones de activación disponibles a través del campo de esquema \texttt{ffn\_activation} (40 elementales más 3 variantes de FFN con compuerta), agrupadas por familia. ``Aprend.'' marca las activaciones con parámetros entrenables; las fórmulas completas están en el Anexo~8.
+
+\scriptsize
+\begin{longtable}{p{2.6cm}p{1.4cm}p{5.2cm}p{0.9cm}p{2.0cm}}
+\toprule
+\textbf{Nombre} & \textbf{Familia} & \textbf{Fórmula} & \textbf{Aprend.} & \textbf{Referencia} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Nombre} & \textbf{Familia} & \textbf{Fórmula} & \textbf{Aprend.} & \textbf{Referencia} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{5}{r}{\textit{continúa en la próxima página}} \\
+\endfoot
+\bottomrule
+\caption{Catálogo de funciones de activación. ``Aprend.'' indica la presencia de parámetros entrenables. RAF = Rational Activation Function (razón de Padé aprendible). $\sigma$ es la sigmoide logística.}
+\label{tab:all-activations-es}
+\endlastfoot
+\multicolumn{5}{c}{\textbf{Clásicas / Sigmoid--Tanh (12)}} \\
+\midrule
+silu / swish & Clásica & $x\,\sigma(\beta x)$ & no / $\beta$ & \citep{ramachandran2017swish} \\
+gelu & Clásica & $x\,\Phi(x)$ & no & \citep{hendrycks2016gelu} \\
+gelu\_tanh & Clásica & $\tfrac{x}{2}\big(1+\tanh\!\sqrt{\tfrac{2}{\pi}}(x{+}0.044715x^3)\big)$ & no & \citep{hendrycks2016gelu} \\
+relu & Clásica & $\max(0,x)$ & no & \citep{nair2010relu} \\
+sigmoid & Clásica & $1/(1+e^{-x})$ & no & \citep{lederer2021activations} \\
+tanh & Clásica & $(e^x-e^{-x})/(e^x+e^{-x})$ & no & \citep{lederer2021activations} \\
+arctan & Clásica & $\arctan(x)$ & no & \citep{lederer2021activations} \\
+softsign / elliott & Clásica & $x/(1+|x|)$ & no & \citep{lederer2021activations} \\
+identity & Clásica & $x$ & no & (interno) \\
+softplus & Clásica & $\log(1+e^x)$ & no & \citep{glorot2011softplus} \\
+mish & Clásica & $x\tanh(\log(1+e^x))$ & no & \citep{misra2019mish} \\
+\midrule
+
+\multicolumn{5}{c}{\textbf{Familia rectificada (12)}} \\
+\midrule
+leaky\_relu & Rectificada & $\max(0,x)+a\min(0,x)$, $a{=}0.01$ & no & \citep{maas2013leakyrelu} \\
+relu6 & Rectificada & $\min(\max(0,x),6)$ & no & \citep{howard2019hardswish} \\
+hardswish & Rectificada & $x\,\text{ReLU6}(x{+}3)/6$ & no & \citep{howard2019hardswish} \\
+prelu & Rectificada & $\max(0,x)+\mathbf{p}\odot\min(0,x)$ & \textbf{sí} & \citep{he2015prelu} \\
+abs\_relu & Rectificada & $\max(0,x)-\max(0,-x)$ & no & \citep{dubey2021activations} \\
+nl\_relu & Rectificada & $\beta\log(1+\max(0,x))$ & no & \citep{dubey2021activations} \\
+brelu & Rectificada & $\min(\max(0,x),t)$ & no & \citep{dubey2021activations} \\
+vrelu & Rectificada & $|x|$ & no & \citep{dubey2021activations} \\
+hexpo & Rectificada & $a\max(0,x)-c\max(0,-x)$ & no & \citep{dubey2021activations} \\
+ptanh & Rectificada & $\max(0,\tanh(x))$ & no & \citep{dubey2021activations} \\
+dis\_relu & Rectificada & $\max(0,x-\delta)$ & no & \citep{dubey2021activations} \\
+lisht & Rectificada & $x\tanh(x)$ & no & \citep{roy2019lisht} \\
+\midrule
+
+\multicolumn{5}{c}{\textbf{Familia exponencial / ELU (12)}} \\
+\midrule
+elu & Exponencial & $x$ si $x\ge0$ si no $\alpha(e^x{-}1)$ & no & \citep{clevert2016elu} \\
+selu & Exponencial & $\lambda\,\text{ELU}_{\alpha'}(x)$ & no & \citep{klambauer2017selu} \\
+celu & Exponencial & $x$ si $x\ge0$ si no $\alpha(e^{x/\alpha}{-}1)$ & no & \citep{barron2017celu} \\
+pelu & Exponencial & $\tfrac{\alpha}{\beta}x$ / $\alpha(e^{x/\beta}{-}1)$ & \textbf{sí} & \citep{dubey2021activations} \\
+mpelu & Exponencial & ELU + $\alpha,\beta$ aprendibles & \textbf{sí} & \citep{dubey2021activations} \\
+felu / eelu / pdelu / preu & Exponencial & variantes ELU c/ params aprendibles & \textbf{sí} & \citep{dubey2021activations} \\
+softexp & Exponencial & interpolación exp/lineal/log & \textbf{sí} & \citep{dubey2021activations} \\
+elish / hardelish & Exponencial & Swish $\cup$ ramas ELU con compuerta & no & \citep{basirat2019elish} \\
+\midrule
+
+\multicolumn{5}{c}{\textbf{Aprendibles / Adaptativas (4)}} \\
+\midrule
+swish\_trainable & Aprendible & $x\,\sigma(\beta x)$, $\beta$ entrenable & \textbf{sí} & \citep{ramachandran2017swish} \\
+maxout & Aprendible & $\max_{i}(W_i x+b_i)$ & \textbf{sí} & \citep{goodfellow2013maxout} \\
+raf & Aprendible & $P(x)/Q(x)$ Padé$(5,4)$, versión A & \textbf{sí} & \citep{fang2023raft} \\
+\midrule
+
+\multicolumn{5}{c}{\textbf{Variantes FFN con compuerta (3)}} \\
+\midrule
+swiglu & Compuerta & $\text{SiLU}(xW_g)\odot(xW_u)\,W_d$ & \textbf{sí} & \citep{shazeer2020glu} \\
+geglu & Compuerta & $\text{GELU}(xW_g)\odot(xW_u)\,W_d$ & \textbf{sí} & \citep{shazeer2020glu} \\
+reglu & Compuerta & $\text{ReLU}(xW_g)\odot(xW_u)\,W_d$ & \textbf{sí} & \citep{shazeer2020glu} \\
 \bottomrule
 \end{longtable}
 \normalsize

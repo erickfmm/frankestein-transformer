@@ -1,7 +1,7 @@
 \section{Comprehensive Summary Tables}
 \label{sec:annex-summary-tables}
 
-This appendix provides a complete reference of all components implemented in the Frankestein Transformer codebase: 35 sequence mixers across six families, 23 optimizers, 5 normalization variants, and 4 embedding methods. Each table is self-contained and cross-references the bibliography.
+This appendix provides a complete reference of all components implemented in the Frankestein Transformer codebase: 35 sequence mixers across six families, 23 optimizers, 5 normalization variants, 43 activation functions, and 4 embedding methods. Each table is self-contained and cross-references the bibliography.
 
 \subsection{Sequence Mixer Summary}
 
@@ -174,6 +174,86 @@ RMSNorm & $\gamma_i x_i / \sqrt{\frac{1}{d}\sum_j x_j^2 + \epsilon}$ & RMS only 
 pRMSNorm & $\gamma_i x_i / \sqrt{\frac{1}{k}\sum_{j \le k} x_j^2 + \epsilon}$ & Partial RMS ($p$\,\%) & \citep{zhang_root_2019} \\
 Dynamic Tanh (DyT) & $\tanh(\alpha x)$ & none & \citep{zhu_transformers_2025} \\
 Dynamic Erf (Derf) & $\operatorname{erf}(\alpha x + s)$ & none & \citep{chen_stronger_2025} \\
+\bottomrule
+\end{longtable}
+\normalsize
+
+\subsection{Activation Functions}
+
+Table~\ref{tab:all-activations} catalogs the 43 feed-forward activation functions available through the \texttt{ffn\_activation} schema field (40 elementwise plus 3 gated-FFN variants), grouped by family. ``Learn.'' marks activations with trainable parameters; the full formulas are in Annex~8.
+
+\scriptsize
+\begin{longtable}{p{2.6cm}p{1.4cm}p{5.2cm}p{0.9cm}p{2.0cm}}
+\toprule
+\textbf{Name} & \textbf{Family} & \textbf{Formula} & \textbf{Learn.} & \textbf{Reference} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Name} & \textbf{Family} & \textbf{Formula} & \textbf{Learn.} & \textbf{Reference} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{5}{r}{\textit{continued on next page}} \\
+\endfoot
+\bottomrule
+\caption{Activation function catalog. ``Learn.'' indicates the presence of trainable parameters. RAF = Rational Activation Function (learnable Padé ratio). $\sigma$ is the logistic sigmoid.}
+\label{tab:all-activations}
+\endlastfoot
+\multicolumn{5}{c}{\textbf{Classical / Sigmoid--Tanh (12)}} \\
+\midrule
+silu / swish & Classical & $x\,\sigma(\beta x)$ & no / $\beta$ & \citep{ramachandran2017swish} \\
+gelu & Classical & $x\,\Phi(x)$ & no & \citep{hendrycks2016gelu} \\
+gelu\_tanh & Classical & $\tfrac{x}{2}\big(1+\tanh\!\sqrt{\tfrac{2}{\pi}}(x{+}0.044715x^3)\big)$ & no & \citep{hendrycks2016gelu} \\
+relu & Classical & $\max(0,x)$ & no & \citep{nair2010relu} \\
+sigmoid & Classical & $1/(1+e^{-x})$ & no & \citep{lederer2021activations} \\
+tanh & Classical & $(e^x-e^{-x})/(e^x+e^{-x})$ & no & \citep{lederer2021activations} \\
+arctan & Classical & $\arctan(x)$ & no & \citep{lederer2021activations} \\
+softsign / elliott & Classical & $x/(1+|x|)$ & no & \citep{lederer2021activations} \\
+identity & Classical & $x$ & no & (internal) \\
+softplus & Classical & $\log(1+e^x)$ & no & \citep{glorot2011softplus} \\
+mish & Classical & $x\tanh(\log(1+e^x))$ & no & \citep{misra2019mish} \\
+\midrule
+
+\multicolumn{5}{c}{\textbf{Rectified family (12)}} \\
+\midrule
+leaky\_relu & Rectified & $\max(0,x)+a\min(0,x)$, $a{=}0.01$ & no & \citep{maas2013leakyrelu} \\
+relu6 & Rectified & $\min(\max(0,x),6)$ & no & \citep{howard2019hardswish} \\
+hardswish & Rectified & $x\,\text{ReLU6}(x{+}3)/6$ & no & \citep{howard2019hardswish} \\
+prelu & Rectified & $\max(0,x)+\mathbf{p}\odot\min(0,x)$ & \textbf{yes} & \citep{he2015prelu} \\
+abs\_relu & Rectified & $\max(0,x)-\max(0,-x)$ & no & \citep{dubey2021activations} \\
+nl\_relu & Rectified & $\beta\log(1+\max(0,x))$ & no & \citep{dubey2021activations} \\
+brelu & Rectified & $\min(\max(0,x),t)$ & no & \citep{dubey2021activations} \\
+vrelu & Rectified & $|x|$ & no & \citep{dubey2021activations} \\
+hexpo & Rectified & $a\max(0,x)-c\max(0,-x)$ & no & \citep{dubey2021activations} \\
+ptanh & Rectified & $\max(0,\tanh(x))$ & no & \citep{dubey2021activations} \\
+dis\_relu & Rectified & $\max(0,x-\delta)$ & no & \citep{dubey2021activations} \\
+lisht & Rectified & $x\tanh(x)$ & no & \citep{roy2019lisht} \\
+\midrule
+
+\multicolumn{5}{c}{\textbf{Exponential / ELU family (12)}} \\
+\midrule
+elu & Exponential & $x$ if $x\ge0$ else $\alpha(e^x{-}1)$ & no & \citep{clevert2016elu} \\
+selu & Exponential & $\lambda\,\text{ELU}_{\alpha'}(x)$ & no & \citep{klambauer2017selu} \\
+celu & Exponential & $x$ if $x\ge0$ else $\alpha(e^{x/\alpha}{-}1)$ & no & \citep{barron2017celu} \\
+pelu & Exponential & $\tfrac{\alpha}{\beta}x$ / $\alpha(e^{x/\beta}{-}1)$ & \textbf{yes} & \citep{dubey2021activations} \\
+mpelu & Exponential & ELU + learnable $\alpha,\beta$ & \textbf{yes} & \citep{dubey2021activations} \\
+felu / eelu / pdelu / preu & Exponential & ELU variants w/ learnable params & \textbf{yes} & \citep{dubey2021activations} \\
+softexp & Exponential & exp/linear/log interpolation & \textbf{yes} & \citep{dubey2021activations} \\
+elish / hardelish & Exponential & Swish $\cup$ ELU gated branches & no & \citep{basirat2019elish} \\
+\midrule
+
+\multicolumn{5}{c}{\textbf{Learnable / Adaptive (4)}} \\
+\midrule
+swish\_trainable & Learnable & $x\,\sigma(\beta x)$, $\beta$ trainable & \textbf{yes} & \citep{ramachandran2017swish} \\
+maxout & Learnable & $\max_{i}(W_i x+b_i)$ & \textbf{yes} & \citep{goodfellow2013maxout} \\
+raf & Learnable & $P(x)/Q(x)$ Padé$(5,4)$, version A & \textbf{yes} & \citep{fang2023raft} \\
+\midrule
+
+\multicolumn{5}{c}{\textbf{Gated FFN variants (3)}} \\
+\midrule
+swiglu & Gated & $\text{SiLU}(xW_g)\odot(xW_u)\,W_d$ & \textbf{yes} & \citep{shazeer2020glu} \\
+geglu & Gated & $\text{GELU}(xW_g)\odot(xW_u)\,W_d$ & \textbf{yes} & \citep{shazeer2020glu} \\
+reglu & Gated & $\text{ReLU}(xW_g)\odot(xW_u)\,W_d$ & \textbf{yes} & \citep{shazeer2020glu} \\
 \bottomrule
 \end{longtable}
 \normalsize

@@ -1,0 +1,137 @@
+\section{Funciones de Activación}
+\label{sec:annex-funciones-activacion}
+
+Este anexo documenta la librería de funciones de activación implementada en
+\texttt{src/model/activation\_function/}. Agrupa las activaciones por familia,
+siguiendo la taxonomía de Dubey et al.~\citep{dubey2021activations} y la visión
+analítica de Lederer~\citep{lederer2021activations}, y añade la
+\emph{Rational Activation Function} (RAF) aprendible de Fang et
+al.~\citep{fang2023raft}. El contrato de esquema es:
+\[
+\texttt{ffn\_activation} \in \{\texttt{silu}, \texttt{gelu}, \dots, \texttt{raf}, \texttt{swiglu}, \texttt{geglu}, \texttt{reglu}\}
+\]
+con 40 activaciones elementales más 3 variantes de FFN con compuerta. La
+selección se despacha en tiempo de ejecución mediante la factoría
+\texttt{get\_activation}, replicando el patrón de \texttt{get\_norm} (Anexo~7).
+
+\subsection{Familia Clásica y Sigmoid/Tanh}
+
+Las activaciones suaves de referencia~\citep{lederer2021activations,dubey2021activations}:
+\begin{align*}
+\text{Sigmoid}(x) &= \frac{1}{1+e^{-x}} & \text{Tanh}(x) &= \frac{e^{x}-e^{-x}}{e^{x}+e^{-x}} = 2\,\text{Sigmoid}(2x)-1 \\
+\text{Arctan}(x) &= \arctan(x) & \text{Softsign}(x) &= \frac{x}{1+|x|} \quad (\text{Elliott}) \\
+\text{Softplus}(x) &= \log(1+e^{x}) & \text{Mish}(x) &= x\tanh\!\big(\log(1+e^{x})\big)
+\end{align*}
+\textbf{Identity} devuelve $x$ sin cambios. Mish~\citep{misra2019mish} es una
+composición auto-regularizada, no monótona, de Softplus y Tanh.
+
+\subsection{Familia Basada en Rectificadores}
+
+La familia ReLU~\citep{nair2010relu,dubey2021activations}:
+\begin{align*}
+\text{ReLU}(x) &= \max(0,x) & \text{LeakyReLU}(x) &= \begin{cases} x & x\ge0 \\ a\,x & x<0 \end{cases},\ a=0.01 \\
+\text{ReLU6}(x) &= \min(\max(0,x),6) & \text{PReLU}(x) &= \max(0,x)+\mathbf{p}\odot\min(0,x) \\
+\text{HardSwish}(x) &= x\cdot\frac{\text{ReLU6}(x+3)}{6} & \text{BReLU}(x) &= \min(\max(0,x),t) \\
+\text{VReLU}(x) &= |x| & \text{DisReLU}(x) &= \max(0,x-\delta)
+\end{align*}
+donde PReLU~\citep{he2015prelu} convierte la pendiente negativa $\mathbf{p}$ en
+un parámetro \emph{aprendible} por canal, y HardSwish~\citep{howard2019hardswish}
+es la aproximación barata de Swish usada en MobileNetV3.
+
+\subsection{Familia Exponencial / ELU}
+
+La familia exponencial-lineal~\citep{clevert2016elu,klambauer2017selu,dubey2021activations}:
+\begin{align*}
+\text{ELU}(x) &= \begin{cases} x & x\ge0 \\ \alpha(e^{x}-1) & x<0 \end{cases} &
+\text{SELU}(x) &= \lambda\,\text{ELU}_{\alpha'}(x) \\
+\text{CELU}(x) &= \begin{cases} x & x\ge0 \\ \alpha(e^{x/\alpha}-1) & x<0 \end{cases} &
+\text{PELU}(x) &= \begin{cases} \tfrac{\alpha}{\beta}x & x\ge0 \\ \alpha(e^{x/\beta}-1) & x<0 \end{cases} \\
+\text{ELiSH}(x) &= \begin{cases} x\,\sigma(x) & x\ge0 \\ (e^{x}-1)\,\sigma(x) & x<0 \end{cases}
+\end{align*}
+ELU~\citep{clevert2016elu} aporta saturación negativa suave; SELU~\citep{klambauer2017selu}
+induce auto-normalización con $(\alpha',\lambda)$ fijos; CELU~\citep{barron2017celu} es
+derivable una vez para cualquier $\alpha$; PELU hace $\alpha,\beta$ aprendibles. El paquete
+también implementa MPELU, FELU, EELU, PDELU, PREU, SoftExp y HardELiSH.
+
+\subsection{Swish y Activaciones Paramétricas}
+
+Swish~\citep{ramachandran2017swish} se define con $\beta$ (fijo o aprendible):
+\[
+\text{Swish}_\beta(x) = x\,\sigma(\beta x) = \frac{x}{1+e^{-\beta x}}.
+\]
+Cuando $\beta=1$ se obtiene SiLU (el valor por defecto del código,
+\texttt{ffn\_activation=silu}). Con $\beta$ grande se recupera ReLU. La
+librería ofrece \texttt{swish} ($\beta$ fijo), \texttt{swish\_trainable}
+($\beta$ aprendible) y \texttt{maxout}~\citep{goodfellow2013maxout}, que
+maximiza sobre $k$ piezas lineales y es un aproximador universal.
+
+\subsection{Funciones de Activación Racionales (RAF)}
+\label{sec:raf-es}
+
+Siguiendo a Fang et al.~\citep{fang2023raft}, una \emph{Rational Activation
+Function} es una razón aprendible de dos polinomios de bajo grado (un
+aproximante de Padé):
+\[
+F(x) = \frac{P(x)}{Q(x)} = \frac{\displaystyle\sum_{j=0}^{m} a_j\, x^{j}}{1 + \left|\displaystyle\sum_{k=0}^{n} b_k\, x^{k+1}\right|}
+\]
+donde $\mathbf{a}\in\mathbb{R}^{m+1}$ y $\mathbf{b}\in\mathbb{R}^{n}$ son
+\emph{aprendibles}. La configuración por defecto coincide con el artículo:
+grado $(m,n)=(5,4)$, la versión ``segura''~A con valores absolutos por término
+en el denominador (de modo que $Q(x)\ge 1$ y no hay división por cero),
+inicializada mediante un ajuste por mínimos cuadrados a GELU en $[-3,3]$. La
+implementación admite cinco variantes de denominador:
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Versión A} (por defecto, ``segura''): $Q(x)=1+\sum_k|b_k x^{k+1}|$ (abs por término).
+    \item \textbf{Versión B}: $Q(x)=1+\big|\sum_k b_k x^{k+1}\big|$ (abs de la suma completa).
+    \item \textbf{Versión C}: $Q(x)=0.1+\big|\sum_k b_k x^k\big|$ con un suelo de $0.1$.
+    \item \textbf{Versión D}: como B, pero inyecta ruido multiplicativo uniforme $U(1-\varepsilon,1+\varepsilon)$ sobre los pesos del denominador sólo durante el entrenamiento.
+    \item \textbf{Versión N} (``no segura''): $Q(x)=1+\sum_k b_k x^{k+1}$ sin valor absoluto (puede tener polos).
+\end{itemize}
+
+\textbf{Escalado de entrada RAFT.} Dado que un aproximante de Padé es un
+aproximador universal fiable sólo en un intervalo acotado, el modelo RAFT
+preprocesa las pre-activaciones de cada token con un escalado min--max por
+token hacia $[-3,3]$:
+\[
+\tilde{x} = \frac{x-\min(x)}{\max(x)-\min(x)}\cdot 6 - 3.
+\]
+Se activa con \texttt{ffn\_activation\_config.raf\_input\_scaling}. Los
+coeficientes racionales pueden congelarse
+(\texttt{raf\_trainable=false}) para ajuste eficiente en parámetros, y
+típicamente se entrenan con una tasa de aprendizaje separada (mayor).
+
+\textbf{Nota sobre el nombre.} El acrónimo RAF significa \emph{Rational}
+Activation Function, no ``Rectified''; corresponde a la razón polinómica
+aprendible descrita arriba.
+
+\subsection{Variantes de FFN con Compuerta (SwiGLU, GEGLU, ReGLU)}
+\label{sec:glu-es}
+
+SwiGLU, GEGLU y ReGLU~\citep{shazeer2020glu} son unidades feed-forward con
+compuerta que reemplazan el bloque estándar
+$\text{Linear}\to\text{activación}\to\text{Linear}$. Poseen sus propias
+proyecciones y, por tanto, se implementan como módulos FFN
+(\texttt{GatedFFN}), no como activaciones elementales:
+\[
+\text{GatedFFN}(x) = \big(\,\text{act}(xW_{\text{gate}})\,\big) \odot \big(xW_{\text{up}}\big)\, W_{\text{down}},
+\]
+donde la función de compuerta es $\text{SiLU}$ (SwiGLU), $\text{GELU}$
+(GEGLU) o $\text{ReLU}$ (ReGLU). Cuando \texttt{ffn\_activation} es uno de
+\texttt{swiglu}/\texttt{geglu}/\texttt{reglu}, la \texttt{HybridLayer} sustituye
+los bloques FFN densos y MoE por una \texttt{GatedFFN} construida con la misma
+clase de proyección (BitLinear bajo BitNet).
+
+\subsection{Configuración}
+
+\begin{itemize}[leftmargin=*]
+    \item \texttt{ffn\_activation}: cadena --- una de las 43 activaciones soportadas (ver el enumerado del esquema).
+    \item \texttt{ffn\_activation\_config}: objeto opcional que agrupa los parámetros de las activaciones aprendibles:
+    \begin{itemize}
+        \item \texttt{raf\_degrees} $[m,n]$ (por defecto $[5,4]$), \texttt{raf\_version} \{A,B,C,D,N\} (por defecto A),
+        \texttt{raf\_approx\_func} (por defecto \texttt{gelu}), \texttt{raf\_trainable} (por defecto true),
+        \texttt{raf\_input\_scaling} (por defecto false).
+        \item \texttt{prelu\_init} (0.25), \texttt{elu\_alpha} (1.0), \texttt{swish\_beta} (1.0),
+        \texttt{leaky\_relu\_slope} (0.01) y el resto de valores de inicialización de la familia paramétrica.
+    \end{itemize}
+\end{itemize}

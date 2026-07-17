@@ -28,6 +28,34 @@ def _field_names(cls) -> set:
 _BITNET_BOOL_KEYS = ("use_bitnet", "bitnet_routers")
 
 
+def _validate_ffn_activation(model_data: Dict[str, Any]) -> None:
+    """Validate FFN activation fields when present in the model block.
+
+    Lightweight pre-check that complements :class:`UltraConfig` validation
+    and the JSON-Schema ``enum``. Ensures ``ffn_activation`` is a string and
+    ``ffn_activation_config`` is a mapping when provided.
+
+    Args:
+        model_data: The ``model`` block from the YAML config.
+
+    Raises:
+        ValueError: If ``ffn_activation`` is not a string or
+            ``ffn_activation_config`` is present but not a mapping.
+    """
+    act = model_data.get("ffn_activation")
+    if act is not None and not isinstance(act, str):
+        raise ValueError(
+            f"model.ffn_activation must be a string, got "
+            f"{type(act).__name__}: {act!r}"
+        )
+    cfg = model_data.get("ffn_activation_config")
+    if cfg is not None and not isinstance(cfg, dict):
+        raise ValueError(
+            f"model.ffn_activation_config must be an object/mapping, got "
+            f"{type(cfg).__name__}"
+        )
+
+
 def _validate_bitnet_flags(model_data: Dict[str, Any]) -> None:
     """Validate that BitNet-related keys, when present, are booleans.
 
@@ -134,6 +162,7 @@ def load_training_config(path: str) -> LoadedTrainingConfig:
         if not model_data:
             raise ValueError("model is required when base_model is not provided")
         _validate_bitnet_flags(model_data)
+        _validate_ffn_activation(model_data)
         model_config = UltraConfig(**model_data)
         if not model_class:
             model_class = "frankenstein"

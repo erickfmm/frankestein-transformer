@@ -1,0 +1,133 @@
+\section{Activation Functions}
+\label{sec:annex-activation-functions}
+
+This annex documents the activation-function library implemented in
+\texttt{src/model/activation\_function/}. It groups the activations by family,
+following the taxonomy of Dubey et al.~\citep{dubey2021activations} and the
+analytic overview of Lederer~\citep{lederer2021activations}, and adds the
+learnable Rational Activation Function (RAF) of Fang et
+al.~\citep{fang2023raft}. The schema contract is:
+\[
+\texttt{ffn\_activation} \in \{\texttt{silu}, \texttt{gelu}, \dots, \texttt{raf}, \texttt{swiglu}, \texttt{geglu}, \texttt{reglu}\}
+\]
+with 40 elementwise activations plus 3 gated-FFN variants. The selection is
+dispatched at runtime by the \texttt{get\_activation} factory, mirroring the
+\texttt{get\_norm} pattern (Annex~7).
+
+\subsection{Classical and Sigmoid/Tanh Family}
+
+The baseline smooth activations~\citep{lederer2021activations,dubey2021activations}:
+\begin{align*}
+\text{Sigmoid}(x) &= \frac{1}{1+e^{-x}} & \text{Tanh}(x) &= \frac{e^{x}-e^{-x}}{e^{x}+e^{-x}} = 2\,\text{Sigmoid}(2x)-1 \\
+\text{Arctan}(x) &= \arctan(x) & \text{Softsign}(x) &= \frac{x}{1+|x|} \quad (\text{Elliott}) \\
+\text{Softplus}(x) &= \log(1+e^{x}) & \text{Mish}(x) &= x\tanh\!\big(\log(1+e^{x})\big)
+\end{align*}
+\textbf{Identity} returns $x$ unchanged. Mish~\citep{misra2019mish} is a
+self-regularized, non-monotonic composition of Softplus and Tanh.
+
+\subsection{Rectifier-Based Family}
+
+The ReLU family~\citep{nair2010relu,dubey2021activations}:
+\begin{align*}
+\text{ReLU}(x) &= \max(0,x) & \text{LeakyReLU}(x) &= \begin{cases} x & x\ge0 \\ a\,x & x<0 \end{cases},\ a=0.01 \\
+\text{ReLU6}(x) &= \min(\max(0,x),6) & \text{PReLU}(x) &= \max(0,x)+\mathbf{p}\odot\min(0,x) \\
+\text{HardSwish}(x) &= x\cdot\frac{\text{ReLU6}(x+3)}{6} & \text{BReLU}(x) &= \min(\max(0,x),t) \\
+\text{VReLU}(x) &= |x| & \text{DisReLU}(x) &= \max(0,x-\delta)
+\end{align*}
+where PReLU~\citep{he2015prelu} makes the negative slope $\mathbf{p}$ a
+per-channel \emph{learnable} parameter, and HardSwish~\citep{howard2019hardswish}
+is the cheap Swish approximation used in MobileNetV3.
+
+\subsection{Exponential / ELU Family}
+
+The exponential-linear family~\citep{clevert2016elu,klambauer2017selu,dubey2021activations}:
+\begin{align*}
+\text{ELU}(x) &= \begin{cases} x & x\ge0 \\ \alpha(e^{x}-1) & x<0 \end{cases} &
+\text{SELU}(x) &= \lambda\,\text{ELU}_{\alpha'}(x) \\
+\text{CELU}(x) &= \begin{cases} x & x\ge0 \\ \alpha(e^{x/\alpha}-1) & x<0 \end{cases} &
+\text{PELU}(x) &= \begin{cases} \tfrac{\alpha}{\beta}x & x\ge0 \\ \alpha(e^{x/\beta}-1) & x<0 \end{cases} \\
+\text{ELiSH}(x) &= \begin{cases} x\,\sigma(x) & x\ge0 \\ (e^{x}-1)\,\sigma(x) & x<0 \end{cases}
+\end{align*}
+ELU~\citep{clevert2016elu} provides smooth negative saturation; SELU~\citep{klambauer2017selu}
+induces self-normalization with fixed $(\alpha',\lambda)$; CELU~\citep{barron2017celu} is
+once-differentiable for any $\alpha$; PELU makes both $\alpha,\beta$ learnable. The package also
+implements MPELU, FELU, EELU, PDELU, PREU, SoftExp, and HardELiSH.
+
+\subsection{Swish and Parametric Activations}
+
+Swish~\citep{ramachandran2017swish} is defined with a (learnable or fixed)
+$\beta$:
+\[
+\text{Swish}_\beta(x) = x\,\sigma(\beta x) = \frac{x}{1+e^{-\beta x}}.
+\]
+When $\beta=1$ this is SiLU (the codebase default, \texttt{ffn\_activation=silu}).
+Large $\beta$ recovers ReLU. The library offers \texttt{swish} (fixed $\beta$),
+\texttt{swish\_trainable} ($\beta$ learnable), and \texttt{maxout}~\citep{goodfellow2013maxout},
+which maximizes over $k$ linear pieces and is a universal approximator.
+
+\subsection{Rational Activation Functions (RAF)}
+\label{sec:raf}
+
+Following Fang et al.~\citep{fang2023raft}, a Rational Activation Function is a
+learnable ratio of two low-degree polynomials (a Padé approximant):
+\[
+F(x) = \frac{P(x)}{Q(x)} = \frac{\displaystyle\sum_{j=0}^{m} a_j\, x^{j}}{1 + \left|\displaystyle\sum_{k=0}^{n} b_k\, x^{k+1}\right|}
+\]
+where $\mathbf{a}\in\mathbb{R}^{m+1}$ and $\mathbf{b}\in\mathbb{R}^{n}$ are
+\emph{learnable}. The default configuration matches the paper: degree
+$(m,n)=(5,4)$, the ``safe'' version~A with per-term absolute values in the
+denominator (so $Q(x)\ge 1$ and no division-by-zero can occur), initialized by
+a least-squares fit to GELU on $[-3,3]$. The implementation supports five
+denominator variants:
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Version A} (default, ``safe''): $Q(x)=1+\sum_k|b_k x^{k+1}|$ (abs per term).
+    \item \textbf{Version B}: $Q(x)=1+\big|\sum_k b_k x^{k+1}\big|$ (abs of the whole sum).
+    \item \textbf{Version C}: $Q(x)=0.1+\big|\sum_k b_k x^k\big|$ with a $0.1$ floor.
+    \item \textbf{Version D}: like B but injects uniform multiplicative noise $U(1-\varepsilon,1+\varepsilon)$ on the denominator weights during training.
+    \item \textbf{Version N} (``nonsafe''): $Q(x)=1+\sum_k b_k x^{k+1}$ without any absolute value (can have poles).
+\end{itemize}
+
+\textbf{RAFT input scaling.} Because a Padé approximant is a reliable
+universal approximator only on a bounded interval, the RAFT model preprocesses
+each token's pre-activations with a per-token min--max scaling into $[-3,3]$:
+\[
+\tilde{x} = \frac{x-\min(x)}{\max(x)-\min(x)}\cdot 6 - 3.
+\]
+This is toggled by \texttt{ffn\_activation\_config.raf\_input\_scaling}. The
+rational coefficients may be frozen (\texttt{raf\_trainable=false}) for
+parameter-efficient fine-tuning, and are typically trained with a separate
+(higher) learning rate.
+
+\textbf{Note on naming.} The acronym RAF stands for \emph{Rational} Activation
+Function, not ``Rectified''; it is the learnable polynomial ratio above.
+
+\subsection{Gated FFN Variants (SwiGLU, GEGLU, ReGLU)}
+\label{sec:glu}
+
+SwiGLU, GEGLU, and ReGLU~\citep{shazeer2020glu} are gated feed-forward units
+that replace the standard $\text{Linear}\to\text{activation}\to\text{Linear}$
+block. They own their projections and are therefore implemented as FFN modules
+(\texttt{GatedFFN}), not elementwise activations:
+\[
+\text{GatedFFN}(x) = \big(\,\text{act}(xW_{\text{gate}})\,\big) \odot \big(xW_{\text{up}}\big)\, W_{\text{down}},
+\]
+where the gate function is $\text{SiLU}$ (SwiGLU), $\text{GELU}$ (GEGLU), or
+$\text{ReLU}$ (ReGLU). When \texttt{ffn\_activation} is one of
+\texttt{swiglu}/\texttt{geglu}/\texttt{reglu}, the \texttt{HybridLayer} swaps
+the dense and MoE FFN blocks for a \texttt{GatedFFN} built with the same
+projection class (BitLinear under BitNet).
+
+\subsection{Configuration}
+
+\begin{itemize}[leftmargin=*]
+    \item \texttt{ffn\_activation}: string --- one of the 43 supported activations (see schema enum).
+    \item \texttt{ffn\_activation\_config}: optional object grouping learnable-activation parameters:
+    \begin{itemize}
+        \item \texttt{raf\_degrees} $[m,n]$ (default $[5,4]$), \texttt{raf\_version} \{A,B,C,D,N\} (default A),
+        \texttt{raf\_approx\_func} (default \texttt{gelu}), \texttt{raf\_trainable} (default true),
+        \texttt{raf\_input\_scaling} (default false).
+        \item \texttt{prelu\_init} (0.25), \texttt{elu\_alpha} (1.0), \texttt{swish\_beta} (1.0),
+        \texttt{leaky\_relu\_slope} (0.01), and the other parametric-family init values.
+    \end{itemize}
+\end{itemize}
