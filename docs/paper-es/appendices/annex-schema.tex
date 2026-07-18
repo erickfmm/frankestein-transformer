@@ -20,7 +20,7 @@ El esquema impone una regla de exclusión mutua: o bien \texttt{base\_model} deb
 \subsection{Configuración del Modelo}
 \label{subsec:model-config}
 
-El objeto \texttt{model} define todos los hiperparámetros arquitectónicos. Los campos obligatorios son \texttt{vocab\_size}, \texttt{hidden\_size}, \texttt{num\_layers}, \texttt{num\_heads} y \texttt{layer\_pattern}. La Tabla~\ref{tab:model-fields} enumera todos los campos del modelo con sus tipos y descripciones.
+El objeto \texttt{model} define todos los hiperparámetros arquitectónicos. Los campos obligatorios son \texttt{dims.vocab\_size}, \texttt{dims.hidden\_size}, \texttt{dims.num\_layers}, \texttt{dims.num\_heads} y \texttt{dims.layer\_pattern}. La Tabla~\ref{tab:model-fields} enumera todos los campos del modelo con sus tipos y descripciones.
 
 \begin{longtable}{>{\ttfamily}l>{\raggedright\arraybackslash}p{3.5cm}>{\raggedright\arraybackslash}p{8.5cm}}
 \toprule
@@ -38,89 +38,144 @@ El objeto \texttt{model} define todos los hiperparámetros arquitectónicos. Los
 \caption{Campos completos de configuración del modelo. Todos los campos son opcionales a menos que se indique como obligatorio.}
 \label{tab:model-fields}
 \endlastfoot
-mode & enum (encoder, decoder) & Modo de enmascaramiento de atención. \texttt{encoder} = bidireccional; \texttt{decoder} = causal. \\
-vocab\_size & int $\ge 1$ (obligatorio) & Número de tokens únicos en el vocabulario. Debe coincidir con el tamaño de vocabulario del tokenizador. \\
-hidden\_size & int $\ge 1$ (obligatorio) & Dimensión oculta. Debe ser divisible por \texttt{num\_heads}. Típico: 512--2048. \\
-num\_layers & int $\ge 1$ (obligatorio) & Número de capas físicas del transformer. Típico: 6--24. \\
-num\_loops & int $\ge 1$ & Número de bucles lógicos. Cada capa en \texttt{layer\_pattern} se ejecuta \texttt{num\_loops} veces. Por defecto: 1. \\
-num\_heads & int $\ge 1$ (obligatorio) & Número de cabezas de atención paralelas. Debe dividir \texttt{hidden\_size} exactamente. \\
-retention\_heads & int $\ge 1$ & Número de cabezas para capas RetNet. Debe dividir \texttt{hidden\_size} exactamente. \\
+\midrule
+\multicolumn{3}{l}{\textit{model.dims.*}} \\
+\midrule
+dims.mode & enum (encoder, decoder) & Modo de enmascaramiento de atención. \texttt{encoder} = bidireccional; \texttt{decoder} = causal. \\
+dims.vocab\_size & int $\ge 1$ (obligatorio) & Número de tokens únicos en el vocabulario. Debe coincidir con el tamaño de vocabulario del tokenizador. \\
+dims.hidden\_size & int $\ge 1$ (obligatorio) & Dimensión oculta. Debe ser divisible por \texttt{num\_heads}. Típico: 512--2048. \\
+dims.num\_layers & int $\ge 1$ (obligatorio) & Número de capas físicas del transformer. Típico: 6--24. \\
+dims.num\_loops & int $\ge 1$ & Número de bucles lógicos. Cada capa en \texttt{layer\_pattern} se ejecuta \texttt{num\_loops} veces. Por defecto: 1. \\
+dims.num\_heads & int $\ge 1$ (obligatorio) & Número de cabezas de atención paralelas. Debe dividir \texttt{hidden\_size} exactamente. \\
+dims.retention\_heads & int $\ge 1$ & Número de cabezas para capas RetNet. Debe dividir \texttt{hidden\_size} exactamente. \\
+dims.dropout & float [0,1] & Tasa de dropout global. Típico: 0.1 (estándar BERT). \\
+dims.layer\_pattern & array of enum (obligatorio) & Secuencia ordenada de tipos de capa. La longitud debe igualar \texttt{num\_layers}. Más de 35 tipos de mezclador disponibles (ver Tabla~\ref{tab:layer-pattern}). \\
+\midrule
+\multicolumn{3}{l}{\textit{model.norm.*}} \\
+\midrule
+norm.type & enum & Estrategia de normalización: \texttt{layer\_norm}, \texttt{dynamic\_tanh}, \texttt{derf}, \texttt{rms\_norm}, \texttt{prms\_norm}. \\
+norm.partial\_ratio & float (0,1] & Fracción de dimensiones ocultas para estimación pRMSNorm. Por defecto: 0.0625. \\
+\midrule
+\multicolumn{3}{l}{\textit{model.embedding.factorized.*}} \\
+\midrule
+embedding.factorized.enabled & bool & Activar factorización de matriz de embedding para reducir parámetros. \\
+embedding.factorized.dim & int $\ge 1$ & Dimensión intermedia para embeddings factorizados. Típico: 64--256. \\
+\midrule
+\multicolumn{3}{l}{\textit{model.embedding.conv.*}} \\
+\midrule
+embedding.conv.enabled & bool & Aplicar Conv1d sobre embeddings de tokens para capturar patrones locales de n-gramas. \\
+embedding.conv.kernel & int $\ge 1$ & Tamaño de kernel para Conv1d de embedding. Típico: 3. \\
+\midrule
+\multicolumn{3}{l}{\textit{model.attention.titan.*}} \\
+\midrule
+attention.titan.positional\_encoding & enum (hope, rope) & Método de codificación posicional para capas \texttt{titan\_attn}. \\
+attention.titan.use\_hope & bool & Bandera heredada para HoPE en \texttt{titan\_attn}. Obsoleta; preferir \texttt{positional\_encoding}. \\
+attention.titan.hope.base & float $\ge 0$ & Escala de frecuencia base para HoPE. Típico: 10000. \\
+attention.titan.hope.damping & float $\ge 0$ & Coeficiente de amortiguación para decaimiento de atención HoPE. Típico: 0.01. \\
+attention.titan.rope.base & float $\ge 0$ & Frecuencia base para RoPE. Típico: 10000. \\
+attention.titan.rope.scaling & float $\ge 0$ & Multiplicador para índices de posición RoPE. Típico: 1.0. \\
+\midrule
+\multicolumn{3}{l}{\textit{model.attention.mla.*}} \\
+\midrule
+attention.mla.latent\_rank & int $\ge 1$ & Rango del latente KV conjunto para MLA. Por defecto: \texttt{hidden\_size // 2}. \\
+\midrule
+\multicolumn{3}{l}{\textit{model.attention.gqla.*}} \\
+\midrule
+attention.gqla.latent\_rank & int $\ge 1$ & Rango del latente KV conjunto para GQLA. Por defecto: \texttt{hidden\_size // 2}. \\
+attention.gqla.num\_groups & int $\ge 1$ & Número de grupos GQA para la ruta de decodificación GQLA. Debe dividir \texttt{num\_heads}. \\
+attention.gqla.decode\_path & enum (mqa\_absorb, gqa) & Ruta de decodificación para GQLA. \\
+\midrule
+\multicolumn{3}{l}{\textit{model.attention.mlra.*}} \\
+\midrule
+attention.mlra.latent\_rank & int $\ge 1$ & Rango latente total para MLRA. Por defecto: \texttt{hidden\_size // 2}. \\
+attention.mlra.num\_latent\_heads & int $\ge 1$ & Número de sub-espacios latentes disjuntos para MLRA. Por defecto: 4. \\
+\midrule
+\multicolumn{3}{l}{\textit{model.attention.tucker.*}} \\
+\midrule
+attention.tucker.query\_rank & int $\ge 1$ & Rango Tucker para el tensor de pesos de consulta. Por defecto: \texttt{hidden\_size}. \\
+attention.tucker.key\_rank & int $\ge 1$ & Rango Tucker para el tensor de pesos de clave. Por defecto: \texttt{hidden\_size // 2}. \\
+attention.tucker.value\_rank & int $\ge 1$ & Rango Tucker para el tensor de pesos de valor. Por defecto: \texttt{hidden\_size // 2}. \\
+\midrule
+\multicolumn{3}{l}{\textit{model.attention.iha.*}} \\
+\midrule
+attention.iha.num\_pseudo\_heads & int $\ge 1$ & Número de pseudo-cabezas por cabeza para IHA. Por defecto: \texttt{num\_heads}. \\
+\midrule
+\multicolumn{3}{l}{\textit{model.attention.gta.*}} \\
+\midrule
+attention.gta.num\_shared\_groups & int $\ge 1$ & Número de grupos de cabezas que comparten un mapa de atención para GTA. Debe dividir \texttt{num\_heads}. \\
+attention.gta.value\_latent\_rank & int $\ge 1$ & Rango del latente de caché de valores para GTA. Por defecto: \texttt{hidden\_size // 2}. \\
+\midrule
+\multicolumn{3}{l}{\textit{model.attention.mtla.*}} \\
+\midrule
+attention.mtla.latent\_rank & int $\ge 1$ & Rango latente para MTLA. Por defecto: \texttt{hidden\_size // 2}. \\
+attention.mtla.merge\_factor & int $\ge 1$ & Número de entradas KV consecutivas fusionadas por slot temporal. Por defecto: 2. \\
+attention.mtla.stride & int $\ge 1$ & Stride entre slots temporales fusionados. Por defecto: \texttt{mtla\_merge\_factor}. \\
+\midrule
+\multicolumn{3}{l}{\textit{model.attention.cca.*}} \\
+\midrule
+attention.cca.latent\_rank & int $\ge 1$ & Ancho latente para CCA. Por defecto: \texttt{hidden\_size // 4}. Debe ser divisible por \texttt{num\_heads}. \\
+attention.cca.num\_conv\_layers & enum (0, 1, 2) & Número de capas de convolución en CCA. Por defecto: 2. \\
+attention.cca.conv\_kernel\_seq & int $\ge 1$ & Tamaño de kernel de convolución causal depth-wise de secuencia. Por defecto: 4. \\
+attention.cca.conv\_kernel\_ch & int $\ge 1$ & Tamaño de kernel de convolución agrupada de canales por cabeza. Por defecto: 3. \\
+attention.cca.qk\_mean & bool & Activar sesgo q-k-mean en CCA. Por defecto: \texttt{true}. \\
+attention.cca.value\_shift & bool & Activar value-shift en CCA. Por defecto: \texttt{true}. \\
+\midrule
+\multicolumn{3}{l}{\textit{model.attention.ccgqa.*}} \\
+\midrule
+attention.ccgqa.query\_latent\_rank & int $\ge 1$ & Ancho latente de consulta para CCGQA. Por defecto: \texttt{hidden\_size // 2}. \\
+attention.ccgqa.kv\_latent\_rank & int $\ge 1$ & Ancho latente KV para CCGQA. Por defecto: \texttt{hidden\_size // 8}. \\
+attention.ccgqa.num\_kv\_heads & int $\ge 1$ & Número de cabezas KV para CCGQA. Debe dividir \texttt{num\_heads}. \\
+attention.ccgqa.num\_conv\_layers & enum (0, 1, 2) & Número de capas de convolución en CCGQA. Por defecto: 2. \\
+attention.ccgqa.conv\_kernel\_seq & int $\ge 1$ & Tamaño de kernel de convolución causal depth-wise de secuencia. Por defecto: 4. \\
+attention.ccgqa.conv\_kernel\_ch & int $\ge 1$ & Tamaño de kernel de convolución agrupada de canales por cabeza. Por defecto: 3. \\
+attention.ccgqa.qk\_mean & bool & Activar sesgo q-k-mean en CCGQA. Por defecto: \texttt{true}. \\
+attention.ccgqa.value\_shift & bool & Activar value-shift en CCGQA. Por defecto: \texttt{true}. \\
+\midrule
+\multicolumn{3}{l}{\textit{model.attention.msa.*}} \\
+\midrule
+attention.msa.block\_size & int $\ge 1$ & Tamaño de bloque para MiniMax Sparse Attention. Por defecto: 128. \\
+attention.msa.topk\_blocks & int $\ge 1$ & Número de bloques seleccionados por grupo GQA por consulta. Por defecto: 16. \\
+attention.msa.index\_dim & int $\ge 1$ & Dimensionalidad de las cabezas de la Rama de Índice. Por defecto: 64. \\
+attention.msa.kl\_loss\_weight & float $\ge 0$ & Peso de la pérdida de alineación KL para la rama índice MSA. Por defecto: 0.0. \\
+\midrule
+\multicolumn{3}{l}{\textit{model.attention.sparda.*}} \\
+\midrule
+attention.sparda.block\_size & int $\ge 1$ & Tamaño de bloque KV para SparDA. Por defecto: 128. \\
+attention.sparda.topk\_blocks & int $\ge 1$ & Número de bloques KV seleccionados por grupo GQA. Por defecto: 16. \\
+attention.sparda.forecast\_dim & int $\ge 1$ & Dimensionalidad de la proyección Forecast. Por defecto: 64. \\
+\midrule
+\multicolumn{3}{l}{\textit{model.attention.engram.*}} \\
+\midrule
+attention.engram.max\_ngram\_size & int $\ge 2$ & Tamaño máximo de N-grama para el módulo de memoria Engram. \\
+attention.engram.n\_heads\_per\_ngram & int $\ge 1$ & Número de cabezas hash por orden de N-grama. \\
+attention.engram.embed\_dim\_per\_head & int $\ge 1$ & Dimensión de embedding por cabeza hash. \\
+attention.engram.kernel\_size & int $\ge 1$ & Ancho de kernel de convolución depthwise causal para Engram. \\
+attention.engram.seed & int & Semilla aleatoria para multiplicadores hash de N-gramas. \\
+\midrule
+\multicolumn{3}{l}{\textit{model.* (nivel superior plano)}} \\
+\midrule
+use\_moe & bool & Activar Mezcla de Expertos en capas FFN. \\
 num\_experts & int $\ge 1$ & Número total de redes expertas en capas MoE. Requiere \texttt{use\_moe=true}. \\
 top\_k\_experts & int $\ge 1$ & Número de expertos activados por token en MoE. Debe ser $\le$ \texttt{num\_experts}. \\
-dropout & float [0,1] & Tasa de dropout global. Típico: 0.1 (estándar BERT). \\
-layer\_pattern & array of enum (obligatorio) & Secuencia ordenada de tipos de capa. La longitud debe igualar \texttt{num\_layers}. Más de 35 tipos de mezclador disponibles (ver Tabla~\ref{tab:layer-pattern}). \\
-ode\_solver & enum (rk4, euler) & Método de integración numérica para capas ODE. \\
-ode\_steps & int $\ge 1$ & Número de pasos de integración para capas ODE. Típico: 2--4. \\
 use\_bitnet & bool & Activar cuantización ternaria de pesos BitLinear. Por defecto: \texttt{true}. \\
 bitnet\_routers & bool & Cuantizar también proyecciones de enrutamiento/puntuación. Requiere \texttt{use\_bitnet=true}. Por defecto: \texttt{false}. \\
-use\_bitnet\_conv & bool & Cuantizar Conv1d de embedding con BitConv1d. Requiere \texttt{use\_bitnet=true} y \texttt{use\_embedding\_conv=true}. Por defecto: \texttt{false}. \\
-norm\_type & enum & Estrategia de normalización: \texttt{layer\_norm}, \texttt{dynamic\_tanh}, \texttt{derf}, \texttt{rms\_norm}, \texttt{prms\_norm}. \\
-prms\_partial\_ratio & float (0,1] & Fracción de dimensiones ocultas para estimación pRMSNorm. Por defecto: 0.0625. \\
-use\_factorized\_embedding & bool & Activar factorización de matriz de embedding para reducir parámetros. \\
-factorized\_embedding\_dim & int $\ge 1$ & Dimensión intermedia para embeddings factorizados. Típico: 64--256. \\
-use\_embedding\_conv & bool & Aplicar Conv1d sobre embeddings de tokens para capturar patrones locales de n-gramas. \\
-embedding\_conv\_kernel & int $\ge 1$ & Tamaño de kernel para Conv1d de embedding. Típico: 3. \\
-use\_hope & bool & Bandera heredada para HoPE en \texttt{titan\_attn}. Obsoleta; preferir \texttt{positional\_encoding}. \\
-hope\_base & float $\ge 0$ & Escala de frecuencia base para HoPE. Típico: 10000. \\
-hope\_damping & float $\ge 0$ & Coeficiente de amortiguación para decaimiento de atención HoPE. Típico: 0.01. \\
-use\_moe & bool & Activar Mezcla de Expertos en capas FFN. \\
-ffn\_hidden\_size & int $\ge 1$ & Dimensión intermedia de capas feed-forward. Típico: $4\times$ \texttt{hidden\_size}. \\
-ffn\_activation & enum (silu, gelu) & Activación no lineal para capas FFN. \\
+use\_bitnet\_conv & bool & Cuantizar Conv1d de embedding con BitConv1d. Requiere \texttt{use\_bitnet=true} y \texttt{embedding.conv.enabled=true}. Por defecto: \texttt{false}. \\
 use\_mixture\_of\_depths & bool & Activar enrutamiento de tokens Mixture-of-Depths. \\
 mixture\_of\_depths\_capacity\_ratio & float (0,1] & Fracción de tokens actualizados por capa en MoD. \\
 mixture\_of\_depths\_router\_aux\_loss\_weight & float $\ge 0$ & Peso para la pérdida auxiliar del enrutador MoD. \\
-engram\_max\_ngram\_size & int $\ge 2$ & Tamaño máximo de N-grama para el módulo de memoria Engram. \\
-engram\_n\_heads\_per\_ngram & int $\ge 1$ & Número de cabezas hash por orden de N-grama. \\
-engram\_embed\_dim\_per\_head & int $\ge 1$ & Dimensión de embedding por cabeza hash. \\
-engram\_kernel\_size & int $\ge 1$ & Ancho de kernel de convolución depthwise causal para Engram. \\
-engram\_seed & int & Semilla aleatoria para multiplicadores hash de N-gramas. \\
-use\_gqa & bool & Activar Atención por Consultas Agrupadas. \\
-num\_kv\_heads & int $\ge 1$ & Número de cabezas clave-valor para GQA. Debe dividir \texttt{num\_heads} exactamente. \\
-positional\_encoding & enum (hope, rope) & Método de codificación posicional para capas \texttt{titan\_attn}. \\
-rope\_base & float $\ge 0$ & Frecuencia base para RoPE. Típico: 10000. \\
-rope\_scaling & float $\ge 0$ & Multiplicador para índices de posición RoPE. Típico: 1.0. \\
-mla\_latent\_rank & int $\ge 1$ & Rango del latente KV conjunto para MLA. Por defecto: \texttt{hidden\_size // 2}. \\
-gqla\_latent\_rank & int $\ge 1$ & Rango del latente KV conjunto para GQLA. Por defecto: \texttt{hidden\_size // 2}. \\
-gqla\_num\_groups & int $\ge 1$ & Número de grupos GQA para la ruta de decodificación GQLA. Debe dividir \texttt{num\_heads}. \\
-gqla\_decode\_path & enum (mqa\_absorb, gqa) & Ruta de decodificación para GQLA. \\
-mlra\_latent\_rank & int $\ge 1$ & Rango latente total para MLRA. Por defecto: \texttt{hidden\_size // 2}. \\
-mlra\_num\_latent\_heads & int $\ge 1$ & Número de sub-espacios latentes disjuntos para MLRA. Por defecto: 4. \\
-tucker\_query\_rank & int $\ge 1$ & Rango Tucker para el tensor de pesos de consulta. Por defecto: \texttt{hidden\_size}. \\
-tucker\_key\_rank & int $\ge 1$ & Rango Tucker para el tensor de pesos de clave. Por defecto: \texttt{hidden\_size // 2}. \\
-tucker\_value\_rank & int $\ge 1$ & Rango Tucker para el tensor de pesos de valor. Por defecto: \texttt{hidden\_size // 2}. \\
-iha\_num\_pseudo\_heads & int $\ge 1$ & Número de pseudo-cabezas por cabeza para IHA. Por defecto: \texttt{num\_heads}. \\
-gta\_num\_shared\_groups & int $\ge 1$ & Número de grupos de cabezas que comparten un mapa de atención para GTA. Debe dividir \texttt{num\_heads}. \\
-gta\_value\_latent\_rank & int $\ge 1$ & Rango del latente de caché de valores para GTA. Por defecto: \texttt{hidden\_size // 2}. \\
-mtla\_latent\_rank & int $\ge 1$ & Rango latente para MTLA. Por defecto: \texttt{hidden\_size // 2}. \\
-mtla\_merge\_factor & int $\ge 1$ & Número de entradas KV consecutivas fusionadas por slot temporal. Por defecto: 2. \\
-mtla\_stride & int $\ge 1$ & Stride entre slots temporales fusionados. Por defecto: \texttt{mtla\_merge\_factor}. \\
-cca\_latent\_rank & int $\ge 1$ & Ancho latente para CCA. Por defecto: \texttt{hidden\_size // 4}. Debe ser divisible por \texttt{num\_heads}. \\
-cca\_num\_conv\_layers & enum (0, 1, 2) & Número de capas de convolución en CCA. Por defecto: 2. \\
-cca\_conv\_kernel\_seq & int $\ge 1$ & Tamaño de kernel de convolución causal depth-wise de secuencia. Por defecto: 4. \\
-cca\_conv\_kernel\_ch & int $\ge 1$ & Tamaño de kernel de convolución agrupada de canales por cabeza. Por defecto: 3. \\
-cca\_qk\_mean & bool & Activar sesgo q-k-mean en CCA. Por defecto: \texttt{true}. \\
-cca\_value\_shift & bool & Activar value-shift en CCA. Por defecto: \texttt{true}. \\
-ccgqa\_query\_latent\_rank & int $\ge 1$ & Ancho latente de consulta para CCGQA. Por defecto: \texttt{hidden\_size // 2}. \\
-ccgqa\_kv\_latent\_rank & int $\ge 1$ & Ancho latente KV para CCGQA. Por defecto: \texttt{hidden\_size // 8}. \\
-ccgqa\_num\_kv\_heads & int $\ge 1$ & Número de cabezas KV para CCGQA. Debe dividir \texttt{num\_heads}. \\
-ccgqa\_num\_conv\_layers & enum (0, 1, 2) & Número de capas de convolución en CCGQA. Por defecto: 2. \\
-ccgqa\_conv\_kernel\_seq & int $\ge 1$ & Tamaño de kernel de convolución causal depth-wise de secuencia. Por defecto: 4. \\
-ccgqa\_conv\_kernel\_ch & int $\ge 1$ & Tamaño de kernel de convolución agrupada de canales por cabeza. Por defecto: 3. \\
-ccgqa\_qk\_mean & bool & Activar sesgo q-k-mean en CCGQA. Por defecto: \texttt{true}. \\
-ccgqa\_value\_shift & bool & Activar value-shift en CCGQA. Por defecto: \texttt{true}. \\
-msa\_block\_size & int $\ge 1$ & Tamaño de bloque para MiniMax Sparse Attention. Por defecto: 128. \\
-msa\_topk\_blocks & int $\ge 1$ & Número de bloques seleccionados por grupo GQA por consulta. Por defecto: 16. \\
-msa\_index\_dim & int $\ge 1$ & Dimensionalidad de las cabezas de la Rama de Índice. Por defecto: 64. \\
-msa\_kl\_loss\_weight & float $\ge 0$ & Peso de la pérdida de alineación KL para la rama índice MSA. Por defecto: 0.0. \\
-sparda\_block\_size & int $\ge 1$ & Tamaño de bloque KV para SparDA. Por defecto: 128. \\
-sparda\_topk\_blocks & int $\ge 1$ & Número de bloques KV seleccionados por grupo GQA. Por defecto: 16. \\
-sparda\_forecast\_dim & int $\ge 1$ & Dimensionalidad de la proyección Forecast. Por defecto: 64. \\
+ffn\_hidden\_size & int $\ge 1$ & Dimensión intermedia de capas feed-forward. Típico: $4\times$ \texttt{hidden\_size}. \\
+ffn\_activation & enum (silu, gelu) & Activación no lineal para capas FFN. \\
+ffn\_activation\_config & object & Parámetros anidados para activaciones aprendibles (grados/versión/init de RAF, init PReLU, etc.). \\
+ode\_solver & enum (rk4, euler) & Método de integración numérica para capas ODE. \\
+ode\_steps & int $\ge 1$ & Número de pasos de integración para capas ODE. Típico: 2--4. \\
 \end{longtable}
+
+Los campos se agrupan bajo sub-objetos jerárquicos (\texttt{dims}, \texttt{norm}, \texttt{embedding.factorized}, \texttt{embedding.conv}, \texttt{attention.titan}, \texttt{attention.mla}, \texttt{attention.gqla}, etc.); cada fila de sub-encabezado marca el prefijo vigente para las filas que le siguen. Los campos listados bajo \texttt{model.*} permanecen como claves planas de nivel superior.
 
 \subsubsection{Enumeración del Patrón de Capas}
 \label{tab:layer-pattern}
 
-El array \texttt{layer\_pattern} acepta los siguientes 35 tipos de mezclador. Cada elemento define una capa física en la pila del modelo. La Tabla~\ref{tab:layer-pattern-enum} enumera todos los tipos disponibles con su soporte de entrenamiento e inferencia.
+El array \texttt{model.dims.layer\_pattern} acepta los siguientes 35 tipos de mezclador. Cada elemento define una capa física en la pila del modelo. La Tabla~\ref{tab:layer-pattern-enum} enumera todos los tipos disponibles con su soporte de entrenamiento e inferencia.
 
 \begin{longtable}{>{\ttfamily}l>{\raggedright\arraybackslash}p{5.5cm}cc}
 \toprule
@@ -260,11 +315,13 @@ El objeto \texttt{training.optimizer} tiene dos campos:
 Todos los optimizadores soportan los siguientes sufijos por grupo de parámetros, prefijados por el nombre de la clase del optimizador (ej., \texttt{adamw-lr\_embeddings}):
 
 \begin{itemize}[nosep]
-    \item \textbf{Grupos de tasa de aprendizaje:} \texttt{lr\_embeddings}, \texttt{lr\_norms}, \texttt{lr\_ode}, \texttt{lr\_retnet}, \texttt{lr\_mamba}, \texttt{lr\_attention}, \texttt{lr\_other}
-    \item \textbf{Grupos de decaimiento de peso:} \texttt{wd\_embeddings}, \texttt{wd\_norms}, \texttt{wd\_ode}, \texttt{wd\_retnet}, \texttt{wd\_mamba}, \texttt{wd\_attention}, \texttt{wd\_other}
-    \item \textbf{Grupos beta:} \texttt{betas\_embeddings}, \texttt{betas\_norms}, \texttt{betas\_ode}, \texttt{betas\_retnet}, \texttt{betas\_mamba}, \texttt{betas\_attention}, \texttt{betas\_other}
-    \item \textbf{Grupos epsilon:} \texttt{eps\_embeddings}, \texttt{eps\_norms}, \texttt{eps\_ode}, \texttt{eps\_retnet}, \texttt{eps\_mamba}, \texttt{eps\_attention}, \texttt{eps\_other}
+    \item \textbf{Grupos de tasa de aprendizaje:} \texttt{lr\_embeddings}, \texttt{lr\_norms}, \texttt{lr\_attention}, \texttt{lr\_other}
+    \item \textbf{Grupos de decaimiento de peso:} \texttt{wd\_embeddings}, \texttt{wd\_norms}, \texttt{wd\_attention}, \texttt{wd\_other}
+    \item \textbf{Grupos beta:} \texttt{betas\_embeddings}, \texttt{betas\_norms}, \texttt{betas\_attention}, \texttt{betas\_other}
+    \item \textbf{Grupos epsilon:} \texttt{eps\_embeddings}, \texttt{eps\_norms}, \texttt{eps\_attention}, \texttt{eps\_other}
 \end{itemize}
+
+Nota: los parámetros de los mezcladores ODE, RetNet y Mamba se enrutan al grupo \texttt{attention} en lugar de tener grupos dedicados.
 
 \subsubsection{Sufijos Globales Específicos del Optimizador}
 
@@ -349,13 +406,13 @@ El esquema impone las siguientes reglas de validación entre componentes, implem
 
 \begin{enumerate}[nosep]
     \item \texttt{additionalProperties: false} se aplica en todos los niveles de anidamiento. Cualquier clave no reconocida en cualquier objeto desencadena un error de validación.
-    \item \texttt{hidden\_size} debe ser divisible por \texttt{num\_heads}. La dimensión por cabeza es $\texttt{hidden\_size} / \texttt{num\_heads}$.
-    \item \texttt{num\_kv\_heads} debe dividir \texttt{num\_heads} exactamente cuando se usa Atención por Consultas Agrupadas.
+    \item \texttt{model.dims.hidden\_size} debe ser divisible por \texttt{model.dims.num\_heads}. La dimensión por cabeza es $\texttt{hidden\_size} / \texttt{num\_heads}$.
+    \item \texttt{model.dims.num\_kv\_heads} debe dividir \texttt{model.dims.num\_heads} exactamente cuando se usa Atención por Consultas Agrupadas.
     \item \texttt{vocab\_size} debe coincidir con el tamaño de vocabulario del tokenizador. Una discrepancia causa corrupción de IDs de token y fallo de entrenamiento irrecuperable.
     \item Cuando \texttt{base\_model} está configurado, \texttt{training.task} es obligatorio. Si \texttt{task=mlm}, \texttt{tokenizer.name\_or\_path} también es obligatorio.
     \item \texttt{task: mlm} requiere \texttt{training.optimizer}; \texttt{task: sbert} requiere \texttt{training.sbert}.
     \item \texttt{bitnet\_routers=true} requiere \texttt{use\_bitnet=true}. La bandera no tiene efecto en caso contrario.
-    \item \texttt{fasa\_attn} y \texttt{sparge\_attn} son tipos de capa solo para evaluación. Lanzan \texttt{RuntimeError} si se usan durante el entrenamiento. No deben aparecer en \texttt{layer\_pattern} para ejecuciones de entrenamiento.
-    \item \texttt{model\_class: frankesteindecoder} fuerza \texttt{mode: decoder} en tiempo de ejecución. Establecer \texttt{mode: encoder} con esta clase se sobrescribe.
+    \item \texttt{fasa\_attn} y \texttt{sparge\_attn} son tipos de capa solo para evaluación. Lanzan \texttt{RuntimeError} si se usan durante el entrenamiento. No deben aparecer en \texttt{model.dims.layer\_pattern} para ejecuciones de entrenamiento.
+    \item \texttt{model\_class: frankesteindecoder} fuerza \texttt{model.dims.mode: decoder} en tiempo de ejecución. Establecer \texttt{model.dims.mode: encoder} con esta clase se sobrescribe.
     \item O bien \texttt{base\_model} debe estar presente, o bien tanto \texttt{model\_class} como \texttt{model} deben estar presentes. El esquema rechaza configuraciones que no proporcionen ninguno o una combinación incompleta.
 \end{enumerate}

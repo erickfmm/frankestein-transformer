@@ -10,7 +10,9 @@ class SchemaAttentionLayerTests(unittest.TestCase):
         schema = resolve_schema(schema_path)
 
         enum_values = (
-            schema["properties"]["model"]["properties"]["layer_pattern"]["items"]["enum"]
+            schema["properties"]["model"]["properties"]["dims"]["properties"][
+                "layer_pattern"
+            ]["items"]["enum"]
         )
 
         expected = {
@@ -70,47 +72,45 @@ class SchemaAttentionLayerTests(unittest.TestCase):
         schema_path = pathlib.Path(__file__).parent.parent / "src" / "schema.yaml"
         schema = resolve_schema(schema_path)
 
-        model_properties = schema["properties"]["model"]["properties"]
+        attention_properties = (
+            schema["properties"]["model"]["properties"]["attention"]["properties"]
+        )
 
-        for field_name in [
-            "mla_latent_rank",
-            "gqla_latent_rank",
-            "gqla_num_groups",
-            "gqla_decode_path",
-            "mlra_latent_rank",
-            "mlra_num_latent_heads",
-            "tucker_query_rank",
-            "tucker_key_rank",
-            "tucker_value_rank",
-            "iha_num_pseudo_heads",
-            "gta_num_shared_groups",
-            "gta_value_latent_rank",
-            "mtla_latent_rank",
-            "mtla_merge_factor",
-            "mtla_stride",
-            "cca_latent_rank",
-            "cca_num_conv_layers",
-            "cca_conv_kernel_seq",
-            "cca_conv_kernel_ch",
-            "cca_qk_mean",
-            "cca_value_shift",
-            "ccgqa_query_latent_rank",
-            "ccgqa_kv_latent_rank",
-            "ccgqa_num_kv_heads",
-            "ccgqa_num_conv_layers",
-            "ccgqa_conv_kernel_seq",
-            "ccgqa_conv_kernel_ch",
-            "ccgqa_qk_mean",
-            "ccgqa_value_shift",
-            "msa_block_size",
-            "msa_topk_blocks",
-            "msa_index_dim",
-            "msa_kl_loss_weight",
-            "sparda_block_size",
-            "sparda_topk_blocks",
-            "sparda_forecast_dim",
-        ]:
-            self.assertIn(field_name, model_properties)
+        # Map of mixer sub-key -> set of expected leaf field names.
+        expected_per_mixer = {
+            "mla": {"latent_rank"},
+            "gqla": {"latent_rank", "num_groups", "decode_path"},
+            "mlra": {"latent_rank", "num_latent_heads"},
+            "tucker": {"query_rank", "key_rank", "value_rank"},
+            "iha": {"num_pseudo_heads"},
+            "gta": {"num_shared_groups", "value_latent_rank"},
+            "mtla": {"latent_rank", "merge_factor", "stride"},
+            "cca": {
+                "latent_rank", "num_conv_layers", "conv_kernel_seq",
+                "conv_kernel_ch", "qk_mean", "value_shift",
+            },
+            "ccgqa": {
+                "query_latent_rank", "kv_latent_rank", "num_kv_heads",
+                "num_conv_layers", "conv_kernel_seq", "conv_kernel_ch",
+                "qk_mean", "value_shift",
+            },
+            "msa": {"block_size", "topk_blocks", "index_dim", "kl_loss_weight"},
+            "sparda": {"block_size", "topk_blocks", "forecast_dim"},
+        }
+
+        for mixer, expected_leaves in expected_per_mixer.items():
+            self.assertIn(
+                mixer,
+                attention_properties,
+                f"attention.{mixer} sub-object missing from schema",
+            )
+            mixer_props = attention_properties[mixer]["properties"]
+            actual_leaves = set(mixer_props.keys())
+            self.assertTrue(
+                expected_leaves.issubset(actual_leaves),
+                f"attention.{mixer} missing leaves: "
+                f"{expected_leaves - actual_leaves}",
+            )
 
 
 if __name__ == "__main__":

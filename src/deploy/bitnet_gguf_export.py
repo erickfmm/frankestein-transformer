@@ -44,6 +44,11 @@ import numpy as np
 import torch
 import yaml
 
+try:
+    from ..utils.config_flatten import flatten_model_dict
+except ImportError:
+    from utils.config_flatten import flatten_model_dict
+
 GGUF_MAGIC = 0x46554747  # "GGUF" little-endian
 GGUF_VERSION = 3
 
@@ -288,7 +293,7 @@ def check_gguf_compatibility(yaml_path: str) -> Dict[str, Any]:
         raise FileNotFoundError(f"YAML file not found: {yaml_file}")
     with yaml_file.open("r", encoding="utf-8") as handle:
         data = yaml.safe_load(handle) or {}
-    model = data.get("model", {}) or {}
+    model = flatten_model_dict(data.get("model", {}) or {})
 
     if not bool(model.get("use_bitnet", False)):
         return {"is_compatible": False, "reason": "use_bitnet must be true"}
@@ -345,7 +350,7 @@ def export_bitnet_gguf(
 
     with yaml_file.open("r", encoding="utf-8") as handle:
         yaml_data = yaml.safe_load(handle) or {}
-    model_config = dict(yaml_data.get("model", {}) or {})
+    model_config = flatten_model_dict(yaml_data.get("model", {}) or {})
 
     checkpoint = torch.load(str(model_file), map_location="cpu", weights_only=False)
     if not isinstance(checkpoint, dict):

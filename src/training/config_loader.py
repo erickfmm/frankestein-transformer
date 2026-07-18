@@ -16,9 +16,11 @@ import yaml
 try:
     from .trainer import TrainingConfig
     from ..model.tormented_bert_frankestein import UltraConfig
+    from ..utils.config_flatten import flatten_model_dict
 except ImportError:
     from training.trainer import TrainingConfig
     from model.tormented_bert_frankestein import UltraConfig
+    from utils.config_flatten import flatten_model_dict
 
 
 def _field_names(cls) -> set:
@@ -161,6 +163,7 @@ def load_training_config(path: str) -> LoadedTrainingConfig:
     if not base_model:
         if not model_data:
             raise ValueError("model is required when base_model is not provided")
+        model_data = flatten_model_dict(model_data)
         _validate_bitnet_flags(model_data)
         _validate_ffn_activation(model_data)
         model_config = UltraConfig(**model_data)

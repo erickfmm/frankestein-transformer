@@ -14,9 +14,6 @@ from typing import Any, Dict, Iterable, List, Tuple
 GROUP_NAMES: Tuple[str, ...] = (
     "embeddings",
     "norms",
-    "ode",
-    "retnet",
-    "mamba",
     "attention",
     "other",
 )
@@ -30,10 +27,8 @@ configuration.
 Group semantics:
     embeddings: Token and position embedding matrices.
     norms: LayerNorm, DynamicTanh, or Derf normalization parameters.
-    ode: ODE-solver parameters (if present).
-    retnet: RetNet retention parameters.
-    mamba: Mamba SSM parameters.
-    attention: Attention projection weights (Q, K, V, O).
+    attention: Attention projection weights (Q, K, V, O) and recurrent /
+        state-space / ODE mixer parameters (retnet, mamba, ode, titan, ...).
     other: All remaining parameters not assigned to a specific group.
 """
 

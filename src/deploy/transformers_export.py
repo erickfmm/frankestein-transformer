@@ -261,8 +261,9 @@ def _bake_state_dict(
         TormentedBertMini,
         UltraConfig,
     )
+    from src.utils.config_flatten import flatten_model_dict
 
-    ultra = UltraConfig(**model_config)
+    ultra = UltraConfig(**flatten_model_dict(model_config))
     mc = str(model_class).lower()
     if mc == "mini":
         model = TormentedBertMini(ultra)
@@ -285,6 +286,8 @@ def _load_schema_layer_enum(schema_path: Path) -> List[str]:
     return list(
         schema.get("properties", {})
         .get("model", {})
+        .get("properties", {})
+        .get("dims", {})
         .get("properties", {})
         .get("layer_pattern", {})
         .get("items", {})

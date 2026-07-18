@@ -24,6 +24,7 @@ try:
     from ..tokenizer.spm_spa_redpajama35 import SpanishSPMTokenizer
     from ..utils.device import SUPPORTED_DEVICE_CHOICES, resolve_torch_device
     from ..model.attention.common import BitLinear
+    from ..utils.config_flatten import flatten_model_dict
 except ImportError:
     from model.tormented_bert_frankestein import (
         FrankensteinDecoder,
@@ -34,6 +35,7 @@ except ImportError:
     from tokenizer.spm_spa_redpajama35 import SpanishSPMTokenizer
     from utils.device import SUPPORTED_DEVICE_CHOICES, resolve_torch_device
     from model.attention.common import BitLinear
+    from utils.config_flatten import flatten_model_dict
 
 logging.basicConfig(
     level=logging.INFO,
@@ -103,7 +105,7 @@ class TormentedBertInference:
         with open(config_path) as f:
             config_dict = json.load(f)
         
-        config = UltraConfig(**config_dict)
+        config = UltraConfig(**flatten_model_dict(config_dict))
         logger.info(f"Config loaded: {config.hidden_size}D, {config.num_layers} layers")
         return config
     

@@ -1023,9 +1023,6 @@ class TitanTrainer:
     def _setup_optimizer(self) -> optim.Optimizer:
         """Setup optimizer with parameter groups for different components"""
         # Separate parameters by component type
-        ode_params = []
-        retnet_params = []
-        mamba_params = []
         titan_attn_params = []
         norm_params = []
         embed_params = []
@@ -1035,13 +1032,9 @@ class TitanTrainer:
             if not param.requires_grad:
                 continue
                 
-            if 'ode' in name.lower():
-                ode_params.append(param)
-            elif 'retention' in name.lower() or 'retnet' in name.lower():
-                retnet_params.append(param)
-            elif 'mamba' in name.lower():
-                mamba_params.append(param)
-            elif 'titan_attn' in name.lower() or 'attention' in name.lower():
+            if ('titan_attn' in name.lower() or 'attention' in name.lower()
+                    or 'ode' in name.lower() or 'retention' in name.lower()
+                    or 'retnet' in name.lower() or 'mamba' in name.lower()):
                 titan_attn_params.append(param)
             elif 'norm' in name.lower() or 'layer_norm' in name.lower():
                 norm_params.append(param)
@@ -1066,30 +1059,6 @@ class TitanTrainer:
                 'betas': (0.9, 0.95),
                 'eps': 1e-8,
                 'name': 'norms'
-            },
-            {
-                'params': ode_params,
-                'lr': 1e-7,
-                'weight_decay': 0.01,
-                'betas': (0.9, 0.95),
-                'eps': 1e-8,
-                'name': 'ode'
-            },
-            {
-                'params': retnet_params,
-                'lr': 5e-6,
-                'weight_decay': 0.01,
-                'betas': (0.9, 0.95),
-                'eps': 1e-8,
-                'name': 'retnet'
-            },
-            {
-                'params': mamba_params,
-                'lr': 2e-6,
-                'weight_decay': 0.01,
-                'betas': (0.9, 0.95),
-                'eps': 1e-8,
-                'name': 'mamba'
             },
             {
                 'params': titan_attn_params,

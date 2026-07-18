@@ -20,7 +20,7 @@ The schema enforces a mutual-exclusivity rule: either \texttt{base\_model} must 
 \subsection{Model Configuration}
 \label{subsec:model-config}
 
-The \texttt{model} object defines all architectural hyperparameters. Required fields are \texttt{vocab\_size}, \texttt{hidden\_size}, \texttt{num\_layers}, \texttt{num\_heads}, and \texttt{layer\_pattern}. Table~\ref{tab:model-fields} lists all model fields with their types and descriptions.
+The \texttt{model} object defines all architectural hyperparameters. Required fields are \texttt{dims.vocab\_size}, \texttt{dims.hidden\_size}, \texttt{dims.num\_layers}, \texttt{dims.num\_heads}, and \texttt{dims.layer\_pattern}. Table~\ref{tab:model-fields} lists all model fields with their types and descriptions.
 
 \begin{longtable}{>{\ttfamily}l>{\raggedright\arraybackslash}p{3.5cm}>{\raggedright\arraybackslash}p{8.5cm}}
 \toprule
@@ -38,89 +38,144 @@ The \texttt{model} object defines all architectural hyperparameters. Required fi
 \caption{Complete model configuration fields. All fields are optional unless marked required.}
 \label{tab:model-fields}
 \endlastfoot
-mode & enum (encoder, decoder) & Attention masking mode. \texttt{encoder} = bidirectional; \texttt{decoder} = causal. \\
-vocab\_size & int $\ge 1$ (required) & Number of unique tokens in the vocabulary. Must match the tokenizer's vocab size. \\
-hidden\_size & int $\ge 1$ (required) & Hidden dimension. Must be divisible by \texttt{num\_heads}. Typical: 512--2048. \\
-num\_layers & int $\ge 1$ (required) & Number of physical transformer layers. Typical: 6--24. \\
-num\_loops & int $\ge 1$ & Logical loop count. Each layer in \texttt{layer\_pattern} runs \texttt{num\_loops} times. Default: 1. \\
-num\_heads & int $\ge 1$ (required) & Number of parallel attention heads. Must divide \texttt{hidden\_size} evenly. \\
-retention\_heads & int $\ge 1$ & Number of heads for RetNet layers. Must divide \texttt{hidden\_size} evenly. \\
+\midrule
+\multicolumn{3}{l}{\textit{model.dims.*}} \\
+\midrule
+dims.mode & enum (encoder, decoder) & Attention masking mode. \texttt{encoder} = bidirectional; \texttt{decoder} = causal. \\
+dims.vocab\_size & int $\ge 1$ (required) & Number of unique tokens in the vocabulary. Must match the tokenizer's vocab size. \\
+dims.hidden\_size & int $\ge 1$ (required) & Hidden dimension. Must be divisible by \texttt{num\_heads}. Typical: 512--2048. \\
+dims.num\_layers & int $\ge 1$ (required) & Number of physical transformer layers. Typical: 6--24. \\
+dims.num\_loops & int $\ge 1$ & Logical loop count. Each layer in \texttt{layer\_pattern} runs \texttt{num\_loops} times. Default: 1. \\
+dims.num\_heads & int $\ge 1$ (required) & Number of parallel attention heads. Must divide \texttt{hidden\_size} evenly. \\
+dims.retention\_heads & int $\ge 1$ & Number of heads for RetNet layers. Must divide \texttt{hidden\_size} evenly. \\
+dims.dropout & float [0,1] & Global dropout rate. Typical: 0.1 (BERT standard). \\
+dims.layer\_pattern & array of enum (required) & Ordered sequence of layer types. Length must equal \texttt{num\_layers}. 35+ mixer types available (see Table~\ref{tab:layer-pattern}). \\
+\midrule
+\multicolumn{3}{l}{\textit{model.norm.*}} \\
+\midrule
+norm.type & enum & Normalization strategy: \texttt{layer\_norm}, \texttt{dynamic\_tanh}, \texttt{derf}, \texttt{rms\_norm}, \texttt{prms\_norm}. \\
+norm.partial\_ratio & float (0,1] & Fraction of hidden dims for pRMSNorm estimation. Default: 0.0625. \\
+\midrule
+\multicolumn{3}{l}{\textit{model.embedding.factorized.*}} \\
+\midrule
+embedding.factorized.enabled & bool & Enable embedding matrix factorization to reduce parameters. \\
+embedding.factorized.dim & int $\ge 1$ & Intermediate dimension for factorized embeddings. Typical: 64--256. \\
+\midrule
+\multicolumn{3}{l}{\textit{model.embedding.conv.*}} \\
+\midrule
+embedding.conv.enabled & bool & Apply Conv1d over token embeddings to capture local n-gram patterns. \\
+embedding.conv.kernel & int $\ge 1$ & Kernel size for embedding Conv1d. Typical: 3. \\
+\midrule
+\multicolumn{3}{l}{\textit{model.attention.titan.*}} \\
+\midrule
+attention.titan.positional\_encoding & enum (hope, rope) & Positional encoding method for \texttt{titan\_attn} layers. \\
+attention.titan.use\_hope & bool & Legacy flag for HoPE in \texttt{titan\_attn}. Deprecated; prefer \texttt{positional\_encoding}. \\
+attention.titan.hope.base & float $\ge 0$ & Base frequency scale for HoPE. Typical: 10000. \\
+attention.titan.hope.damping & float $\ge 0$ & Damping coefficient for HoPE attention decay. Typical: 0.01. \\
+attention.titan.rope.base & float $\ge 0$ & Base frequency for RoPE. Typical: 10000. \\
+attention.titan.rope.scaling & float $\ge 0$ & Multiplier for RoPE position indices. Typical: 1.0. \\
+\midrule
+\multicolumn{3}{l}{\textit{model.attention.mla.*}} \\
+\midrule
+attention.mla.latent\_rank & int $\ge 1$ & Rank of joint KV latent for MLA. Default: \texttt{hidden\_size // 2}. \\
+\midrule
+\multicolumn{3}{l}{\textit{model.attention.gqla.*}} \\
+\midrule
+attention.gqla.latent\_rank & int $\ge 1$ & Rank of joint KV latent for GQLA. Default: \texttt{hidden\_size // 2}. \\
+attention.gqla.num\_groups & int $\ge 1$ & Number of GQA groups for GQLA decode path. Must divide \texttt{num\_heads}. \\
+attention.gqla.decode\_path & enum (mqa\_absorb, gqa) & Decoding path for GQLA. \\
+\midrule
+\multicolumn{3}{l}{\textit{model.attention.mlra.*}} \\
+\midrule
+attention.mlra.latent\_rank & int $\ge 1$ & Total latent rank for MLRA. Default: \texttt{hidden\_size // 2}. \\
+attention.mlra.num\_latent\_heads & int $\ge 1$ & Number of disjoint latent sub-spaces for MLRA. Default: 4. \\
+\midrule
+\multicolumn{3}{l}{\textit{model.attention.tucker.*}} \\
+\midrule
+attention.tucker.query\_rank & int $\ge 1$ & Tucker rank for query weight tensor. Default: \texttt{hidden\_size}. \\
+attention.tucker.key\_rank & int $\ge 1$ & Tucker rank for key weight tensor. Default: \texttt{hidden\_size // 2}. \\
+attention.tucker.value\_rank & int $\ge 1$ & Tucker rank for value weight tensor. Default: \texttt{hidden\_size // 2}. \\
+\midrule
+\multicolumn{3}{l}{\textit{model.attention.iha.*}} \\
+\midrule
+attention.iha.num\_pseudo\_heads & int $\ge 1$ & Number of pseudo-heads per head for IHA. Default: \texttt{num\_heads}. \\
+\midrule
+\multicolumn{3}{l}{\textit{model.attention.gta.*}} \\
+\midrule
+attention.gta.num\_shared\_groups & int $\ge 1$ & Number of head groups sharing an attention map for GTA. Must divide \texttt{num\_heads}. \\
+attention.gta.value\_latent\_rank & int $\ge 1$ & Rank of value-cache latent for GTA. Default: \texttt{hidden\_size // 2}. \\
+\midrule
+\multicolumn{3}{l}{\textit{model.attention.mtla.*}} \\
+\midrule
+attention.mtla.latent\_rank & int $\ge 1$ & Latent rank for MTLA. Default: \texttt{hidden\_size // 2}. \\
+attention.mtla.merge\_factor & int $\ge 1$ & Number of consecutive KV entries merged per temporal slot. Default: 2. \\
+attention.mtla.stride & int $\ge 1$ & Stride between merged temporal slots. Default: \texttt{mtla\_merge\_factor}. \\
+\midrule
+\multicolumn{3}{l}{\textit{model.attention.cca.*}} \\
+\midrule
+attention.cca.latent\_rank & int $\ge 1$ & Latent width for CCA. Default: \texttt{hidden\_size // 4}. Must be divisible by \texttt{num\_heads}. \\
+attention.cca.num\_conv\_layers & enum (0, 1, 2) & Number of convolution layers in CCA. Default: 2. \\
+attention.cca.conv\_kernel\_seq & int $\ge 1$ & Kernel size of depth-wise causal sequence conv. Default: 4. \\
+attention.cca.conv\_kernel\_ch & int $\ge 1$ & Kernel size of head-wise grouped channel conv. Default: 3. \\
+attention.cca.qk\_mean & bool & Enable q-k-mean bias in CCA. Default: \texttt{true}. \\
+attention.cca.value\_shift & bool & Enable value-shift in CCA. Default: \texttt{true}. \\
+\midrule
+\multicolumn{3}{l}{\textit{model.attention.ccgqa.*}} \\
+\midrule
+attention.ccgqa.query\_latent\_rank & int $\ge 1$ & Query latent width for CCGQA. Default: \texttt{hidden\_size // 2}. \\
+attention.ccgqa.kv\_latent\_rank & int $\ge 1$ & KV latent width for CCGQA. Default: \texttt{hidden\_size // 8}. \\
+attention.ccgqa.num\_kv\_heads & int $\ge 1$ & Number of KV heads for CCGQA. Must divide \texttt{num\_heads}. \\
+attention.ccgqa.num\_conv\_layers & enum (0, 1, 2) & Number of convolution layers in CCGQA. Default: 2. \\
+attention.ccgqa.conv\_kernel\_seq & int $\ge 1$ & Kernel size of depth-wise causal sequence conv. Default: 4. \\
+attention.ccgqa.conv\_kernel\_ch & int $\ge 1$ & Kernel size of head-wise grouped channel conv. Default: 3. \\
+attention.ccgqa.qk\_mean & bool & Enable q-k-mean bias in CCGQA. Default: \texttt{true}. \\
+attention.ccgqa.value\_shift & bool & Enable value-shift in CCGQA. Default: \texttt{true}. \\
+\midrule
+\multicolumn{3}{l}{\textit{model.attention.msa.*}} \\
+\midrule
+attention.msa.block\_size & int $\ge 1$ & Block size for MiniMax Sparse Attention. Default: 128. \\
+attention.msa.topk\_blocks & int $\ge 1$ & Number of blocks selected per GQA group per query. Default: 16. \\
+attention.msa.index\_dim & int $\ge 1$ & Dimensionality of Index Branch heads. Default: 64. \\
+attention.msa.kl\_loss\_weight & float $\ge 0$ & Weight of KL alignment loss for MSA index branch. Default: 0.0. \\
+\midrule
+\multicolumn{3}{l}{\textit{model.attention.sparda.*}} \\
+\midrule
+attention.sparda.block\_size & int $\ge 1$ & KV block size for SparDA. Default: 128. \\
+attention.sparda.topk\_blocks & int $\ge 1$ & Number of KV blocks selected per GQA group. Default: 16. \\
+attention.sparda.forecast\_dim & int $\ge 1$ & Dimensionality of Forecast projection. Default: 64. \\
+\midrule
+\multicolumn{3}{l}{\textit{model.attention.engram.*}} \\
+\midrule
+attention.engram.max\_ngram\_size & int $\ge 2$ & Maximum N-gram order for Engram memory module. \\
+attention.engram.n\_heads\_per\_ngram & int $\ge 1$ & Number of hash heads per N-gram order. \\
+attention.engram.embed\_dim\_per\_head & int $\ge 1$ & Embedding dimension per hash head. \\
+attention.engram.kernel\_size & int $\ge 1$ & Causal depthwise conv kernel width for Engram. \\
+attention.engram.seed & int & Random seed for N-gram hash multipliers. \\
+\midrule
+\multicolumn{3}{l}{\textit{model.* (flat top-level)}} \\
+\midrule
+use\_moe & bool & Enable Mixture of Experts in FFN layers. \\
 num\_experts & int $\ge 1$ & Total number of expert networks in MoE layers. Requires \texttt{use\_moe=true}. \\
 top\_k\_experts & int $\ge 1$ & Number of experts activated per token in MoE. Must be $\le$ \texttt{num\_experts}. \\
-dropout & float [0,1] & Global dropout rate. Typical: 0.1 (BERT standard). \\
-layer\_pattern & array of enum (required) & Ordered sequence of layer types. Length must equal \texttt{num\_layers}. 35+ mixer types available (see Table~\ref{tab:layer-pattern}). \\
-ode\_solver & enum (rk4, euler) & Numerical integration method for ODE layers. \\
-ode\_steps & int $\ge 1$ & Number of integration steps for ODE layers. Typical: 2--4. \\
 use\_bitnet & bool & Enable BitLinear ternary weight quantization. Default: \texttt{true}. \\
 bitnet\_routers & bool & Also quantize routing/scoring projections. Requires \texttt{use\_bitnet=true}. Default: \texttt{false}. \\
-use\_bitnet\_conv & bool & Quantize embedding Conv1d with BitConv1d. Requires \texttt{use\_bitnet=true} and \texttt{use\_embedding\_conv=true}. Default: \texttt{false}. \\
-norm\_type & enum & Normalization strategy: \texttt{layer\_norm}, \texttt{dynamic\_tanh}, \texttt{derf}, \texttt{rms\_norm}, \texttt{prms\_norm}. \\
-prms\_partial\_ratio & float (0,1] & Fraction of hidden dims for pRMSNorm estimation. Default: 0.0625. \\
-use\_factorized\_embedding & bool & Enable embedding matrix factorization to reduce parameters. \\
-factorized\_embedding\_dim & int $\ge 1$ & Intermediate dimension for factorized embeddings. Typical: 64--256. \\
-use\_embedding\_conv & bool & Apply Conv1d over token embeddings to capture local n-gram patterns. \\
-embedding\_conv\_kernel & int $\ge 1$ & Kernel size for embedding Conv1d. Typical: 3. \\
-use\_hope & bool & Legacy flag for HoPE in \texttt{titan\_attn}. Deprecated; prefer \texttt{positional\_encoding}. \\
-hope\_base & float $\ge 0$ & Base frequency scale for HoPE. Typical: 10000. \\
-hope\_damping & float $\ge 0$ & Damping coefficient for HoPE attention decay. Typical: 0.01. \\
-use\_moe & bool & Enable Mixture of Experts in FFN layers. \\
-ffn\_hidden\_size & int $\ge 1$ & Intermediate dimension of feed-forward layers. Typical: $4\times$ \texttt{hidden\_size}. \\
-ffn\_activation & enum (silu, gelu) & Non-linear activation for FFN layers. \\
+use\_bitnet\_conv & bool & Quantize embedding Conv1d with BitConv1d. Requires \texttt{use\_bitnet=true} and \texttt{embedding.conv.enabled=true}. Default: \texttt{false}. \\
 use\_mixture\_of\_depths & bool & Enable Mixture-of-Depths token routing. \\
 mixture\_of\_depths\_capacity\_ratio & float (0,1] & Fraction of tokens updated per layer in MoD. \\
 mixture\_of\_depths\_router\_aux\_loss\_weight & float $\ge 0$ & Weight for MoD router auxiliary loss. \\
-engram\_max\_ngram\_size & int $\ge 2$ & Maximum N-gram order for Engram memory module. \\
-engram\_n\_heads\_per\_ngram & int $\ge 1$ & Number of hash heads per N-gram order. \\
-engram\_embed\_dim\_per\_head & int $\ge 1$ & Embedding dimension per hash head. \\
-engram\_kernel\_size & int $\ge 1$ & Causal depthwise conv kernel width for Engram. \\
-engram\_seed & int & Random seed for N-gram hash multipliers. \\
-use\_gqa & bool & Enable Grouped-Query Attention. \\
-num\_kv\_heads & int $\ge 1$ & Number of key-value heads for GQA. Must divide \texttt{num\_heads} exactly. \\
-positional\_encoding & enum (hope, rope) & Positional encoding method for \texttt{titan\_attn} layers. \\
-rope\_base & float $\ge 0$ & Base frequency for RoPE. Typical: 10000. \\
-rope\_scaling & float $\ge 0$ & Multiplier for RoPE position indices. Typical: 1.0. \\
-mla\_latent\_rank & int $\ge 1$ & Rank of joint KV latent for MLA. Default: \texttt{hidden\_size // 2}. \\
-gqla\_latent\_rank & int $\ge 1$ & Rank of joint KV latent for GQLA. Default: \texttt{hidden\_size // 2}. \\
-gqla\_num\_groups & int $\ge 1$ & Number of GQA groups for GQLA decode path. Must divide \texttt{num\_heads}. \\
-gqla\_decode\_path & enum (mqa\_absorb, gqa) & Decoding path for GQLA. \\
-mlra\_latent\_rank & int $\ge 1$ & Total latent rank for MLRA. Default: \texttt{hidden\_size // 2}. \\
-mlra\_num\_latent\_heads & int $\ge 1$ & Number of disjoint latent sub-spaces for MLRA. Default: 4. \\
-tucker\_query\_rank & int $\ge 1$ & Tucker rank for query weight tensor. Default: \texttt{hidden\_size}. \\
-tucker\_key\_rank & int $\ge 1$ & Tucker rank for key weight tensor. Default: \texttt{hidden\_size // 2}. \\
-tucker\_value\_rank & int $\ge 1$ & Tucker rank for value weight tensor. Default: \texttt{hidden\_size // 2}. \\
-iha\_num\_pseudo\_heads & int $\ge 1$ & Number of pseudo-heads per head for IHA. Default: \texttt{num\_heads}. \\
-gta\_num\_shared\_groups & int $\ge 1$ & Number of head groups sharing an attention map for GTA. Must divide \texttt{num\_heads}. \\
-gta\_value\_latent\_rank & int $\ge 1$ & Rank of value-cache latent for GTA. Default: \texttt{hidden\_size // 2}. \\
-mtla\_latent\_rank & int $\ge 1$ & Latent rank for MTLA. Default: \texttt{hidden\_size // 2}. \\
-mtla\_merge\_factor & int $\ge 1$ & Number of consecutive KV entries merged per temporal slot. Default: 2. \\
-mtla\_stride & int $\ge 1$ & Stride between merged temporal slots. Default: \texttt{mtla\_merge\_factor}. \\
-cca\_latent\_rank & int $\ge 1$ & Latent width for CCA. Default: \texttt{hidden\_size // 4}. Must be divisible by \texttt{num\_heads}. \\
-cca\_num\_conv\_layers & enum (0, 1, 2) & Number of convolution layers in CCA. Default: 2. \\
-cca\_conv\_kernel\_seq & int $\ge 1$ & Kernel size of depth-wise causal sequence conv. Default: 4. \\
-cca\_conv\_kernel\_ch & int $\ge 1$ & Kernel size of head-wise grouped channel conv. Default: 3. \\
-cca\_qk\_mean & bool & Enable q-k-mean bias in CCA. Default: \texttt{true}. \\
-cca\_value\_shift & bool & Enable value-shift in CCA. Default: \texttt{true}. \\
-ccgqa\_query\_latent\_rank & int $\ge 1$ & Query latent width for CCGQA. Default: \texttt{hidden\_size // 2}. \\
-ccgqa\_kv\_latent\_rank & int $\ge 1$ & KV latent width for CCGQA. Default: \texttt{hidden\_size // 8}. \\
-ccgqa\_num\_kv\_heads & int $\ge 1$ & Number of KV heads for CCGQA. Must divide \texttt{num\_heads}. \\
-ccgqa\_num\_conv\_layers & enum (0, 1, 2) & Number of convolution layers in CCGQA. Default: 2. \\
-ccgqa\_conv\_kernel\_seq & int $\ge 1$ & Kernel size of depth-wise causal sequence conv. Default: 4. \\
-ccgqa\_conv\_kernel\_ch & int $\ge 1$ & Kernel size of head-wise grouped channel conv. Default: 3. \\
-ccgqa\_qk\_mean & bool & Enable q-k-mean bias in CCGQA. Default: \texttt{true}. \\
-ccgqa\_value\_shift & bool & Enable value-shift in CCGQA. Default: \texttt{true}. \\
-msa\_block\_size & int $\ge 1$ & Block size for MiniMax Sparse Attention. Default: 128. \\
-msa\_topk\_blocks & int $\ge 1$ & Number of blocks selected per GQA group per query. Default: 16. \\
-msa\_index\_dim & int $\ge 1$ & Dimensionality of Index Branch heads. Default: 64. \\
-msa\_kl\_loss\_weight & float $\ge 0$ & Weight of KL alignment loss for MSA index branch. Default: 0.0. \\
-sparda\_block\_size & int $\ge 1$ & KV block size for SparDA. Default: 128. \\
-sparda\_topk\_blocks & int $\ge 1$ & Number of KV blocks selected per GQA group. Default: 16. \\
-sparda\_forecast\_dim & int $\ge 1$ & Dimensionality of Forecast projection. Default: 64. \\
+ffn\_hidden\_size & int $\ge 1$ & Intermediate dimension of feed-forward layers. Typical: $4\times$ \texttt{hidden\_size}. \\
+ffn\_activation & enum (silu, gelu) & Non-linear activation for FFN layers. \\
+ffn\_activation\_config & object & Nested parameters for learnable activations (RAF degrees/version/init, PReLU init, etc.). \\
+ode\_solver & enum (rk4, euler) & Numerical integration method for ODE layers. \\
+ode\_steps & int $\ge 1$ & Number of integration steps for ODE layers. Typical: 2--4. \\
 \end{longtable}
+
+Fields are grouped under hierarchical sub-objects (\texttt{dims}, \texttt{norm}, \texttt{embedding.factorized}, \texttt{embedding.conv}, \texttt{attention.titan}, \texttt{attention.mla}, \texttt{attention.gqla}, etc.); each sub-header row marks the prefix in effect for the rows that follow it. Fields listed under \texttt{model.*} remain flat top-level keys.
 
 \subsubsection{Layer Pattern Enumeration}
 \label{tab:layer-pattern}
 
-The \texttt{layer\_pattern} array accepts the following 35 mixer types. Each element defines one physical layer in the model stack. Table~\ref{tab:layer-pattern-enum} lists all available types with their training and inference support.
+The \texttt{model.dims.layer\_pattern} array accepts the following 35 mixer types. Each element defines one physical layer in the model stack. Table~\ref{tab:layer-pattern-enum} lists all available types with their training and inference support.
 
 \begin{longtable}{>{\ttfamily}l>{\raggedright\arraybackslash}p{5.5cm}cc}
 \toprule
@@ -260,11 +315,13 @@ The \texttt{training.optimizer} object has two fields:
 All optimizers support the following per-parameter-group suffixes, prefixed by the optimizer class name (e.g., \texttt{adamw-lr\_embeddings}):
 
 \begin{itemize}[nosep]
-    \item \textbf{Learning rate groups:} \texttt{lr\_embeddings}, \texttt{lr\_norms}, \texttt{lr\_ode}, \texttt{lr\_retnet}, \texttt{lr\_mamba}, \texttt{lr\_attention}, \texttt{lr\_other}
-    \item \textbf{Weight decay groups:} \texttt{wd\_embeddings}, \texttt{wd\_norms}, \texttt{wd\_ode}, \texttt{wd\_retnet}, \texttt{wd\_mamba}, \texttt{wd\_attention}, \texttt{wd\_other}
-    \item \textbf{Beta groups:} \texttt{betas\_embeddings}, \texttt{betas\_norms}, \texttt{betas\_ode}, \texttt{betas\_retnet}, \texttt{betas\_mamba}, \texttt{betas\_attention}, \texttt{betas\_other}
-    \item \textbf{Epsilon groups:} \texttt{eps\_embeddings}, \texttt{eps\_norms}, \texttt{eps\_ode}, \texttt{eps\_retnet}, \texttt{eps\_mamba}, \texttt{eps\_attention}, \texttt{eps\_other}
+    \item \textbf{Learning rate groups:} \texttt{lr\_embeddings}, \texttt{lr\_norms}, \texttt{lr\_attention}, \texttt{lr\_other}
+    \item \textbf{Weight decay groups:} \texttt{wd\_embeddings}, \texttt{wd\_norms}, \texttt{wd\_attention}, \texttt{wd\_other}
+    \item \textbf{Beta groups:} \texttt{betas\_embeddings}, \texttt{betas\_norms}, \texttt{betas\_attention}, \texttt{betas\_other}
+    \item \textbf{Epsilon groups:} \texttt{eps\_embeddings}, \texttt{eps\_norms}, \texttt{eps\_attention}, \texttt{eps\_other}
 \end{itemize}
+
+Note: parameters of ODE, RetNet, and Mamba mixers are routed into the \texttt{attention} group rather than having dedicated groups.
 
 \subsubsection{Optimizer-Specific Global Suffixes}
 
@@ -349,13 +406,13 @@ The schema enforces the following cross-component validation rules, implemented 
 
 \begin{enumerate}[nosep]
     \item \texttt{additionalProperties: false} is enforced at all nesting levels. Any unrecognized key in any object triggers a validation error.
-    \item \texttt{hidden\_size} must be divisible by \texttt{num\_heads}. The per-head dimension is $\texttt{hidden\_size} / \texttt{num\_heads}$.
-    \item \texttt{num\_kv\_heads} must divide \texttt{num\_heads} exactly when Grouped-Query Attention is used.
+    \item \texttt{model.dims.hidden\_size} must be divisible by \texttt{model.dims.num\_heads}. The per-head dimension is $\texttt{hidden\_size} / \texttt{num\_heads}$.
+    \item \texttt{model.dims.num\_kv\_heads} must divide \texttt{model.dims.num\_heads} exactly when Grouped-Query Attention is used.
     \item \texttt{vocab\_size} must match the tokenizer's vocabulary size. Mismatch causes token ID corruption and unrecoverable training failure.
     \item When \texttt{base\_model} is set, \texttt{training.task} is required. If \texttt{task=mlm}, \texttt{tokenizer.name\_or\_path} is also required.
     \item \texttt{task: mlm} requires \texttt{training.optimizer}; \texttt{task: sbert} requires \texttt{training.sbert}.
     \item \texttt{bitnet\_routers=true} requires \texttt{use\_bitnet=true}. The flag has no effect otherwise.
-    \item \texttt{fasa\_attn} and \texttt{sparge\_attn} are evaluation-only layer types. They raise \texttt{RuntimeError} if used during training. They must not appear in \texttt{layer\_pattern} for training runs.
-    \item \texttt{model\_class: frankesteindecoder} forces \texttt{mode: decoder} at runtime. Setting \texttt{mode: encoder} with this class is overridden.
+    \item \texttt{fasa\_attn} and \texttt{sparge\_attn} are evaluation-only layer types. They raise \texttt{RuntimeError} if used during training. They must not appear in \texttt{model.dims.layer\_pattern} for training runs.
+    \item \texttt{model\_class: frankesteindecoder} forces \texttt{model.dims.mode: decoder} at runtime. Setting \texttt{model.dims.mode: encoder} with this class is overridden.
     \item Either \texttt{base\_model} must be present, or both \texttt{model\_class} and \texttt{model} must be present. The schema rejects configurations that provide neither or an incomplete combination.
 \end{enumerate}

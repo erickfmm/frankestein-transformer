@@ -53,30 +53,18 @@ training:
     parameters:
       adamw-lr_embeddings: 1e-6
       adamw-lr_norms: 5e-6
-      adamw-lr_ode: 1e-7
-      adamw-lr_retnet: 5e-6
-      adamw-lr_mamba: 2e-6
       adamw-lr_attention: 3e-6
       adamw-lr_other: 2e-6
       adamw-wd_embeddings: 0.01
       adamw-wd_norms: 0.001
-      adamw-wd_ode: 0.01
-      adamw-wd_retnet: 0.01
-      adamw-wd_mamba: 0.01
       adamw-wd_attention: 0.01
       adamw-wd_other: 0.01
       adamw-betas_embeddings: [0.9, 0.95]
       adamw-betas_norms: [0.9, 0.95]
-      adamw-betas_ode: [0.9, 0.95]
-      adamw-betas_retnet: [0.9, 0.95]
-      adamw-betas_mamba: [0.9, 0.95]
       adamw-betas_attention: [0.9, 0.95]
       adamw-betas_other: [0.9, 0.95]
       adamw-eps_embeddings: 1e-8
       adamw-eps_norms: 1e-8
-      adamw-eps_ode: 1e-8
-      adamw-eps_retnet: 1e-8
-      adamw-eps_mamba: 1e-8
       adamw-eps_attention: 1e-8
       adamw-eps_other: 1e-8
   scheduler_total_steps: 10000
@@ -167,10 +155,10 @@ training:
 
 All optimizers support these shared per-group parameter suffixes (use with optimizer prefix, e.g. `adamw-lr_embeddings`):
 
-- `lr_embeddings`, `lr_norms`, `lr_ode`, `lr_retnet`, `lr_mamba`, `lr_attention`, `lr_other`
-- `wd_embeddings`, `wd_norms`, `wd_ode`, `wd_retnet`, `wd_mamba`, `wd_attention`, `wd_other`
-- `betas_embeddings`, `betas_norms`, `betas_ode`, `betas_retnet`, `betas_mamba`, `betas_attention`, `betas_other`
-- `eps_embeddings`, `eps_norms`, `eps_ode`, `eps_retnet`, `eps_mamba`, `eps_attention`, `eps_other`
+- `lr_embeddings`, `lr_norms`, `lr_attention`, `lr_other`
+- `wd_embeddings`, `wd_norms`, `wd_attention`, `wd_other`
+- `betas_embeddings`, `betas_norms`, `betas_attention`, `betas_other`
+- `eps_embeddings`, `eps_norms`, `eps_attention`, `eps_other`
 
 Optimizer-specific global parameter suffixes (also prefixed):
 
@@ -216,14 +204,20 @@ Examples:
 - Uses `AutoTokenizer` via `tokenizer.name_or_path`.
 
 ### model (UltraConfig)
+
+The `model` block is organized into hierarchical sub-objects: `dims`, `norm`,
+`embedding`, `attention`, plus flat top-level keys for cross-cutting features
+(MoE, BitNet, Mixture-of-Depths, FFN, ODE).
+
+#### model.dims
+
 - `vocab_size`: vocabulary size.
 - `hidden_size`: hidden dimension.
 - `num_layers`: physical layers.
 - `num_loops`: logical loops.
 - `num_heads`: attention heads.
+- `num_kv_heads`: key-value heads for GQA.
 - `retention_heads`: retention heads.
-- `num_experts`: MoE experts.
-- `top_k_experts`: top-k routing in MoE.
 - `dropout`: global dropout.
 - `layer_pattern`: list of blocks.
 - Legacy blocks: `retnet`, `retnet_attn`, `mamba`, `ode`, `titan_attn`, `standard_attn`, `sigmoid_attn`.
@@ -240,6 +234,33 @@ Examples:
   - `cca_attn` — Compressed Convolutional Attention, attention in compressed latent + convs (arXiv:2510.04476).
   - `ccgqa_attn` — Compressed Convolutional Grouped Query Attention, CCA + decoupled GQA in latent (arXiv:2510.04476).
 - Training-free policy: `sparge_attn` and `fasa_attn` are eval-only; training mode raises an explicit runtime error.
+- `mode`: `encoder` or `decoder` (if omitted, defaults to encoder unless `model_class: frankesteindecoder`, which forces decoder).
+
+#### model.norm
+
+- `type`: `layer_norm`, `dynamic_tanh`, `derf`, `rms_norm`, `prms_norm`.
+- `partial_ratio`: fraction of dims for pRMSNorm (default 0.0625).
+
+#### model.embedding
+
+- `factorized.enabled`: enable factorized embeddings.
+- `factorized.dim`: reduced embedding dimension.
+- `conv.enabled`: optional Conv1d on embeddings.
+- `conv.kernel`: Conv1d kernel size.
+
+#### model.attention.titan
+
+- `positional_encoding`: titan positional encoding (`hope` or `rope`). If omitted, legacy `use_hope` is used.
+- `use_hope`: legacy fallback for `titan_attn` when `positional_encoding` is omitted.
+- `hope.base`: HoPE base.
+- `hope.damping`: HoPE damping.
+- `rope.base`: RoPE base.
+- `rope.scaling`: RoPE position scaling.
+
+#### Flat model.* keys
+
+- `num_experts`: MoE experts.
+- `top_k_experts`: top-k routing in MoE.
 - `ode_solver`: `rk4` or `euler`.
 - `ode_steps`: integration steps.
 - `use_bitnet`: BitLinear on/off (BitNet b1.58). When true, all primary + gate
@@ -249,63 +270,55 @@ Examples:
   routing/scoring projections (MoE router, MoD router, sparse block-index,
   forecast, top-k score nets). Default `false` keeps them full-precision for
   routing stability.
-- `use_bitnet_conv`: when `true` (and `use_bitnet` and `use_embedding_conv`),
+- `use_bitnet_conv`: when `true` (and `use_bitnet` and `model.embedding.conv.enabled`),
   also quantize the embedding Conv1d to `BitConv1d`. Default `false` (opt-in).
-- `norm_type`: `dynamic_tanh`, `derf`, or `layer_norm`.
-- `use_factorized_embedding`: enable factorized embeddings.
-- `factorized_embedding_dim`: reduced embedding dimension.
-- `use_embedding_conv`: optional Conv1d on embeddings.
-- `embedding_conv_kernel`: Conv1d kernel size.
-- `positional_encoding`: titan positional encoding (`hope` or `rope`). If omitted, legacy `use_hope` is used.
-- `hope_base`: HoPE base.
-- `hope_damping`: HoPE damping.
-- `rope_base`: RoPE base.
-- `rope_scaling`: RoPE position scaling.
-- `use_hope`: legacy fallback for `titan_attn` when `positional_encoding` is omitted.
 - `use_moe`: use MoE in FFN.
+- `use_mixture_of_depths`: enable Mixture-of-Depths token routing.
+- `mixture_of_depths_capacity_ratio`: fraction of tokens updated per MoD layer.
+- `mixture_of_depths_router_aux_loss_weight`: MoD router aux loss weight.
 - `ffn_hidden_size`: FFN intermediate dimension.
-- `ffn_activation`: `silu` or `gelu`.
-- `mode`: `encoder` or `decoder` (if omitted, defaults to encoder unless `model_class: frankesteindecoder`, which forces decoder).
+- `ffn_activation`: `silu` or `gelu` (or any of the 43 supported activations).
+- `ffn_activation_config`: nested object for learnable/parametric activations.
 
-### Latent / KV-compression family (optional)
+### Latent / KV-compression family (model.attention.*)
 
-- `mla_latent_rank`: rank of the joint KV latent for `mla_attn` (default `hidden_size // 2`).
-- `gqla_latent_rank`: latent rank for `gqla_attn` (default `hidden_size // 2`).
-- `gqla_num_groups`: number of GQA groups for the expanded path (default `num_heads // 4`).
-- `gqla_decode_path`: `"mqa_absorb"` or `"gqa"` (default `"gqa"`).
-- `mlra_latent_rank`: total latent rank for `mlra_attn` (default `hidden_size // 2`).
-- `mlra_num_latent_heads`: number of disjoint latent sub-heads (default 4).
-- `tucker_query_rank`, `tucker_key_rank`, `tucker_value_rank`: Tucker ranks (default `hidden_size` for Q, `hidden_size // 2` for K/V).
-- `iha_num_pseudo_heads`: number of pseudo-heads per head for `iha_attn` (default `num_heads`).
-- `gta_num_shared_groups`: number of head groups sharing an attention map for `gta_attn` (default `num_heads // 4`).
-- `gta_value_latent_rank`: value-cache latent rank for `gta_attn` (default `hidden_size // 2`).
-- `mtla_latent_rank`: feature-axis latent rank for `mtla_attn` (default `hidden_size // 2`).
-- `mtla_merge_factor`: consecutive KV entries merged per temporal slot (default 2).
-- `mtla_stride`: stride between merged slots (default `mtla_merge_factor`).
-- `cca_latent_rank`: latent width ẽ for `cca_attn` (default `hidden_size // 4`, i.e. C=4).
-- `cca_num_conv_layers`: 0, 1, or 2 convolution layers for `cca_attn` (default 2).
-- `cca_conv_kernel_seq`: depth-wise causal seq conv kernel for `cca_attn` (default 4).
-- `cca_conv_kernel_ch`: head-wise grouped channel conv kernel for `cca_attn` (default 3).
-- `cca_qk_mean`: enable q-k-mean bias for `cca_attn` (default true).
-- `cca_value_shift`: enable value-shift for `cca_attn` (default true; requires even `num_heads`).
-- `ccgqa_query_latent_rank`: query latent width E/C₁ for `ccgqa_attn` (default `hidden_size // 2`).
-- `ccgqa_kv_latent_rank`: KV latent width E/C₂ for `ccgqa_attn` (default `hidden_size // 8`).
-- `ccgqa_num_kv_heads`: number of KV group heads for `ccgqa_attn` (default `num_heads // 4`).
-- `ccgqa_num_conv_layers`: 0, 1, or 2 conv layers for `ccgqa_attn` (default 2).
-- `ccgqa_conv_kernel_seq`: seq conv kernel for `ccgqa_attn` (default 4).
-- `ccgqa_conv_kernel_ch`: channel conv kernel for `ccgqa_attn` (default 3).
-- `ccgqa_qk_mean`: enable q-k-mean with B_group/E_group for `ccgqa_attn` (default true).
-- `ccgqa_value_shift`: enable value-shift for `ccgqa_attn` (default true).
+- `model.attention.mla.latent_rank`: rank of the joint KV latent for `mla_attn` (default `hidden_size // 2`).
+- `model.attention.gqla.latent_rank`: latent rank for `gqla_attn` (default `hidden_size // 2`).
+- `model.attention.gqla.num_groups`: number of GQA groups for the expanded path (default `num_heads // 4`).
+- `model.attention.gqla.decode_path`: `"mqa_absorb"` or `"gqa"` (default `"gqa"`).
+- `model.attention.mlra.latent_rank`: total latent rank for `mlra_attn` (default `hidden_size // 2`).
+- `model.attention.mlra.num_latent_heads`: number of disjoint latent sub-heads (default 4).
+- `model.attention.tucker.query_rank`, `model.attention.tucker.key_rank`, `model.attention.tucker.value_rank`: Tucker ranks (default `hidden_size` for Q, `hidden_size // 2` for K/V).
+- `model.attention.iha.num_pseudo_heads`: number of pseudo-heads per head for `iha_attn` (default `num_heads`).
+- `model.attention.gta.num_shared_groups`: number of head groups sharing an attention map for `gta_attn` (default `num_heads // 4`).
+- `model.attention.gta.value_latent_rank`: value-cache latent rank for `gta_attn` (default `hidden_size // 2`).
+- `model.attention.mtla.latent_rank`: feature-axis latent rank for `mtla_attn` (default `hidden_size // 2`).
+- `model.attention.mtla.merge_factor`: consecutive KV entries merged per temporal slot (default 2).
+- `model.attention.mtla.stride`: stride between merged slots (default `mtla_merge_factor`).
+- `model.attention.cca.latent_rank`: latent width ẽ for `cca_attn` (default `hidden_size // 4`, i.e. C=4).
+- `model.attention.cca.num_conv_layers`: 0, 1, or 2 convolution layers for `cca_attn` (default 2).
+- `model.attention.cca.conv_kernel_seq`: depth-wise causal seq conv kernel for `cca_attn` (default 4).
+- `model.attention.cca.conv_kernel_ch`: head-wise grouped channel conv kernel for `cca_attn` (default 3).
+- `model.attention.cca.qk_mean`: enable q-k-mean bias for `cca_attn` (default true).
+- `model.attention.cca.value_shift`: enable value-shift for `cca_attn` (default true; requires even `num_heads`).
+- `model.attention.ccgqa.query_latent_rank`: query latent width E/C₁ for `ccgqa_attn` (default `hidden_size // 2`).
+- `model.attention.ccgqa.kv_latent_rank`: KV latent width E/C₂ for `ccgqa_attn` (default `hidden_size // 8`).
+- `model.attention.ccgqa.num_kv_heads`: number of KV group heads for `ccgqa_attn` (default `num_heads // 4`).
+- `model.attention.ccgqa.num_conv_layers`: 0, 1, or 2 conv layers for `ccgqa_attn` (default 2).
+- `model.attention.ccgqa.conv_kernel_seq`: seq conv kernel for `ccgqa_attn` (default 4).
+- `model.attention.ccgqa.conv_kernel_ch`: channel conv kernel for `ccgqa_attn` (default 3).
+- `model.attention.ccgqa.qk_mean`: enable q-k-mean with B_group/E_group for `ccgqa_attn` (default true).
+- `model.attention.ccgqa.value_shift`: enable value-shift for `ccgqa_attn` (default true).
 
-### MiniMax Sparse Attention & SparDA (optional)
+### MiniMax Sparse Attention & SparDA (model.attention.msa / model.attention.sparda)
 
-- `msa_block_size`: KV block size for `msa_attn` (default 128).
-- `msa_topk_blocks`: blocks selected per GQA group per query (default 16).
-- `msa_index_dim`: Index Branch head dim (default 64).
-- `msa_kl_loss_weight`: KL alignment loss weight (default 0.0).
-- `sparda_block_size`: KV block size for `sparda_attn` (default 128).
-- `sparda_topk_blocks`: blocks selected per GQA group (default 16).
-- `sparda_forecast_dim`: Forecast projection dim (default 64).
+- `model.attention.msa.block_size`: KV block size for `msa_attn` (default 128).
+- `model.attention.msa.topk_blocks`: blocks selected per GQA group per query (default 16).
+- `model.attention.msa.index_dim`: Index Branch head dim (default 64).
+- `model.attention.msa.kl_loss_weight`: KL alignment loss weight (default 0.0).
+- `model.attention.sparda.block_size`: KV block size for `sparda_attn` (default 128).
+- `model.attention.sparda.topk_blocks`: blocks selected per GQA group (default 16).
+- `model.attention.sparda.forecast_dim`: Forecast projection dim (default 64).
 
 ## Decoder Examples (Famous Architecture-Inspired)
 

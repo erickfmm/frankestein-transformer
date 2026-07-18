@@ -28,6 +28,7 @@ try:
         BitNetQuantizer,
     )
     from ..utils.device import SUPPORTED_DEVICE_CHOICES, resolve_torch_device
+    from ..utils.config_flatten import flatten_model_dict
 except ImportError:
     from model.tormented_bert_frankestein import (
         FrankensteinDecoder,
@@ -43,6 +44,7 @@ except ImportError:
         BitNetQuantizer,
     )
     from utils.device import SUPPORTED_DEVICE_CHOICES, resolve_torch_device
+    from utils.config_flatten import flatten_model_dict
 
 logging.basicConfig(
     level=logging.INFO,
@@ -104,6 +106,8 @@ class ModelDeployer:
         # Extract config if saved with checkpoint
         if 'config' in checkpoint:
             saved_config = checkpoint['config']
+            # Flatten nested model dict (new schema) or pass through legacy flat
+            saved_config = flatten_model_dict(saved_config)
             # Update config with saved values
             for key, value in saved_config.items():
                 if hasattr(self.config, key):
@@ -265,7 +269,7 @@ class ModelDeployer:
                 config_dict = json.load(f)
             
             # Create config object
-            config = UltraConfig(**config_dict)
+            config = UltraConfig(**flatten_model_dict(config_dict))
             
             # Initialize model (decoder/mini when configured)
             if isinstance(config.mode, str) and config.mode == "decoder":
@@ -355,7 +359,7 @@ def main(argv=None):
     if args.config:
         with open(args.config) as f:
             config_dict = json.load(f)
-        config = UltraConfig(**config_dict)
+        config = UltraConfig(**flatten_model_dict(config_dict))
     else:
         # Use default config
         config = UltraConfig()
