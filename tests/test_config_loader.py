@@ -282,6 +282,71 @@ class LoadTrainingConfigMLMTests(unittest.TestCase):
         self.assertEqual(cfg.training_config.optimizer_class, "lamb")
         self.assertIn("lamb-lr_other", cfg.training_config.optimizer_parameters)
 
+    def test_flash_norm_hierarchical_schema(self):
+        # Hierarchical schema: model.norm.{type, flashnorm_partial_ratio}.
+        path = self._cfg_path("""
+            model:
+              dims:
+                vocab_size: 100
+                hidden_size: 48
+                num_layers: 1
+                num_loops: 1
+                num_heads: 6
+                retention_heads: 6
+                dropout: 0.0
+                layer_pattern: [standard_attn]
+                mode: encoder
+              norm:
+                type: flash_norm
+                flashnorm_partial_ratio: 0.25
+              use_bitnet: false
+              use_moe: false
+              ode_solver: rk4
+              ode_steps: 1
+              ffn_hidden_size: 96
+              ffn_activation: gelu
+            training:
+              task: mlm
+              optimizer:
+                optimizer_class: adamw
+                parameters: {}
+        """)
+        cfg = load_training_config(path)
+        self.assertEqual(cfg.model_config.norm_type, "flash_norm")
+        self.assertAlmostEqual(cfg.model_config.flashnorm_partial_ratio, 0.25)
+
+    def test_flash_norm_flat_schema(self):
+        # Flat top-level schema still works.
+        path = self._cfg_path("""
+            model:
+              vocab_size: 100
+              hidden_size: 48
+              num_layers: 1
+              num_loops: 1
+              num_heads: 6
+              retention_heads: 6
+              num_experts: 2
+              top_k_experts: 1
+              dropout: 0.0
+              norm_type: flash_norm
+              flashnorm_partial_ratio: 0.5
+              layer_pattern: [standard_attn]
+              use_bitnet: false
+              use_moe: false
+              ode_solver: rk4
+              ode_steps: 1
+              ffn_hidden_size: 96
+              ffn_activation: gelu
+            training:
+              task: mlm
+              optimizer:
+                optimizer_class: adamw
+                parameters: {}
+        """)
+        cfg = load_training_config(path)
+        self.assertEqual(cfg.model_config.norm_type, "flash_norm")
+        self.assertAlmostEqual(cfg.model_config.flashnorm_partial_ratio, 0.5)
+
 
 @unittest.skipUnless(_IMPORTS_OK, "torch and training deps required")
 class ListConfigPathsTests(unittest.TestCase):

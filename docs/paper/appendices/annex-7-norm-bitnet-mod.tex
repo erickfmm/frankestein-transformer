@@ -3,11 +3,11 @@
 
 This annex collects the implementation-level detail for normalization variants, BitNet-style ternary quantization, adaptive depth routing (Mixture-of-Depths), conditional memory (Engram), factorized embeddings, and the runtime algorithms (training-step stability controls, SBERT inference router) that support the configuration-driven pipeline. The main sections defer to this annex for the mathematical formulations and pseudocode; the bibliography keys cited here resolve against \texttt{docs/bibliography/}.
 
-\subsection{Normalization Variants: LayerNorm, RMSNorm, Dynamic Tanh, and Dynamic Erf}
+\subsection{Normalization Variants: LayerNorm, RMSNorm, pRMSNorm, Dynamic Tanh, Dynamic Erf, and FlashNorm}
 
 Normalization determines how activation scale is controlled across depth. In this repository, normalization is not only a modeling choice but also a schema compatibility question, because only certain values are currently accepted by \texttt{norm\_type}. The schema contract is:
 \[
-\texttt{norm\_type} \in \{\texttt{layer\_norm}, \texttt{dynamic\_tanh}, \texttt{derf}, \texttt{rms\_norm}, \texttt{prms\_norm}\}
+\texttt{norm\_type} \in \{\texttt{layer\_norm}, \texttt{dynamic\_tanh}, \texttt{derf}, \texttt{rms\_norm}, \texttt{prms\_norm}, \texttt{flash\_norm}\}
 \]
 The formulations most relevant to this codebase are:
 
@@ -46,6 +46,86 @@ Derf extends the same normalization-free direction by using an error-function ba
 \]
 with learnable scale/shift. Reported results in the cited work indicate stronger performance than DyT and common normalization baselines across multiple domains.
 
+\subsubsection{FlashNorm (Weightless RMSNorm)}
+FlashNorm \citep{graef2026flashnorm} is not a new mathematical normalization; it is an \emph{exact algebraic rewrite} of the ubiquitous ``$\mathrm{RMSNorm} \to \mathrm{Linear}$'' pair that (i) eliminates the per-dimension learnable scale $\mathbf{g}$ by folding it into the subsequent linear layer's weights, and (ii) defers the scalar RMS reduction to the output of the matrix multiplication so that the matmul (matrix unit) and the RMS reduction (vector unit) execute in parallel. Three propositions formalize the rewrite.
+
+\paragraph{Proposition 1 (Weight folding).}
+Given activation $\mathbf{a}\in\mathbb{R}^{n}$, RMSNorm weight $\mathbf{g}\in\mathbb{R}^{n}$, and a subsequent linear $\mathbf{W}\in\mathbb{R}^{n\times k}$,
+\[
+\mathbf{z}=\mathrm{RMSNorm}(\mathbf{a})\mathbf{W}=\frac{\mathbf{a}}{\mathrm{RMS}(\mathbf{a})}\mathbf{W}^{*},\qquad
+W^{*}_{i,j}=g_{i}\cdot W_{i,j}\ \Leftrightarrow\ \mathbf{W}^{*}=\operatorname{diag}(\mathbf{g})\mathbf{W}.
+\]
+The per-dimension scale $\mathbf{g}$ becomes redundant and is folded into $\mathbf{W}$ once at load time. The standalone \texttt{FlashNorm} module in this repository applies this directly: it has \emph{no learnable parameters} (the scale is meant to be absorbed by the downstream projection).
+
+\paragraph{Proposition 2 (Deferred normalization).}
+For a bias-free linear $\mathbf{W}^{*}$, scalar--matrix commutativity yields
+\[
+\frac{\mathbf{a}}{\mathrm{RMS}(\mathbf{a})}\mathbf{W}^{*}=\left(\mathbf{a}\mathbf{W}^{*}\right)\cdot\frac{1}{\mathrm{RMS}(\mathbf{a})}.
+\]
+The matmul $\mathbf{a}\mathbf{W}^{*}$ and the RMS reduction are independent of each other; on hardware with distinct matrix and vector execution units they execute in parallel, and only a single vector--scalar multiply synchronizes them. The fused module \texttt{FlashNormLinear} implements this rewrite: on the bias-free path it computes the matmul on the \emph{un-normalized} input and multiplies the result by the per-token reciprocal RMS. When the linear has a bias $\mathbf{c}$, the rewrite is no longer exact (Remark 1 of the paper): $\left(\mathbf{a}\mathbf{W}^{*}+\mathbf{c}\right)/\mathrm{RMS}(\mathbf{a})\neq\mathbf{a}\mathbf{W}^{*}/\mathrm{RMS}(\mathbf{a})+\mathbf{c}$; the layer then applies the scalar to the input first and lets the linear add its bias as usual.
+
+\paragraph{Proposition 3 (RMS cancellation).}
+By RMS scale invariance, $\mathrm{RMS}(\alpha\mathbf{a})=\alpha\,\mathrm{RMS}(\mathbf{a})$. Therefore an ``$\mathrm{RMSNorm}\to\mathrm{Linear}\to\mathrm{RMSNorm}$'' pattern allows the \emph{first} RMSNorm to be dropped entirely:
+\[
+\mathrm{RMSNorm}\!\left(\frac{\mathbf{a}}{\mathrm{RMS}(\mathbf{a})}\mathbf{W}^{*}\right)=\mathrm{RMSNorm}\!\left(\mathbf{a}\mathbf{W}^{*}\right).
+\]
+This cancellation is relevant for QKV-normalization (Gemma~4) and MLA latent normalization (DeepSeek-V2, Mistral Small~4); it is not auto-applied in this repository but is documented for completeness.
+
+\paragraph{Partial-RMS composition.}
+FlashNorm composes naturally with the pRMSNorm trick (§\ref{sec:annex-norm-bitnet-mod}, pRMSNorm subsection): when \texttt{flashnorm\_partial\_ratio} $=p>0$, the RMS is estimated from the first $k=\lceil d\cdot p\rceil$ dimensions of the input only, reducing the cost of the vector-unit RMS reduction further.
+
+\paragraph{BitNet interaction.}
+Folding a floating-point $\mathbf{g}$ into BitNet's ternary weight tensor $\{-1,0,+1\}$ \citep{wang_bitnet_2023} would destroy the quantization, and BitLinear applies its own internal LayerNorm before activation quantization which needs the normalized input. The fused module \texttt{FlashNormBitLinear} therefore falls back to the sequential composition $\mathrm{FlashNorm}\to\mathrm{BitLinear}$: the matmul and the RMS reduction still execute in parallel, but the post-matmul scalar multiply of Prop.~2 is sacrificed. Folding f.p.~$\mathbf{g}$ into a 1.58-bit weight tensor is left to future kernel-level work.
+
+\paragraph{PyTorch pseudocode.}
+\begin{algorithmic}[1]
+\State \textbf{Input:} activation $\mathbf{a}\in\mathbb{R}^{T\times n}$, RMSNorm weight $\mathbf{g}\in\mathbb{R}^{n}$, linear $\mathbf{W}\in\mathbb{R}^{n\times k}$, bias $\mathbf{c}\in\mathbb{R}^{k}$ or \texttt{None}
+\State \texttt{// Prop. 1: weight folding at load time}
+\State $\mathbf{W}^{*}\gets \mathbf{g}\odot\mathbf{W}$ \Comment{column-wise; \texttt{g.unsqueeze(0) * W} in PyTorch}
+\State $\mathbf{g}\gets \mathbf{1}$ \Comment{the standalone norm is now weightless}
+\State \texttt{// Prop. 2: forward pass with deferred RMS (bias-free path)}
+\State $\mathbf{b}\gets \mathbf{a}\mathbf{W}^{*\top}$ \Comment{matrix unit / tensor cores}
+\State $\mathrm{rms\_inv}\gets \mathrm{rsqrt}(\mathrm{mean}(\mathbf{a}^{2})+\varepsilon)$ \Comment{vector unit, independent of $\mathbf{b}$}
+\If{$\mathbf{c}=\texttt{None}$}
+    \State \textbf{return} $\mathbf{b}\cdot\mathrm{rms\_inv}$ \Comment{single vector--scalar multiply}
+\Else
+    \State \texttt{// Remark 1: bias path is sequential; matmul and RMS still parallelize}
+    \State \textbf{return} $(\mathbf{a}\cdot\mathrm{rms\_inv})\mathbf{W}^{*\top}+\mathbf{c}$
+\EndIf
+\end{algorithmic}
+
+\paragraph{Reported latency (NVIDIA T4 GPU).}
+The paper reports the following speedups on the norm-then-project operation, with an adaptive dispatch that falls back to the sequential path in the memory-bound (decode) regime:
+
+\scriptsize
+\begin{tabular}{llrrrr}
+\toprule
+\textbf{Scale} & \textbf{Tokens} & \textbf{Sequential (ms)} & \textbf{FlashNorm (ms)} & \textbf{Speedup} & \textbf{Notes} \\
+\midrule
+SmolLM2-135M & 4096 & 0.704 & 0.468 & $+33.6\%$ & compute-bound (prefill) \\
+SmolLM2-135M & 8192 & 0.929 & 0.599 & $+35.5\%$ & compute-bound (prefill) \\
+Llama-7B     & 1024 & 1.882 & 1.654 & $+12.1\%$ & compute-bound (prefill) \\
+Llama-7B     & 4096 & 7.628 & 6.570 & $+13.9\%$ & compute-bound (prefill) \\
+\bottomrule
+\end{tabular}
+\normalsize
+
+\paragraph{Zero-loss weight folding validation.}
+Weight folding (Prop.~1) is mathematically exact; the paper verified bit-identical outputs on three open-weight checkpoints:
+
+\scriptsize
+\begin{tabular}{lll}
+\toprule
+\textbf{Model} & \textbf{Precision} & \textbf{Result} \\
+\midrule
+SmolLM2-135M & fp16 & max diff $=0.0$, cosine sim $=1.0$, identical text \\
+Llama-3.2-1B & fp32 & bit-identical greedy generation \\
+Llama-3.1-8B & fp32 & bit-identical greedy generation \\
+\bottomrule
+\end{tabular}
+\normalsize
+Quality preservation on \texttt{lm-evaluation-harness} (wikitext word\_ppl, MMLU 5-shot, HellaSwag 0-shot) stays within benchmark noise (worst $\Delta=+0.0017$ word\_ppl).
+
 \subsubsection{Comparison}
 \scriptsize
 \begin{longtable}{p{2.2cm}p{3.4cm}p{2.0cm}p{4.0cm}}
@@ -58,6 +138,7 @@ RMSNorm & $\gamma_i x_i/\sqrt{\frac{1}{d}\sum_j x_j^2+\epsilon}$ & RMS only & Lo
 pRMSNorm & $\gamma_i x_i/\sqrt{\frac{1}{k}\sum_{j\le k} x_j^2+\epsilon}$ & Partial RMS & RMS from first $p$\% of dims; \texttt{prms\_partial\_ratio} default $6.25\%$ \citep{zhang_root_2019}. \\
 Dynamic Tanh & $\tanh(\alpha x)$ & none & Normalization-free bounded transform; drop-in replacement \citep{zhu_transformers_2025}. \\
 Dynamic Erf & $\mathrm{erf}(\alpha x+s)$ & none & Normalization-free alternative; improves over DyT \citep{chen_stronger_2025}. \\
+FlashNorm & $x_i/\sqrt{\frac{1}{d}\sum_j x_j^2+\epsilon}$ (weightless) & RMS only & Exact rewrite of RMSNorm$\to$Linear: folds $\mathbf{g}$ into $\mathbf{W}$ (Prop.~1), defers scalar RMS to matmul output (Prop.~2); 12--35\% latency reduction on T4 GPU \citep{graef2026flashnorm}. \\
 \bottomrule
 \end{longtable}
 \normalsize

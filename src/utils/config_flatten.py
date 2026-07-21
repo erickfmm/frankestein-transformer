@@ -222,6 +222,8 @@ def flatten_model_dict(model_data: Dict[str, Any]) -> Dict[str, Any]:
             out["norm_type"] = norm["type"]
         if "partial_ratio" in norm:
             out["prms_partial_ratio"] = norm["partial_ratio"]
+        if "flashnorm_partial_ratio" in norm:
+            out["flashnorm_partial_ratio"] = norm["flashnorm_partial_ratio"]
 
     # embedding.factorized.* + embedding.conv.* — leaf renames.
     embedding = model_data.get("embedding")

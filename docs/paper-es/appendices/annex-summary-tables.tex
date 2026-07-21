@@ -1,7 +1,7 @@
 \section{Tablas de Resumen Completas}
 \label{sec:annex-summary-tables}
 
-Este anexo proporciona una referencia completa de todos los componentes implementados en el código base de Frankestein Transformer: 35 mezcladores de secuencia en seis familias, 23 optimizadores, 5 variantes de normalización, 43 funciones de activación y 4 métodos de embedding. Cada tabla es autocontenida y referencia la bibliografía.
+Este anexo proporciona una referencia completa de todos los componentes implementados en el código base de Frankestein Transformer: 35 mezcladores de secuencia en seis familias, 23 optimizadores, 6 variantes de normalización, 43 funciones de activación y 4 métodos de embedding. Cada tabla es autocontenida y referencia la bibliografía.
 
 \subsection{Resumen de Mezcladores de Secuencia}
 
@@ -150,7 +150,7 @@ Anon & Adaptividad ajustable & 3 ($m$, $v$, fixed\_lr) & $\mathcal{O}(n)$ & lr, 
 
 \subsection{Variantes de Normalización}
 
-La Tabla~\ref{tab:all-norms} resume los cinco métodos de normalización disponibles a través del campo de esquema \texttt{norm\_type}, desde enfoques clásicos basados en estadísticas hasta transformaciones acotadas sin normalización.
+La Tabla~\ref{tab:all-norms} resume los seis métodos de normalización disponibles a través del campo de esquema \texttt{norm\_type}, desde enfoques clásicos basados en estadísticas hasta transformaciones acotadas sin normalización y RMSNorm sin pesos con ejecución norm-then-project fusionada.
 
 \small
 \begin{longtable}{p{2.5cm}p{5.5cm}p{2.5cm}p{3.5cm}}
@@ -166,7 +166,7 @@ La Tabla~\ref{tab:all-norms} resume los cinco métodos de normalización disponi
 \multicolumn{4}{r}{\textit{continúa en la página siguiente}} \\
 \endfoot
 \bottomrule
-\caption{Variantes de normalización. $d$ = dimensión oculta, $k = \lceil d \cdot p \rceil$ para razón parcial $p$, $\alpha$ y $s$ son parámetros aprendibles.}
+\caption{Variantes de normalización. $d$ = dimensión oculta, $k = \lceil d \cdot p \rceil$ para razón parcial $p$, $\alpha$ y $s$ son parámetros aprendibles. FlashNorm es sin pesos (sin parámetros aprendibles); la escala por dimensión se pliega en la capa lineal subsecuente según la Prop.~1 de \citep{graef2026flashnorm}.}
 \label{tab:all-norms}
 \endlastfoot
 LayerNorm & $\gamma_i (x_i - \mu)/\sqrt{\sigma^2 + \epsilon} + \beta_i$ & media + varianza & \citep{ba2016layer} \\
@@ -174,6 +174,7 @@ RMSNorm & $\gamma_i x_i / \sqrt{\frac{1}{d}\sum_j x_j^2 + \epsilon}$ & solo RMS 
 pRMSNorm & $\gamma_i x_i / \sqrt{\frac{1}{k}\sum_{j \le k} x_j^2 + \epsilon}$ & RMS parcial ($p$\,\%) & \citep{zhang_root_2019} \\
 Dynamic Tanh (DyT) & $\tanh(\alpha x)$ & ninguna & \citep{zhu_transformers_2025} \\
 Dynamic Erf (Derf) & $\operatorname{erf}(\alpha x + s)$ & ninguna & \citep{chen_stronger_2025} \\
+FlashNorm & $x_i / \sqrt{\frac{1}{d}\sum_j x_j^2 + \epsilon}$ & solo RMS (sin pesos) & \citep{graef2026flashnorm} \\
 \bottomrule
 \end{longtable}
 \normalsize

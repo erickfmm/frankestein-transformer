@@ -70,7 +70,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from .attention.common import BitLinear
-from .norm import get_norm
+from .norm import FlashNormBitLinear, FlashNormLinear, get_norm
 from .activation_function import (
     ALL_ACTIVATIONS,
     GLU_VARIANTS,
@@ -257,12 +257,22 @@ class UltraConfig:
             disabled. Default: False.
         norm_type: Normalization layer type. One of ``"layer_norm"``,
             ``"dynamic_tanh"`` (DyT), ``"derf"`` (Dynamic Erf),
-            ``"rms_norm"`` (RMSNorm), or ``"prms_norm"`` (partial RMSNorm).
+            ``"rms_norm"`` (RMSNorm), ``"prms_norm"`` (partial RMSNorm),
+            or ``"flash_norm"`` (FlashNorm — weightless RMSNorm; the
+            per-dim scale ``g`` is dropped per Prop. 1 of arXiv:2407.09577
+            and is meant to be absorbed by the subsequent linear layer).
             Default: ``"dynamic_tanh"``.
         prms_partial_ratio: Fraction of hidden dimensions used for RMS
             estimation when ``norm_type="prms_norm"``. The paper default is
             6.25%. Must be in ``(0, 1]``. Ignored for other ``norm_type``
             values. Default: ``0.0625``.
+        flashnorm_partial_ratio: Fraction of hidden dimensions used for
+            RMS estimation when ``norm_type="flash_norm"``. ``0.0``
+            (default) uses the full RMS — standard FlashNorm. Values in
+            ``(0, 1]`` activate the partial-RMS variant (composing the
+            pRMSNorm trick with Prop. 1 of FlashNorm). Must be in
+            ``[0, 1]``. Ignored for other ``norm_type`` values.
+            Default: ``0.0``.
         use_factorized_embedding: If True, use :class:`FactorizedEmbedding`
             with reduced embedding dimension + projection. Default: False.
         factorized_embedding_dim: Embedding dimension when factorization is
@@ -352,6 +362,7 @@ class UltraConfig:
     use_bitnet_conv: bool = False
     norm_type: str = "dynamic_tanh"
     prms_partial_ratio: float = 0.0625
+    flashnorm_partial_ratio: float = 0.0
     use_factorized_embedding: bool = False
     factorized_embedding_dim: int = 128
     use_embedding_conv: bool = True
@@ -509,6 +520,9 @@ class UltraConfig:
         if not 0.0 < float(self.prms_partial_ratio) <= 1.0:
             raise ValueError("prms_partial_ratio must be in the range (0, 1]")
 
+        if not 0.0 <= float(self.flashnorm_partial_ratio) <= 1.0:
+            raise ValueError("flashnorm_partial_ratio must be in the range [0, 1]")
+
         # ---- Validate FFN activation ----
         ffn_act = str(self.ffn_activation).lower()
         if ffn_act not in ALL_ACTIVATIONS:
@@ -641,6 +655,19 @@ class HybridLayer(nn.Module):
         self.norm2 = get_norm(config)
         is_glu = config.ffn_activation in GLU_VARIANTS
 
+        # FlashNorm fusion (Prop. 2 of arXiv:2407.09577): when norm_type is
+        # flash_norm and the FFN is the simple elementwise non-MoE path,
+        # fold norm2 into the FFN's first linear projection. The router in
+        # MoE needs a normalized input, and GLU FFNs have two parallel
+        # projections (gate + up) that would each need their own fusion;
+        # those cases keep norm2 as a standalone FlashNorm.
+        fuse_ffn_input = (
+            config.norm_type == "flash_norm"
+            and not is_glu
+            and not self.use_moe
+        )
+        flashnorm_partial_ratio = float(getattr(config, "flashnorm_partial_ratio", 0.0))
+
         def _build_ffn():
             """Return a fresh FFN block (gated or elementwise activation)."""
             if is_glu:
@@ -654,11 +681,34 @@ class HybridLayer(nn.Module):
                     dropout=float(getattr(config, "dropout", 0.0) or 0.0),
                     proj_factory=proj_cls,
                 )
+            if fuse_ffn_input:
+                # Fused first projection: FlashNorm + Linear in one module.
+                # The bias-free path applies Prop. 2 (deferred scalar RMS).
+                if config.use_bitnet:
+                    first_proj = FlashNormBitLinear(
+                        config.hidden_size,
+                        config.ffn_hidden_size,
+                        bias=False,
+                        partial_ratio=flashnorm_partial_ratio,
+                    )
+                else:
+                    first_proj = FlashNormLinear(
+                        config.hidden_size,
+                        config.ffn_hidden_size,
+                        bias=False,
+                        partial_ratio=flashnorm_partial_ratio,
+                    )
+            else:
+                first_proj = proj_cls(config.hidden_size, config.ffn_hidden_size)
             return nn.Sequential(
-                proj_cls(config.hidden_size, config.ffn_hidden_size),
+                first_proj,
                 get_activation(config, dim=config.ffn_hidden_size),
                 proj_cls(config.ffn_hidden_size, config.hidden_size),
             )
+
+        if fuse_ffn_input:
+            # norm2 is absorbed into the FFN's first projection.
+            self.norm2 = nn.Identity()
 
         if self.use_moe:
             self.router = router_cls(config.hidden_size, config.num_experts, bias=False)

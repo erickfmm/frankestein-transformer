@@ -1,7 +1,7 @@
 \section{Comprehensive Summary Tables}
 \label{sec:annex-summary-tables}
 
-This appendix provides a complete reference of all components implemented in the Frankestein Transformer codebase: 35 sequence mixers across six families, 23 optimizers, 5 normalization variants, 43 activation functions, and 4 embedding methods. Each table is self-contained and cross-references the bibliography.
+This appendix provides a complete reference of all components implemented in the Frankestein Transformer codebase: 35 sequence mixers across six families, 23 optimizers, 6 normalization variants, 43 activation functions, and 4 embedding methods. Each table is self-contained and cross-references the bibliography.
 
 \subsection{Sequence Mixer Summary}
 
@@ -150,7 +150,7 @@ Anon & Adaptivity-tunable & 3 ($m$, $v$, fixed\_lr) & $\mathcal{O}(n)$ & lr, $\b
 
 \subsection{Normalization Variants}
 
-Table~\ref{tab:all-norms} summarizes the five normalization methods available through the \texttt{norm\_type} schema field, ranging from classical statistics-based approaches to normalization-free bounded transforms.
+Table~\ref{tab:all-norms} summarizes the six normalization methods available through the \texttt{norm\_type} schema field, ranging from classical statistics-based approaches to normalization-free bounded transforms and weightless RMSNorm with fused norm-then-project execution.
 
 \small
 \begin{longtable}{p{2.5cm}p{5.5cm}p{2.5cm}p{3.5cm}}
@@ -166,7 +166,7 @@ Table~\ref{tab:all-norms} summarizes the five normalization methods available th
 \multicolumn{4}{r}{\textit{continued on next page}} \\
 \endfoot
 \bottomrule
-\caption{Normalization variants. $d$ = hidden dimension, $k = \lceil d \cdot p \rceil$ for partial ratio $p$, $\alpha$ and $s$ are learnable parameters.}
+\caption{Normalization variants. $d$ = hidden dimension, $k = \lceil d \cdot p \rceil$ for partial ratio $p$, $\alpha$ and $s$ are learnable parameters. FlashNorm is weightless (no learnable parameters); the per-dim scale is folded into the subsequent linear layer per Prop.~1 of \citep{graef2026flashnorm}.}
 \label{tab:all-norms}
 \endlastfoot
 LayerNorm & $\gamma_i (x_i - \mu)/\sqrt{\sigma^2 + \epsilon} + \beta_i$ & mean + variance & \citep{ba2016layer} \\
@@ -174,6 +174,7 @@ RMSNorm & $\gamma_i x_i / \sqrt{\frac{1}{d}\sum_j x_j^2 + \epsilon}$ & RMS only 
 pRMSNorm & $\gamma_i x_i / \sqrt{\frac{1}{k}\sum_{j \le k} x_j^2 + \epsilon}$ & Partial RMS ($p$\,\%) & \citep{zhang_root_2019} \\
 Dynamic Tanh (DyT) & $\tanh(\alpha x)$ & none & \citep{zhu_transformers_2025} \\
 Dynamic Erf (Derf) & $\operatorname{erf}(\alpha x + s)$ & none & \citep{chen_stronger_2025} \\
+FlashNorm & $x_i / \sqrt{\frac{1}{d}\sum_j x_j^2 + \epsilon}$ & RMS only (weightless) & \citep{graef2026flashnorm} \\
 \bottomrule
 \end{longtable}
 \normalsize

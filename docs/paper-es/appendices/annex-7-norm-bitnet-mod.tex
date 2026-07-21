@@ -3,11 +3,11 @@
 
 Este anexo recopila el detalle a nivel de implementación para las variantes de normalización, cuantización ternaria estilo BitNet, enrutamiento adaptativo de profundidad (Mixture-of-Depths), memoria condicional (Engram), embeddings factorizados y los algoritmos de ejecución (controles de estabilidad del paso de entrenamiento, enrutador de inferencia SBERT) que soportan la tubería impulsada por configuración. Las secciones principales difieren a este anexo para las formulaciones matemáticas y el pseudocódigo; las claves bibliográficas citadas aquí se resuelven contra \texttt{docs/bibliography/}.
 
-\subsection{Variantes de Normalización: LayerNorm, RMSNorm, Tanh Dinámico y Erf Dinámico}
+\subsection{Variantes de Normalización: LayerNorm, RMSNorm, pRMSNorm, Tanh Dinámico, Erf Dinámico y FlashNorm}
 
 La normalización determina cómo se controla la escala de activación a través de la profundidad. En este repositorio, la normalización no es solo una elección de modelado sino también una cuestión de compatibilidad con el esquema, porque solo ciertos valores son actualmente aceptados por \texttt{norm\_type}. El contrato del esquema es:
 \[
-\texttt{norm\_type} \in \{\texttt{layer\_norm}, \texttt{dynamic\_tanh}, \texttt{derf}, \texttt{rms\_norm}, \texttt{prms\_norm}\}
+\texttt{norm\_type} \in \{\texttt{layer\_norm}, \texttt{dynamic\_tanh}, \texttt{derf}, \texttt{rms\_norm}, \texttt{prms\_norm}, \texttt{flash\_norm}\}
 \]
 Las formulaciones más relevantes para este código base son:
 
@@ -46,6 +46,86 @@ Derf extiende la misma dirección libre de normalización usando un mapeo basado
 \]
 con escala/desplazamiento aprendibles. Los resultados reportados en el trabajo citado indican un rendimiento superior al de DyT y las líneas base de normalización comunes en múltiples dominios.
 
+\subsubsection{FlashNorm (RMSNorm sin pesos)}
+FlashNorm \citep{graef2026flashnorm} no es una nueva normalización matemática; es una \emph{reescritura algebraica exacta} del ubicuo par ``$\mathrm{RMSNorm} \to \mathrm{Lineal}$'' que (i) elimina la escala aprendible por dimensión $\mathbf{g}$ al plegarla en los pesos de la capa lineal subsecuente, y (ii) difiere la reducción escalar RMS a la salida de la multiplicación matricial, de modo que el \texttt{matmul} (unidad matricial) y la reducción RMS (unidad vectorial) se ejecuten en paralelo. Tres proposiciones formalizan la reescritura.
+
+\paragraph{Proposición 1 (Plegado de pesos).}
+Dada la activación $\mathbf{a}\in\mathbb{R}^{n}$, el peso RMSNorm $\mathbf{g}\in\mathbb{R}^{n}$ y una lineal subsecuente $\mathbf{W}\in\mathbb{R}^{n\times k}$,
+\[
+\mathbf{z}=\mathrm{RMSNorm}(\mathbf{a})\mathbf{W}=\frac{\mathbf{a}}{\mathrm{RMS}(\mathbf{a})}\mathbf{W}^{*},\qquad
+W^{*}_{i,j}=g_{i}\cdot W_{i,j}\ \Leftrightarrow\ \mathbf{W}^{*}=\operatorname{diag}(\mathbf{g})\mathbf{W}.
+\]
+La escala por dimensión $\mathbf{g}$ se vuelve redundante y se pliega en $\mathbf{W}$ una única vez al cargar el modelo. El módulo autónomo \texttt{FlashNorm} de este repositorio aplica esto directamente: \emph{no tiene parámetros aprendibles} (la escala está destinada a ser absorbida por la proyección subsecuente).
+
+\paragraph{Proposición 2 (Normalización diferida).}
+Para una lineal sin bias $\mathbf{W}^{*}$, la conmutatividad escalar--matricial produce
+\[
+\frac{\mathbf{a}}{\mathrm{RMS}(\mathbf{a})}\mathbf{W}^{*}=\left(\mathbf{a}\mathbf{W}^{*}\right)\cdot\frac{1}{\mathrm{RMS}(\mathbf{a})}.
+\]
+El \texttt{matmul} $\mathbf{a}\mathbf{W}^{*}$ y la reducción RMS son independientes entre sí; en hardware con unidades matriciales y vectoriales diferenciadas se ejecutan en paralelo, y solo una multiplicación vectorial--escalar los sincroniza. El módulo fusionado \texttt{FlashNormLinear} implementa esta reescritura: en la ruta sin bias calcula el \texttt{matmul} sobre la entrada \emph{no normalizada} y multiplica el resultado por el RMS recíproco por token. Cuando la lineal tiene bias $\mathbf{c}$, la reescritura deja de ser exacta (Observación 1 del paper): $\left(\mathbf{a}\mathbf{W}^{*}+\mathbf{c}\right)/\mathrm{RMS}(\mathbf{a})\neq\mathbf{a}\mathbf{W}^{*}/\mathrm{RMS}(\mathbf{a})+\mathbf{c}$; la capa entonces aplica el escalar a la entrada primero y deja que la lineal añada su bias como de costumbre.
+
+\paragraph{Proposición 3 (Cancelación de RMS).}
+Por la invariancia de escala de RMS, $\mathrm{RMS}(\alpha\mathbf{a})=\alpha\,\mathrm{RMS}(\mathbf{a})$. Por tanto, un patrón ``$\mathrm{RMSNorm}\to\mathrm{Lineal}\to\mathrm{RMSNorm}$'' permite que el \emph{primer} RMSNorm se elimine por completo:
+\[
+\mathrm{RMSNorm}\!\left(\frac{\mathbf{a}}{\mathrm{RMS}(\mathbf{a})}\mathbf{W}^{*}\right)=\mathrm{RMSNorm}\!\left(\mathbf{a}\mathbf{W}^{*}\right).
+\]
+Esta cancelación es relevante para la normalización QKV (Gemma~4) y la normalización latente MLA (DeepSeek-V2, Mistral Small~4); no se aplica automáticamente en este repositorio pero se documenta por completitud.
+
+\paragraph{Composición con RMS parcial.}
+FlashNorm se compone naturalmente con el truco pRMSNorm (§\ref{sec:annex-norm-bitnet-mod}, subsección pRMSNorm): cuando \texttt{flashnorm\_partial\_ratio} $=p>0$, el RMS se estima solo de los primeros $k=\lceil d\cdot p\rceil$ elementos de la entrada, reduciendo aún más el costo de la reducción RMS en la unidad vectorial.
+
+\paragraph{Interacción con BitNet.}
+Plegar un $\mathbf{g}$ de coma flotante en el tensor de pesos ternarios de BitNet $\{-1,0,+1\}$ \citep{wang_bitnet_2023} destruiría la cuantización, y BitLinear aplica su propio LayerNorm interno antes de la cuantización de activaciones, el cual necesita la entrada normalizada. El módulo fusionado \texttt{FlashNormBitLinear} por tanto recurre a la composición secuencial $\mathrm{FlashNorm}\to\mathrm{BitLinear}$: el \texttt{matmul} y la reducción RMS aún se ejecutan en paralelo, pero la multiplicación escalar post-\texttt{matmul} de la Prop.~2 se sacrifica. El plegado de $\mathbf{g}$ en coma flotante en un tensor de pesos de 1.58 bits se deja a trabajo futuro a nivel kernel.
+
+\paragraph{Pseudocódigo PyTorch.}
+\begin{algorithmic}[1]
+\State \textbf{Entrada:} activación $\mathbf{a}\in\mathbb{R}^{T\times n}$, peso RMSNorm $\mathbf{g}\in\mathbb{R}^{n}$, lineal $\mathbf{W}\in\mathbb{R}^{n\times k}$, bias $\mathbf{c}\in\mathbb{R}^{k}$ o \texttt{None}
+\State \texttt{// Prop. 1: plegado de pesos al cargar}
+\State $\mathbf{W}^{*}\gets \mathbf{g}\odot\mathbf{W}$ \Comment{por columnas; \texttt{g.unsqueeze(0) * W} en PyTorch}
+\State $\mathbf{g}\gets \mathbf{1}$ \Comment{la norma autónoma ahora es sin pesos}
+\State \texttt{// Prop. 2: paso forward con RMS diferida (ruta sin bias)}
+\State $\mathbf{b}\gets \mathbf{a}\mathbf{W}^{*\top}$ \Comment{unidad matricial / tensor cores}
+\State $\mathrm{rms\_inv}\gets \mathrm{rsqrt}(\mathrm{mean}(\mathbf{a}^{2})+\varepsilon)$ \Comment{unidad vectorial, independiente de $\mathbf{b}$}
+\If{$\mathbf{c}=\texttt{None}$}
+    \State \textbf{retornar} $\mathbf{b}\cdot\mathrm{rms\_inv}$ \Comment{una sola multiplicación vectorial--escalar}
+\Else
+    \State \texttt{// Observación 1: la ruta con bias es secuencial; matmul y RMS aún paralelizan}
+    \State \textbf{retornar} $(\mathbf{a}\cdot\mathrm{rms\_inv})\mathbf{W}^{*\top}+\mathbf{c}$
+\EndIf
+\end{algorithmic}
+
+\paragraph{Latencia reportada (GPU NVIDIA T4).}
+El paper reporta las siguientes aceleraciones sobre la operación \emph{norm-then-project}, con un despacho adaptativo que cae al camino secuencial en el régión limitada por memoria (decodificación):
+
+\scriptsize
+\begin{tabular}{llrrrl}
+\toprule
+\textbf{Escala} & \textbf{Tokens} & \textbf{Secuencial (ms)} & \textbf{FlashNorm (ms)} & \textbf{Aceleración} & \textbf{Notas} \\
+\midrule
+SmolLM2-135M & 4096 & 0.704 & 0.468 & $+33.6\%$ & limitada por cómputo (prefill) \\
+SmolLM2-135M & 8192 & 0.929 & 0.599 & $+35.5\%$ & limitada por cómputo (prefill) \\
+Llama-7B     & 1024 & 1.882 & 1.654 & $+12.1\%$ & limitada por cómputo (prefill) \\
+Llama-7B     & 4096 & 7.628 & 6.570 & $+13.9\%$ & limitada por cómputo (prefill) \\
+\bottomrule
+\end{tabular}
+\normalsize
+
+\paragraph{Validación de plegado sin pérdida.}
+El plegado de pesos (Prop.~1) es matemáticamente exacto; el paper verificó salidas bit-idénticas en tres checkpoints abiertos:
+
+\scriptsize
+\begin{tabular}{lll}
+\toprule
+\textbf{Modelo} & \textbf{Precisión} & \textbf{Resultado} \\
+\midrule
+SmolLM2-135M & fp16 & diff máxima $=0.0$, similitud coseno $=1.0$, texto idéntico \\
+Llama-3.2-1B & fp32 & generación voraz bit-idéntica \\
+Llama-3.1-8B & fp32 & generación voraz bit-idéntica \\
+\bottomrule
+\end{tabular}
+\normalsize
+La preservación de calidad en \texttt{lm-evaluation-harness} (wikitext word\_ppl, MMLU 5-shot, HellaSwag 0-shot) se mantiene dentro del ruido del benchmark (peor $\Delta=+0.0017$ word\_ppl).
+
 \subsubsection{Comparación}
 \scriptsize
 \begin{longtable}{p{2.2cm}p{3.4cm}p{2.0cm}p{4.0cm}}
@@ -58,6 +138,7 @@ RMSNorm & $\gamma_i x_i/\sqrt{\frac{1}{d}\sum_j x_j^2+\epsilon}$ & Solo RMS & Me
 pRMSNorm & $\gamma_i x_i/\sqrt{\frac{1}{k}\sum_{j\le k} x_j^2+\epsilon}$ & RMS parcial & RMS del primer $p$\% de dims; \texttt{prms\_partial\_ratio} por defecto $6.25\%$ \citep{zhang_root_2019}. \\
 Tanh Dinámico & $\tanh(\alpha x)$ & ninguna & Transformación acotada libre de normalización; reemplazo directo \citep{zhu_transformers_2025}. \\
 Erf Dinámico & $\mathrm{erf}(\alpha x+s)$ & ninguna & Alternativa libre de normalización; mejora sobre DyT \citep{chen_stronger_2025}. \\
+FlashNorm & $x_i/\sqrt{\frac{1}{d}\sum_j x_j^2+\epsilon}$ (sin pesos) & Solo RMS & Reescritura exacta de RMSNorm$\to$Lineal: pliega $\mathbf{g}$ en $\mathbf{W}$ (Prop.~1), difiere el escalar RMS a la salida del \texttt{matmul} (Prop.~2); 12--35\% de reducción de latencia en GPU T4 \citep{graef2026flashnorm}. \\
 \bottomrule
 \end{longtable}
 \normalsize

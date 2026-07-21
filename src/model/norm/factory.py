@@ -10,6 +10,7 @@ import torch.nn as nn
 
 from .derf import Derf
 from .dynamic_tanh import DynamicTanhNorm
+from .flash import FlashNorm
 from .rms import RMSNorm
 
 
@@ -17,16 +18,20 @@ def get_norm(config):
     """Factory function that returns a normalization module based on config.
 
     Selects among ``LayerNorm``, ``DynamicTanhNorm``, ``Derf``, ``RMSNorm``,
-    and ``pRMSNorm`` (partial RMSNorm) based on the ``norm_type`` field in the
-    configuration.
+    ``pRMSNorm`` (partial RMSNorm), and ``FlashNorm`` (weightless RMSNorm
+    with optional partial-RMS composition) based on the ``norm_type`` field
+    in the configuration.
 
     Args:
         config: Model configuration object with attributes ``norm_type``
             (one of ``"layer_norm"``, ``"dynamic_tanh"``, ``"derf"``,
-            ``"rms_norm"``, ``"prms_norm"``) and ``hidden_size``. When
-            ``norm_type == "prms_norm"``, the optional ``prms_partial_ratio``
-            attribute (default ``0.0625``) controls the fraction of dimensions
-            used for RMS estimation.
+            ``"rms_norm"``, ``"prms_norm"``, ``"flash_norm"``) and
+            ``hidden_size``. When ``norm_type == "prms_norm"``, the optional
+            ``prms_partial_ratio`` attribute (default ``0.0625``) controls
+            the fraction of dimensions used for RMS estimation. When
+            ``norm_type == "flash_norm"``, the optional
+            ``flashnorm_partial_ratio`` attribute (default ``0.0``)
+            activates the partial-RMS variant of FlashNorm.
 
     Returns:
         A normalization ``nn.Module`` instance appropriate for the requested
@@ -45,4 +50,7 @@ def get_norm(config):
     if config.norm_type == "prms_norm":
         partial_ratio = float(getattr(config, "prms_partial_ratio", 0.0625))
         return RMSNorm(config.hidden_size, partial_ratio=partial_ratio)
+    if config.norm_type == "flash_norm":
+        partial_ratio = float(getattr(config, "flashnorm_partial_ratio", 0.0))
+        return FlashNorm(config.hidden_size, partial_ratio=partial_ratio)
     return nn.LayerNorm(config.hidden_size)

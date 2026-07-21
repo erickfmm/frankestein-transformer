@@ -218,6 +218,130 @@ class TormentedBertFrankensteinTests(unittest.TestCase):
         y = model(x)
         self.assertEqual(y.shape, (1, 4, 100))
 
+    def test_flash_norm_forward(self):
+        model = self._model(norm_type="flash_norm")
+        x = torch.randint(0, 100, (1, 4))
+        y = model(x)
+        self.assertEqual(y.shape, (1, 4, 100))
+
+    def test_flash_norm_partial_ratio_forward(self):
+        model = self._model(norm_type="flash_norm", flashnorm_partial_ratio=0.25)
+        x = torch.randint(0, 100, (1, 4))
+        y = model(x)
+        self.assertEqual(y.shape, (1, 4, 100))
+
+    def test_flash_norm_default_partial_ratio(self):
+        cfg = UltraConfig(
+            vocab_size=100,
+            hidden_size=48,
+            num_layers=1,
+            num_loops=1,
+            num_heads=6,
+            retention_heads=6,
+            num_experts=2,
+            top_k_experts=1,
+            dropout=0.0,
+            norm_type="flash_norm",
+            use_bitnet=False,
+            layer_pattern=["standard_attn"],
+            use_moe=False,
+            ode_solver="rk4",
+            ode_steps=1,
+            ffn_hidden_size=96,
+            ffn_activation="gelu",
+        )
+        # Default flashnorm_partial_ratio is 0.0 (full RMS, not partial).
+        self.assertAlmostEqual(cfg.flashnorm_partial_ratio, 0.0)
+
+    def test_flashnorm_partial_ratio_validation(self):
+        # 0.0 is valid (full RMS).
+        cfg = UltraConfig(
+            vocab_size=100,
+            hidden_size=48,
+            num_layers=1,
+            num_loops=1,
+            num_heads=6,
+            retention_heads=6,
+            num_experts=2,
+            top_k_experts=1,
+            dropout=0.0,
+            norm_type="flash_norm",
+            flashnorm_partial_ratio=0.0,
+            use_bitnet=False,
+            layer_pattern=["standard_attn"],
+            use_moe=False,
+            ode_solver="rk4",
+            ode_steps=1,
+            ffn_hidden_size=96,
+            ffn_activation="gelu",
+        )
+        self.assertAlmostEqual(cfg.flashnorm_partial_ratio, 0.0)
+        # 1.0 is valid (upper bound).
+        UltraConfig(
+            vocab_size=100,
+            hidden_size=48,
+            num_layers=1,
+            num_loops=1,
+            num_heads=6,
+            retention_heads=6,
+            num_experts=2,
+            top_k_experts=1,
+            dropout=0.0,
+            norm_type="flash_norm",
+            flashnorm_partial_ratio=1.0,
+            use_bitnet=False,
+            layer_pattern=["standard_attn"],
+            use_moe=False,
+            ode_solver="rk4",
+            ode_steps=1,
+            ffn_hidden_size=96,
+            ffn_activation="gelu",
+        )
+        # Negative is invalid.
+        with self.assertRaises(ValueError):
+            UltraConfig(
+                vocab_size=100,
+                hidden_size=48,
+                num_layers=1,
+                num_loops=1,
+                num_heads=6,
+                retention_heads=6,
+                num_experts=2,
+                top_k_experts=1,
+                dropout=0.0,
+                norm_type="flash_norm",
+                flashnorm_partial_ratio=-0.1,
+                use_bitnet=False,
+                layer_pattern=["standard_attn"],
+                use_moe=False,
+                ode_solver="rk4",
+                ode_steps=1,
+                ffn_hidden_size=96,
+                ffn_activation="gelu",
+            )
+        # > 1.0 is invalid.
+        with self.assertRaises(ValueError):
+            UltraConfig(
+                vocab_size=100,
+                hidden_size=48,
+                num_layers=1,
+                num_loops=1,
+                num_heads=6,
+                retention_heads=6,
+                num_experts=2,
+                top_k_experts=1,
+                dropout=0.0,
+                norm_type="flash_norm",
+                flashnorm_partial_ratio=1.5,
+                use_bitnet=False,
+                layer_pattern=["standard_attn"],
+                use_moe=False,
+                ode_solver="rk4",
+                ode_steps=1,
+                ffn_hidden_size=96,
+                ffn_activation="gelu",
+            )
+
     def test_prms_norm_default_ratio(self):
         cfg = UltraConfig(
             vocab_size=100,
