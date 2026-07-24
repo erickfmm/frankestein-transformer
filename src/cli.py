@@ -113,6 +113,10 @@ def _run_train(args: argparse.Namespace) -> int:
         argv.extend(["--gpu-temp-critical-threshold-c", str(args.gpu_temp_critical_threshold_c)])
     if args.gpu_temp_poll_interval_seconds is not None:
         argv.extend(["--gpu-temp-poll-interval-seconds", str(args.gpu_temp_poll_interval_seconds)])
+    if args.gpu_temp_checkpoint_grace_seconds is not None:
+        argv.extend(["--gpu-temp-checkpoint-grace-seconds", str(args.gpu_temp_checkpoint_grace_seconds)])
+    if args.resume_from_checkpoint is not None:
+        argv.extend(["--resume-from-checkpoint", str(args.resume_from_checkpoint)])
     if args.switch_on_thermal is True:
         argv.append("--switch-on-thermal")
     elif args.switch_on_thermal is False:
@@ -438,6 +442,8 @@ def build_parser() -> argparse.ArgumentParser:
     train_parser.add_argument("--gpu-temp-resume-threshold-c", type=float, default=None)
     train_parser.add_argument("--gpu-temp-critical-threshold-c", type=float, default=None)
     train_parser.add_argument("--gpu-temp-poll-interval-seconds", type=float, default=None)
+    train_parser.add_argument("--gpu-temp-checkpoint-grace-seconds", type=float, default=None)
+    train_parser.add_argument("--resume-from-checkpoint", type=str, default=None, help="Resume training from a checkpoint ('auto' or a path)")
     switch_on_thermal_group = train_parser.add_mutually_exclusive_group()
     switch_on_thermal_group.add_argument("--switch-on-thermal", dest="switch_on_thermal", action="store_true")
     switch_on_thermal_group.add_argument("--no-switch-on-thermal", dest="switch_on_thermal", action="store_false")

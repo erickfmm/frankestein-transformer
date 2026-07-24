@@ -12,9 +12,11 @@ import torch
 import logging
 import math
 import heapq
-import time
 import re
+import signal
 import subprocess
+import glob
+import time
 from datetime import datetime
 from dataclasses import dataclass, field
 from typing import Any, List, Tuple, Optional, Dict
@@ -27,11 +29,21 @@ import torch.nn.functional as F
 
 try:
     from ..utils.storage_manager import StorageManager
-    from ..utils.gpu_temp_guard import GPUTelemetryError, GPUTemperatureGuard
+    from ..utils.gpu_temp_guard import (
+        CHECKPOINT_DONE_SENTINEL,
+        GPUTelemetryError,
+        GPUTemperatureGuard,
+        RESUME_AUTO,
+    )
     from ..model.optimizer.factory import build_optimizer
 except ImportError:
     from utils.storage_manager import StorageManager
-    from utils.gpu_temp_guard import GPUTelemetryError, GPUTemperatureGuard
+    from utils.gpu_temp_guard import (
+        CHECKPOINT_DONE_SENTINEL,
+        GPUTelemetryError,
+        GPUTemperatureGuard,
+        RESUME_AUTO,
+    )
     from model.optimizer.factory import build_optimizer
 
 
@@ -101,6 +113,8 @@ class TrainingConfig:
     gpu_temp_resume_threshold_c: float = 80.0
     gpu_temp_critical_threshold_c: Optional[float] = None
     gpu_temp_poll_interval_seconds: float = 30.0
+    gpu_temp_checkpoint_grace_seconds: float = 30.0
+    resume_from_checkpoint: Optional[str] = None
     
     # Rolling Checkpoints
     checkpoint_every_n_steps: int = 500  # Save every N steps
@@ -188,11 +202,6 @@ class TitanTrainer:
         self.training_config = training_config or TrainingConfig()
         self.device = device if device else ("cuda" if torch.cuda.is_available() else "cpu")
         self._primary_device = str(self.device)
-        if (
-            self.training_config.gpu_temp_critical_threshold_c is not None
-            and self._primary_device.startswith("cuda")
-        ):
-            self.training_config.switch_on_thermal = True
         self._configured_use_amp = bool(self.training_config.use_amp)
         self.use_amp = (
             self._configured_use_amp
@@ -241,11 +250,6 @@ class TitanTrainer:
         self._nvml_warning_logged = False
         self._last_guard_temp_c: Optional[float] = None
         self._pending_thermal_repair_action = "none"
-        self._thermal_offload_active = False
-        self._thermal_offload_started_monotonic: Optional[float] = None
-        self._thermal_last_poll_monotonic = 0.0
-        self._thermal_emergency_last_checkpoint: Optional[str] = None
-        self._force_cpu_only_after_gpu_error = False
         self.gpu_temp_guard = GPUTemperatureGuard(
             enabled=bool(self.training_config.gpu_temp_guard_enabled),
             device=str(self.device),
@@ -256,11 +260,19 @@ class TitanTrainer:
             poll_interval_seconds=float(self.training_config.gpu_temp_poll_interval_seconds),
         )
 
+        # Supervisor integration: when this process is a supervisor child, the
+        # supervisor sends SIGUSR1 to request an immediate rolling-checkpoint
+        # flush before SIGKILL. The training loop checks the flag each step.
+        self._is_supervisor_child = os.environ.get("FRANKESTEIN_SUPERVISOR_CHILD") == "1"
+        self._checkpoint_request_pending = False
+        self._checkpoint_dir = "checkpoints"
+        if self._is_supervisor_child and self._is_main_thread():
+            self._install_supervisor_sigusr1_handler()
+
         self._init_csv_logger()
         
         # === NEW: Rolling checkpoint tracking ===
         self.rolling_checkpoints: List[str] = []  # FIFO queue of checkpoint paths
-        self.thermal_emergency_checkpoints: List[str] = []
         
         # === NEW: Best checkpoints tracking (min-heap by negative loss for max extraction) ===
         # Format: [(-loss, checkpoint_path), ...]
@@ -277,6 +289,98 @@ class TitanTrainer:
         self.non_improving_epochs = 0
         
         self._log_setup()
+
+    @staticmethod
+    def _is_main_thread() -> bool:
+        import threading
+        return threading.current_thread() is threading.main_thread()
+
+    def _install_supervisor_sigusr1_handler(self):
+        """Register SIGUSR1 to request an immediate rolling-checkpoint flush.
+
+        The supervisor sends SIGUSR1 to this process (its direct child) before
+        SIGKILL on a thermal event. The handler only sets a flag; the actual
+        checkpoint write happens in the training loop
+        (:meth:`_maybe_flush_supervisor_checkpoint`) to stay on the main thread
+        and avoid torch re-entrancy issues.
+        """
+        try:
+            signal.signal(signal.SIGUSR1, self._on_supervisor_sigusr1)
+            logging.info("Supervisor SIGUSR1 handler installed (FRANKESTEIN_SUPERVISOR_CHILD=1)")
+        except (ValueError, OSError) as exc:
+            logging.warning("Could not install SIGUSR1 supervisor handler: %s", exc)
+
+    def _on_supervisor_sigusr1(self, signum, frame):
+        self._checkpoint_request_pending = True
+
+    def _maybe_flush_supervisor_checkpoint(self, epoch: int) -> None:
+        """Flush a rolling checkpoint immediately if the supervisor requested one.
+
+        Called every training step from the main thread. After flushing, the
+        sentinel file ``.supervisor_checkpoint_done`` is written into the
+        checkpoint directory so the supervisor knows the flush completed and
+        can proceed to SIGKILL.
+        """
+        if not self._checkpoint_request_pending:
+            return
+        try:
+            self._save_rolling_checkpoint(epoch)
+            os.makedirs(self._checkpoint_dir, exist_ok=True)
+            sentinel = os.path.join(self._checkpoint_dir, CHECKPOINT_DONE_SENTINEL)
+            with open(sentinel, "w") as fh:
+                fh.write(str(self.global_step))
+            logging.info("Supervisor checkpoint flush acknowledged (sentinel written)")
+        except Exception as exc:
+            logging.error("Supervisor checkpoint flush failed: %s", exc)
+        finally:
+            self._checkpoint_request_pending = False
+
+    @staticmethod
+    def find_latest_rolling_checkpoint(checkpoint_dir: str = "checkpoints") -> Optional[str]:
+        """Return the path of the most recent rolling checkpoint by global_step.
+
+        Rolling checkpoints are named ``titan_rolling_step_<n>.pt``. Returns
+        ``None`` if none exist.
+        """
+        if not os.path.isdir(checkpoint_dir):
+            return None
+        pattern = os.path.join(checkpoint_dir, "titan_rolling_step_*.pt")
+        best_path = None
+        best_step = -1
+        for path in glob.glob(pattern):
+            match = re.search(r"titan_rolling_step_(\d+)\.pt$", os.path.basename(path))
+            if match is None:
+                continue
+            step = int(match.group(1))
+            if step > best_step:
+                best_step = step
+                best_path = path
+        return best_path
+
+    def resume_from_latest_checkpoint(self, checkpoint_spec: Optional[str]) -> int:
+        """Load the specified (or latest) checkpoint and return its epoch.
+
+        Args:
+            checkpoint_spec: ``"auto"`` to pick the latest rolling checkpoint,
+                an explicit path, or ``None`` to do nothing.
+
+        Returns:
+            The epoch number from the loaded checkpoint, or ``0`` if no
+            checkpoint was loaded.
+        """
+        if not checkpoint_spec:
+            return 0
+        if checkpoint_spec == RESUME_AUTO:
+            path = self.find_latest_rolling_checkpoint(self._checkpoint_dir)
+            if path is None:
+                logging.info("No rolling checkpoint found in %s; starting fresh", self._checkpoint_dir)
+                return 0
+        else:
+            path = checkpoint_spec
+        if not os.path.exists(path):
+            logging.warning("Resume checkpoint not found: %s; starting fresh", path)
+            return 0
+        return int(self.load_checkpoint(path))
 
     def _get_csv_columns(self) -> List[str]:
         """CSV schema for step-level training metrics."""
@@ -328,277 +432,22 @@ class TitanTrainer:
             return cur
         return f"{cur}+{add}"
 
-    def _register_thermal_emergency_checkpoint(self, checkpoint_path: str):
-        self.thermal_emergency_checkpoints.append(checkpoint_path)
-        max_keep = max(int(self.training_config.max_rolling_checkpoints), 1)
-        while len(self.thermal_emergency_checkpoints) > max_keep:
-            old_checkpoint = self.thermal_emergency_checkpoints.pop(0)
-            try:
-                if os.path.exists(old_checkpoint):
-                    os.remove(old_checkpoint)
-                    logging.info(
-                        "🗑️ Removed old thermal emergency checkpoint: %s",
-                        old_checkpoint,
-                    )
-            except Exception as exc:
-                logging.warning(
-                    "Failed to remove old thermal emergency checkpoint %s: %s",
-                    old_checkpoint,
-                    exc,
-                )
-
-    def _save_thermal_emergency_checkpoint(self, epoch: int, batch_idx: int, temp_c: float) -> str:
-        safe_temp = str(f"{float(temp_c):.1f}").replace(".", "p")
-        suffix = (
-            f"_thermal_emergency_step_{self.global_step}"
-            f"_batch_{batch_idx + 1}_temp_{safe_temp}c"
-        )
-        checkpoint_path = self.save_checkpoint(epoch, suffix=suffix)
-        self._register_thermal_emergency_checkpoint(checkpoint_path)
-        logging.warning(
-            "🚨 Thermal emergency checkpoint created before GPU offload: %s",
-            checkpoint_path,
-        )
-        return checkpoint_path
-
-    def _move_optimizer_state_tensors(self, device: str):
-        target = torch.device(device)
-
-        def _move_value(value):
-            if torch.is_tensor(value):
-                return value.to(target)
-            if isinstance(value, dict):
-                return {k: _move_value(v) for k, v in value.items()}
-            if isinstance(value, list):
-                return [_move_value(v) for v in value]
-            if isinstance(value, tuple):
-                return tuple(_move_value(v) for v in value)
-            return value
-
-        for param_state in self.optimizer.state.values():
-            if not isinstance(param_state, dict):
-                continue
-            for key, value in list(param_state.items()):
-                param_state[key] = _move_value(value)
-
-    def _offload_training_state_to_cpu(self):
-        self.model.to("cpu")
-        self._move_optimizer_state_tensors("cpu")
-        self.device = "cpu"
-        self.use_amp = False
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
-
-    def _reload_training_state_to_device(self):
-        target_device = self._primary_device
-        self.model.to(target_device)
-        self._move_optimizer_state_tensors(target_device)
-        self.device = target_device
-        self.use_amp = (
-            self._configured_use_amp
-            and torch.cuda.is_available()
-            and str(target_device).startswith("cuda")
-        )
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
-
-    def _wait_for_gpu_resume_temperature(self, context: str) -> Tuple[float, float, int]:
-        resume_threshold = float(self.gpu_temp_guard.resume_threshold_c)
-        poll_interval = float(self.gpu_temp_guard.poll_interval_seconds)
-        temp_c = float(self.gpu_temp_guard.read_temperature_c())
-        checks = 0
-        started = time.perf_counter()
-        while temp_c > resume_threshold:
-            logging.warning(
-                "[ThermalOffload] %s waiting on CPU: GPU %.1fC (resume <= %.1fC)",
-                context,
-                temp_c,
-                resume_threshold,
-            )
-            time.sleep(poll_interval)
-            checks += 1
-            temp_c = float(self.gpu_temp_guard.read_temperature_c())
-        duration_s = time.perf_counter() - started
-        return temp_c, duration_s, checks
-
-    def _is_cuda_or_nvidia_runtime_error(self, exc: RuntimeError) -> bool:
-        message = str(exc).lower()
-        gpu_error_tokens = (
-            "cuda",
-            "cudnn",
-            "cublas",
-            "device-side assert",
-            "nvidia",
-            "driver",
-            "out of memory",
-        )
-        return any(token in message for token in gpu_error_tokens)
-
-    def _switch_to_cpu_only_after_gpu_error(
-        self,
-        *,
-        exc: RuntimeError,
-        epoch: int,
-        batch_idx: int,
-    ) -> bool:
-        if not bool(self.training_config.switch_on_thermal):
-            return False
-        if self._force_cpu_only_after_gpu_error:
-            return False
-        if not self._is_cuda_or_nvidia_runtime_error(exc):
-            return False
-        if not str(self.device).startswith("cuda"):
-            return False
-
-        logging.error(
-            "[ThermalSwitch] GPU runtime error detected; switching to CPU-only mode for remaining training: %s",
-            exc,
-        )
-        try:
-            checkpoint_path = self.save_checkpoint(
-                epoch,
-                suffix=f"_gpu_error_cpu_fallback_step_{self.global_step}_batch_{batch_idx + 1}",
-            )
-            self._register_thermal_emergency_checkpoint(checkpoint_path)
-            self._thermal_emergency_last_checkpoint = checkpoint_path
-            logging.warning(
-                "[ThermalSwitch] Saved GPU error emergency checkpoint: %s",
-                checkpoint_path,
-            )
-        except Exception as ckpt_exc:
-            logging.exception(
-                "[ThermalSwitch] Failed to save GPU error emergency checkpoint: %s",
-                ckpt_exc,
-            )
-
-        self._offload_training_state_to_cpu()
-        self._thermal_offload_active = False
-        self._thermal_offload_started_monotonic = None
-        self._thermal_last_poll_monotonic = 0.0
-        self._force_cpu_only_after_gpu_error = True
-        return True
-
-    def _monitor_thermal_offload_and_maybe_reload(self, epoch: int, batch_idx: int) -> str:
-        if not self._thermal_offload_active:
-            return "none"
-        if self._force_cpu_only_after_gpu_error:
-            return "thermal_cpu_only_gpu_error"
-
-        context = f"mlm epoch={epoch + 1} batch={batch_idx + 1}"
-        now = time.perf_counter()
-        started = (
-            self._thermal_offload_started_monotonic
-            if self._thermal_offload_started_monotonic is not None
-            else now
-        )
-        elapsed_s = max(now - started, 0.0)
-        poll_interval = float(self.gpu_temp_guard.poll_interval_seconds)
-        if (now - self._thermal_last_poll_monotonic) < poll_interval:
-            return f"thermal_cpu_training_{int(round(elapsed_s))}s"
-
-        self._thermal_last_poll_monotonic = now
-        temp_c = float(self.gpu_temp_guard.read_temperature_c())
-        self._last_guard_temp_c = temp_c
-        resume_threshold = float(self.gpu_temp_guard.resume_threshold_c)
-        if temp_c > resume_threshold:
-            logging.warning(
-                "[ThermalOffload] %s continuing CPU training: GPU %.1fC (resume <= %.1fC)",
-                context,
-                temp_c,
-                resume_threshold,
-            )
-            return f"thermal_cpu_training_{int(round(elapsed_s))}s"
-
-        checkpoint_path = self._thermal_emergency_last_checkpoint
-        try:
-            self._reload_training_state_to_device()
-        except Exception as exc:
-            logging.error(
-                "[ThermalSwitch] Failed to reload to GPU after thermal CPU mode. "
-                "Switching to CPU-only mode. Emergency checkpoint: %s. Error: %s",
-                checkpoint_path or "unavailable",
-                exc,
-            )
-            self._force_cpu_only_after_gpu_error = True
-            self._thermal_offload_active = False
-            self._thermal_offload_started_monotonic = None
-            self._thermal_last_poll_monotonic = 0.0
-            return "thermal_cpu_only_gpu_error"
-
-        self._thermal_offload_active = False
-        self._thermal_offload_started_monotonic = None
-        self._thermal_last_poll_monotonic = 0.0
-        logging.warning(
-            "[ThermalOffload] %s resumed GPU training after %.1fs at %.1fC",
-            context,
-            elapsed_s,
-            temp_c,
-        )
-        return f"thermal_onload_gpu_{int(round(elapsed_s))}s"
-
-    def _handle_critical_thermal_offload(self, epoch: int, batch_idx: int, temp_c: float) -> str:
-        if not bool(self.training_config.switch_on_thermal):
-            return "none"
-        if self._force_cpu_only_after_gpu_error:
-            return "thermal_cpu_only_gpu_error"
-        if self._thermal_offload_active:
-            return self._monitor_thermal_offload_and_maybe_reload(epoch, batch_idx)
-
-        context = f"mlm epoch={epoch + 1} batch={batch_idx + 1}"
-        checkpoint_path: Optional[str] = None
-        logging.warning(
-            "[ThermalOffload] %s critical threshold reached at %.1fC; switching to CPU training mode",
-            context,
-            temp_c,
-        )
-        try:
-            checkpoint_path = self._save_thermal_emergency_checkpoint(epoch, batch_idx, temp_c)
-        except Exception as exc:
-            logging.exception(
-                "[ThermalOffload] %s failed to save emergency checkpoint before offload: %s",
-                context,
-                exc,
-            )
-
-        self._offload_training_state_to_cpu()
-        self._thermal_offload_active = True
-        self._thermal_offload_started_monotonic = time.perf_counter()
-        self._thermal_last_poll_monotonic = 0.0
-        self._thermal_emergency_last_checkpoint = checkpoint_path
-        self._last_guard_temp_c = float(temp_c)
-        return "thermal_offload_cpu_mode"
-
     def _enforce_thermal_guard(self, epoch: int, batch_idx: int) -> str:
-        if not self.gpu_temp_guard.is_active:
-            self._last_guard_temp_c = None
-            return "none"
-        if self._force_cpu_only_after_gpu_error:
-            return "thermal_cpu_only_gpu_error"
-        if self._thermal_offload_active:
-            return self._monitor_thermal_offload_and_maybe_reload(epoch, batch_idx)
+        """Thermal guard hook (no-op under the supervisor model).
 
-        if not bool(self.training_config.switch_on_thermal):
-            context = f"mlm epoch={epoch + 1} batch={batch_idx + 1}"
-            temp_c = float(self.gpu_temp_guard.read_temperature_c())
-            self._last_guard_temp_c = temp_c
-            if temp_c > float(self.gpu_temp_guard.pause_threshold_c):
-                result = self.gpu_temp_guard.wait_until_safe(context=context)
-                self._last_guard_temp_c = result.temp_c
-                return result.repair_action
-            return "none"
+        The CPU-side :class:`GPUTempSupervisor` owns the training subprocess
+        lifecycle and handles thermal events by checkpointing + killing this
+        process. In-process thermal offload is therefore no longer performed
+        here. This method is kept as a no-op so the training loop remains
+        unchanged and reads ``"none"`` for the CSV ``repair_action`` column.
 
-        context = f"mlm epoch={epoch + 1} batch={batch_idx + 1}"
-        temp_c = float(self.gpu_temp_guard.read_temperature_c())
-        self._last_guard_temp_c = temp_c
+        Args:
+            epoch: Current epoch (0-indexed).
+            batch_idx: Current batch index within the epoch.
 
-        critical_threshold = self.gpu_temp_guard.critical_threshold_c
-        if critical_threshold is not None and temp_c >= float(critical_threshold):
-            return self._handle_critical_thermal_offload(epoch, batch_idx, temp_c)
-
-        if temp_c > float(self.gpu_temp_guard.pause_threshold_c):
-            result = self.gpu_temp_guard.wait_until_safe(context=context)
-            self._last_guard_temp_c = result.temp_c
-            return result.repair_action
+        Returns:
+            Always ``"none"``.
+        """
         return "none"
 
     def _merge_guard_temperature(self, telemetry: Dict[str, float]) -> Dict[str, float]:
@@ -1153,7 +1002,7 @@ class TitanTrainer:
         logging.info(f"📐 Gradient Accumulation: {self.gradient_accumulation_steps} steps")
         if self.gpu_temp_guard.is_active:
             logging.info(
-                "🌡️ GPU thermal guard enabled (pause>%.1fC, resume<=%.1fC, poll=%.1fs, critical=%s)",
+                "🌡️ GPU thermal supervisor enabled (pause>=%.1fC, resume<=%.1fC, poll=%.1fs, critical=%s, grace=%.1fs)",
                 float(self.training_config.gpu_temp_pause_threshold_c),
                 float(self.training_config.gpu_temp_resume_threshold_c),
                 float(self.training_config.gpu_temp_poll_interval_seconds),
@@ -1162,15 +1011,15 @@ class TitanTrainer:
                     if self.training_config.gpu_temp_critical_threshold_c is not None
                     else "disabled"
                 ),
+                float(self.training_config.gpu_temp_checkpoint_grace_seconds),
             )
+            if self._is_supervisor_child:
+                logging.info("🌡️ Running as supervisor child (SIGUSR1 checkpoint handler active)")
             if self.training_config.gpu_temp_critical_threshold_c is not None:
                 logging.info(
-                    "🌡️ Thermal critical offload enabled (critical>=%.1fC)",
-                    float(self.training_config.gpu_temp_critical_threshold_c),
-                )
-            else:
-                logging.info(
-                    "🌡️ Thermal critical offload disabled (gpu_temp_critical_threshold_c is not set)"
+                    "🌡️ Critical threshold: %s (switch_on_thermal=%s)",
+                    f"{float(self.training_config.gpu_temp_critical_threshold_c):.1f}C",
+                    "CPU-continuation" if bool(self.training_config.switch_on_thermal) else "permanent-abort",
                 )
             logging.info(
                 "🌡️ switch_on_thermal=%s",
@@ -1507,6 +1356,10 @@ class TitanTrainer:
                         if self.global_step % self.training_config.checkpoint_every_n_steps == 0:
                             self._save_rolling_checkpoint(epoch)
 
+                        # Flush an on-demand checkpoint if the supervisor
+                        # sent SIGUSR1 (thermal kill is imminent).
+                        self._maybe_flush_supervisor_checkpoint(epoch)
+
                         self._maybe_save_best_checkpoint(epoch, raw_loss)
 
                     # Accumulate metrics
@@ -1577,33 +1430,11 @@ class TitanTrainer:
                         e,
                     )
                     raise
-                if self._switch_to_cpu_only_after_gpu_error(exc=e, epoch=epoch, batch_idx=batch_idx):
-                    telemetry = self._merge_guard_temperature(self._get_default_gpu_telemetry())
-                    self._log_step_to_csv(
-                        epoch=epoch,
-                        step=batch_idx,
-                        loss=float("nan"),
-                        accuracy=0.0,
-                        lr=self.scheduler.get_last_lr()[0],
-                        grad_norm=0.0,
-                        has_nan=False,
-                        has_inf=True,
-                        has_zero=False,
-                        repair_action="thermal_cpu_only_gpu_error",
-                        gpu_telemetry=telemetry,
-                        block_grad_norms=self._get_default_block_grad_norms(),
-                        step_time_ms=0.0,
-                        tokens_per_sec=0.0,
-                        clip_ratio=0.0,
-                        effective_batch_size=0,
-                    )
-                    self.optimizer.zero_grad(set_to_none=True)
-                    self._pending_thermal_repair_action = self._append_repair_action(
-                        self._pending_thermal_repair_action,
-                        "thermal_cpu_only_gpu_error",
-                    )
-                    optimizer_window_start = time.perf_counter()
-                    continue
+                # In-process thermal CPU fallback is no longer used; the
+                # supervisor owns the subprocess lifecycle and handles GPU
+                # runtime errors by killing this child. Re-raise so the
+                # supervisor can react (and re-launch on CPU if
+                # switch_on_thermal is enabled).
                 if "out of memory" in str(e):
                     telemetry = self._merge_guard_temperature(self._get_default_gpu_telemetry())
                     self._log_step_to_csv(

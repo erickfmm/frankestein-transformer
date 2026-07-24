@@ -320,12 +320,14 @@ def _validate_gpu_temp_guard_config(training_config: TrainingConfig):
 
     Raises:
         ValueError: If pause/resume thresholds are <= 0, resume >= pause,
-            poll interval <= 0, or critical threshold <= 0 when provided.
+            poll interval <= 0, critical threshold <= 0 when provided, or
+            checkpoint grace seconds <= 0.
     """
     pause_threshold = float(training_config.gpu_temp_pause_threshold_c)
     resume_threshold = float(training_config.gpu_temp_resume_threshold_c)
     poll_interval = float(training_config.gpu_temp_poll_interval_seconds)
     critical_threshold = training_config.gpu_temp_critical_threshold_c
+    grace_seconds = float(training_config.gpu_temp_checkpoint_grace_seconds)
     if pause_threshold <= 0:
         raise ValueError("gpu_temp_pause_threshold_c must be > 0")
     if resume_threshold <= 0:
@@ -334,6 +336,8 @@ def _validate_gpu_temp_guard_config(training_config: TrainingConfig):
         raise ValueError("gpu_temp_resume_threshold_c must be < gpu_temp_pause_threshold_c")
     if poll_interval <= 0:
         raise ValueError("gpu_temp_poll_interval_seconds must be > 0")
+    if grace_seconds <= 0:
+        raise ValueError("gpu_temp_checkpoint_grace_seconds must be > 0")
     if critical_threshold is not None and float(critical_threshold) <= 0:
         raise ValueError("gpu_temp_critical_threshold_c must be > 0 when provided")
 
@@ -351,17 +355,21 @@ def _apply_gpu_temp_guard_overrides(
         resolved_device: Resolved PyTorch device string. Disables thermal
             guard and switching for non-CUDA devices.
     """
-    if args.gpu_temp_guard is not None:
+    if getattr(args, "gpu_temp_guard", None) is not None:
         training_config.gpu_temp_guard_enabled = bool(args.gpu_temp_guard)
-    if args.gpu_temp_pause_threshold_c is not None:
+    if getattr(args, "gpu_temp_pause_threshold_c", None) is not None:
         training_config.gpu_temp_pause_threshold_c = float(args.gpu_temp_pause_threshold_c)
-    if args.gpu_temp_resume_threshold_c is not None:
+    if getattr(args, "gpu_temp_resume_threshold_c", None) is not None:
         training_config.gpu_temp_resume_threshold_c = float(args.gpu_temp_resume_threshold_c)
-    if args.gpu_temp_critical_threshold_c is not None:
+    if getattr(args, "gpu_temp_critical_threshold_c", None) is not None:
         training_config.gpu_temp_critical_threshold_c = float(args.gpu_temp_critical_threshold_c)
-    if args.gpu_temp_poll_interval_seconds is not None:
+    if getattr(args, "gpu_temp_poll_interval_seconds", None) is not None:
         training_config.gpu_temp_poll_interval_seconds = float(args.gpu_temp_poll_interval_seconds)
-    if args.switch_on_thermal is not None:
+    if getattr(args, "gpu_temp_checkpoint_grace_seconds", None) is not None:
+        training_config.gpu_temp_checkpoint_grace_seconds = float(args.gpu_temp_checkpoint_grace_seconds)
+    if getattr(args, "resume_from_checkpoint", None) is not None:
+        training_config.resume_from_checkpoint = str(args.resume_from_checkpoint)
+    if getattr(args, "switch_on_thermal", None) is not None:
         training_config.switch_on_thermal = bool(args.switch_on_thermal)
 
     if not str(resolved_device).startswith("cuda"):
@@ -376,7 +384,7 @@ def _apply_gpu_temp_guard_overrides(
                 "Disabling switch_on_thermal because resolved device is '%s'",
                 resolved_device,
             )
-        training_config.switch_on_thermal = False
+            training_config.switch_on_thermal = False
 
     _validate_gpu_temp_guard_config(training_config)
 
@@ -388,7 +396,7 @@ def _apply_gpu_temp_guard_overrides(
             training_config.switch_on_thermal = True
         if training_config.gpu_temp_critical_threshold_c is None:
             logging.info(
-                "GPU thermal critical offload disabled (gpu_temp_critical_threshold_c is null); pause-only thermal guard remains active."
+                "GPU thermal critical action disabled (gpu_temp_critical_threshold_c is null); pause-only thermal supervisor remains active."
             )
             if training_config.switch_on_thermal:
                 logging.info(
@@ -396,13 +404,225 @@ def _apply_gpu_temp_guard_overrides(
                 )
         else:
             logging.info(
-                "GPU thermal critical offload enabled (critical>=%.1fC).",
+                "GPU thermal critical action configured (critical>=%.1fC, switch_on_thermal=%s).",
                 float(training_config.gpu_temp_critical_threshold_c),
+                bool(training_config.switch_on_thermal),
             )
         logging.info(
             "GPU thermal switch_on_thermal=%s",
             bool(training_config.switch_on_thermal),
         )
+
+
+def _build_supervisor_child_argv(
+    args: argparse.Namespace,
+    training_config: TrainingConfig,
+    config_path: str,
+) -> list:
+    """Build the argv used to (re)launch the training child under the supervisor.
+
+    The child is a fresh invocation of the training entrypoint with the same
+    config, its own guard disabled (``--no-gpu-temp-guard`` — the supervisor
+    owns thermal monitoring), and asked to resume from the latest rolling
+    checkpoint (``--resume-from-checkpoint auto``). The supervisor prepends
+    the Python interpreter.
+    """
+    # Determine the entrypoint. Prefer the installed console script module
+    # path; fall back to running the package's main CLI module.
+    argv = []
+    # Use ``python -m src.cli train ...`` so it works in editable installs
+    # without relying on the console-script shim being on PATH.
+    argv.extend(["-m", "src.cli", "train"])
+    argv.extend(["--config", str(config_path)])
+    argv.extend(["--device", str(args.device)])
+    # Disable the child's own guard to avoid nesting; the supervisor monitors.
+    argv.append("--no-gpu-temp-guard")
+    # Pass the resume spec so each re-launch resumes from the latest checkpoint.
+    argv.extend(["--resume-from-checkpoint", "auto"])
+    # Forward threshold overrides so the child logs consistent config.
+    if getattr(args, "batch_size", None) is not None:
+        argv.extend(["--batch-size", str(args.batch_size)])
+    if getattr(args, "model_mode", None):
+        argv.extend(["--model-mode", str(args.model_mode)])
+    if getattr(args, "gpu_temp_pause_threshold_c", None) is not None:
+        argv.extend(["--gpu-temp-pause-threshold-c", str(args.gpu_temp_pause_threshold_c)])
+    if getattr(args, "gpu_temp_resume_threshold_c", None) is not None:
+        argv.extend(["--gpu-temp-resume-threshold-c", str(args.gpu_temp_resume_threshold_c)])
+    if getattr(args, "gpu_temp_critical_threshold_c", None) is not None:
+        argv.extend(["--gpu-temp-critical-threshold-c", str(args.gpu_temp_critical_threshold_c)])
+    if getattr(args, "gpu_temp_poll_interval_seconds", None) is not None:
+        argv.extend(["--gpu-temp-poll-interval-seconds", str(args.gpu_temp_poll_interval_seconds)])
+    if bool(training_config.switch_on_thermal):
+        argv.append("--switch-on-thermal")
+    return argv
+
+
+def _build_sbert_supervisor_child_argv(
+    loaded: "LoadedTrainingConfig",
+    training_config: TrainingConfig,
+    resolved_device: str,
+) -> list:
+    """Build the supervisor child argv for the SBERT task.
+
+    Mirrors :func:`_run_sbert_task` argument construction but re-runs the
+    SBERT entrypoint as a subprocess so the supervisor can kill/restart it.
+    """
+    sbert_cfg = loaded.training_runtime.get("sbert", {}) or {}
+    if not isinstance(sbert_cfg, dict):
+        raise ValueError("training.sbert must be an object")
+    argv = ["-m", "src.sbert.train_sbert"]
+    argv.extend(["--base-model", str(loaded.base_model)])
+    argv.extend(["--output_dir", str(sbert_cfg.get("output_dir", "./output/sbert_base_model"))])
+    argv.extend(["--batch_size", str(int(sbert_cfg.get("batch_size", 16)))])
+    argv.extend(["--epochs", str(int(sbert_cfg.get("epochs", 4)))])
+    argv.extend(["--learning_rate", str(float(sbert_cfg.get("learning_rate", 2e-5)))])
+    argv.extend(["--max_eval_samples", str(int(sbert_cfg.get("max_eval_samples", 10000)))])
+    argv.extend(["--pooling_mode", str(sbert_cfg.get("pooling_mode", "mean"))])
+    argv.extend(["--resample_std", str(float(sbert_cfg.get("resample_std", 0.3)))])
+    argv.extend(["--device", str(resolved_device)])
+    argv.append("--no-gpu-temp-guard")
+    argv.append("--resume_from_checkpoint")
+    gradient_accumulation_steps = sbert_cfg.get("gradient_accumulation_steps")
+    if gradient_accumulation_steps is not None:
+        argv.extend(["--gradient_accumulation_steps", str(int(gradient_accumulation_steps))])
+    max_grad_norm = sbert_cfg.get("max_grad_norm")
+    if max_grad_norm is not None:
+        argv.extend(["--max_grad_norm", str(float(max_grad_norm))])
+    dataset_name = str(sbert_cfg.get("dataset_name", "")).strip()
+    if dataset_name:
+        argv.extend(["--dataset_name", dataset_name])
+    dataset_type = str(sbert_cfg.get("dataset_type", "")).strip()
+    if dataset_type:
+        argv.extend(["--dataset_type", dataset_type])
+    max_train_samples = sbert_cfg.get("max_train_samples")
+    if max_train_samples is not None:
+        argv.extend(["--max_train_samples", str(int(max_train_samples))])
+    warmup_steps = sbert_cfg.get("warmup_steps")
+    if warmup_steps is not None:
+        argv.extend(["--warmup_steps", str(int(warmup_steps))])
+    evaluation_steps = sbert_cfg.get("evaluation_steps")
+    if evaluation_steps is not None:
+        argv.extend(["--evaluation_steps", str(int(evaluation_steps))])
+    checkpoint_save_steps = sbert_cfg.get("checkpoint_save_steps")
+    if checkpoint_save_steps is not None:
+        argv.extend(["--checkpoint_save_steps", str(int(checkpoint_save_steps))])
+    max_seq_length = sbert_cfg.get("max_seq_length")
+    if max_seq_length is not None:
+        argv.extend(["--max_seq_length", str(int(max_seq_length))])
+    if not bool(sbert_cfg.get("use_amp", True)):
+        argv.append("--no_amp")
+    if not bool(sbert_cfg.get("resample_balanced", True)):
+        argv.append("--no_resample")
+    if bool(sbert_cfg.get("standardize_scores", False)):
+        argv.append("--standardize_scores")
+    if bool(sbert_cfg.get("trust_remote_code", False)):
+        argv.append("--trust_remote_code")
+    columns_cfg = sbert_cfg.get("columns", {}) or {}
+    if isinstance(columns_cfg, dict):
+        column_arg_map = {
+            "sentence1": "--col_sentence1",
+            "sentence2": "--col_sentence2",
+            "similarity": "--col_similarity",
+            "query": "--col_query",
+            "positive": "--col_positive",
+            "negatives": "--col_negatives",
+            "question": "--col_question",
+            "answer": "--col_answer",
+        }
+        for key, cli_flag in column_arg_map.items():
+            value = columns_cfg.get(key)
+            if value is None:
+                continue
+            text_value = str(value).strip()
+            if text_value:
+                argv.extend([cli_flag, text_value])
+    query_prefix = sbert_cfg.get("query_prefix")
+    if query_prefix is not None:
+        argv.extend(["--query_prefix", str(query_prefix)])
+    document_prefix = sbert_cfg.get("document_prefix")
+    if document_prefix is not None:
+        argv.extend(["--document_prefix", str(document_prefix)])
+    sbert_optimizer = sbert_cfg.get("optimizer")
+    if isinstance(sbert_optimizer, dict):
+        optimizer_class = sbert_optimizer.get("optimizer_class")
+        if isinstance(optimizer_class, str) and optimizer_class.strip():
+            argv.extend(["--optimizer_class", str(optimizer_class).strip()])
+        optimizer_params = sbert_optimizer.get("parameters", {})
+        if isinstance(optimizer_params, dict):
+            import json as _json
+            for key, value in optimizer_params.items():
+                argv.extend(["--optimizer_param", f"{key}={_json.dumps(value)}"])
+    return argv
+
+
+def _run_under_supervisor(
+    args: argparse.Namespace,
+    training_config: TrainingConfig,
+    resolved_device: str,
+    config_path: str,
+    task: str,
+) -> int:
+    """Hand off training to the CPU-side GPU temperature supervisor.
+
+    Args:
+        args: Parsed CLI arguments (used to build the child argv).
+        training_config: Resolved :class:`TrainingConfig` (thermal fields).
+        resolved_device: Resolved PyTorch device string.
+        config_path: Absolute path to the YAML config.
+        task: ``"mlm"`` or ``"sbert"``.
+
+    Returns:
+        The supervisor's exit code.
+    """
+    from ..utils.gpu_temp_guard import GPUTempSupervisor
+    import sys
+
+    if task == "sbert":
+        try:
+            from ..training.config_loader import LoadedTrainingConfig  # noqa: F401
+        except ImportError:
+            from training.config_loader import LoadedTrainingConfig  # noqa: F401
+        # Re-load to pass a LoadedTrainingConfig to the SBERT argv builder.
+        from .config_loader import load_training_config
+        loaded = load_training_config(config_path)
+        child_argv = _build_sbert_supervisor_child_argv(loaded, training_config, resolved_device)
+        checkpoint_dir = os.path.join(
+            str(loaded.training_runtime.get("sbert", {}).get("output_dir", "./output/sbert_base_model")),
+            "checkpoints",
+        )
+    else:
+        child_argv = _build_supervisor_child_argv(args, training_config, config_path)
+        checkpoint_dir = "checkpoints"
+
+    logging.info(
+        "🌡️ Launching GPU temperature supervisor (pause>=%.1fC, resume<=%.1fC, critical=%s, "
+        "poll=%.1fs, grace=%.1fs, switch_on_thermal=%s)",
+        float(training_config.gpu_temp_pause_threshold_c),
+        float(training_config.gpu_temp_resume_threshold_c),
+        (
+            f"{float(training_config.gpu_temp_critical_threshold_c):.1f}C"
+            if training_config.gpu_temp_critical_threshold_c is not None
+            else "disabled"
+        ),
+        float(training_config.gpu_temp_poll_interval_seconds),
+        float(training_config.gpu_temp_checkpoint_grace_seconds),
+        bool(training_config.switch_on_thermal),
+    )
+
+    supervisor = GPUTempSupervisor(
+        enabled=True,
+        device=resolved_device,
+        nvml_device_index=int(training_config.nvml_device_index),
+        pause_threshold_c=float(training_config.gpu_temp_pause_threshold_c),
+        resume_threshold_c=float(training_config.gpu_temp_resume_threshold_c),
+        critical_threshold_c=training_config.gpu_temp_critical_threshold_c,
+        poll_interval_seconds=float(training_config.gpu_temp_poll_interval_seconds),
+        checkpoint_dir=checkpoint_dir,
+        checkpoint_grace_seconds=float(training_config.gpu_temp_checkpoint_grace_seconds),
+        switch_on_thermal=bool(training_config.switch_on_thermal),
+        child_argv=child_argv,
+    )
+    return int(supervisor.run())
 
 
 def _run_sbert_task(
@@ -553,6 +773,8 @@ def _run_sbert_task(
             str(float(training_config.gpu_temp_resume_threshold_c)),
             "--gpu-temp-poll-interval-seconds",
             str(float(training_config.gpu_temp_poll_interval_seconds)),
+            "--gpu-temp-checkpoint-grace-seconds",
+            str(float(training_config.gpu_temp_checkpoint_grace_seconds)),
             "--nvml-device-index",
             str(int(training_config.nvml_device_index)),
         ]
@@ -681,6 +903,18 @@ def main(argv=None):
         default=None,
         help="Polling interval in seconds while paused for temperature cooldown.",
     )
+    parser.add_argument(
+        "--gpu-temp-checkpoint-grace-seconds",
+        type=float,
+        default=None,
+        help="Seconds the supervisor waits for the child to flush a checkpoint after SIGUSR1 before SIGKILL.",
+    )
+    parser.add_argument(
+        "--resume-from-checkpoint",
+        type=str,
+        default=None,
+        help="Resume training from a checkpoint ('auto' = latest rolling checkpoint, or a path).",
+    )
     args = parser.parse_args(argv)
 
     logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -722,6 +956,17 @@ def main(argv=None):
     logging.info("Using config: %s", config_path)
     logging.info("Training task: %s", loaded.task)
 
+    # When the GPU temperature supervisor is enabled on CUDA and this process
+    # is NOT already a supervisor child, hand off to the CPU-side supervisor.
+    # The supervisor re-executes the training command as a subprocess and
+    # manages kill/checkpoint/resume on thermal events.
+    if (
+        bool(training_config.gpu_temp_guard_enabled)
+        and str(resolved_device).startswith("cuda")
+        and os.environ.get("FRANKESTEIN_SUPERVISOR_CHILD") != "1"
+    ):
+        return _run_under_supervisor(args, training_config, resolved_device, config_path, loaded.task)
+
     if loaded.task == "sbert":
         return _run_sbert_task(loaded, resolved_device, training_config)
 
@@ -760,11 +1005,18 @@ def main(argv=None):
         device=resolved_device,
     )
 
+    # Resume from the latest rolling checkpoint when requested (supervisor
+    # re-launches pass --resume-from-checkpoint auto).
+    resume_epoch = 0
+    resume_spec = training_config.resume_from_checkpoint
+    if resume_spec:
+        resume_epoch = trainer.resume_from_latest_checkpoint(resume_spec)
+
     num_epochs = int(training_runtime.get("num_epochs", 5))
     nan_detected = False
 
     try:
-        for epoch in range(num_epochs):
+        for epoch in range(resume_epoch, num_epochs):
             logging.info("\n🚀 Starting Epoch %s/%s", epoch + 1, num_epochs)
             try:
                 avg_loss, should_stop = trainer.train_epoch(dataloader, epoch)

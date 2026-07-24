@@ -49,6 +49,32 @@ class TrainCliGpuTempFlagTests(unittest.TestCase):
         self.assertIn("--no-gpu-temp-guard", forwarded_argv)
         self.assertIn("--no-switch-on-thermal", forwarded_argv)
 
+    def test_forward_resume_from_checkpoint(self):
+        mocked_train_main = Mock(return_value=0)
+        fake_training_main_module = SimpleNamespace(main=mocked_train_main)
+        with patch.dict("sys.modules", {"src.training.main": fake_training_main_module}):
+            exit_code = cli.main(
+                ["train", "--config-name", "mini", "--resume-from-checkpoint", "auto"]
+            )
+        self.assertEqual(exit_code, 0)
+        forwarded_argv = mocked_train_main.call_args[0][0]
+        self.assertIn("--resume-from-checkpoint", forwarded_argv)
+        idx = forwarded_argv.index("--resume-from-checkpoint")
+        self.assertEqual(forwarded_argv[idx + 1], "auto")
+
+    def test_forward_checkpoint_grace_seconds(self):
+        mocked_train_main = Mock(return_value=0)
+        fake_training_main_module = SimpleNamespace(main=mocked_train_main)
+        with patch.dict("sys.modules", {"src.training.main": fake_training_main_module}):
+            exit_code = cli.main(
+                ["train", "--config-name", "mini", "--gpu-temp-checkpoint-grace-seconds", "45"]
+            )
+        self.assertEqual(exit_code, 0)
+        forwarded_argv = mocked_train_main.call_args[0][0]
+        self.assertIn("--gpu-temp-checkpoint-grace-seconds", forwarded_argv)
+        idx = forwarded_argv.index("--gpu-temp-checkpoint-grace-seconds")
+        self.assertEqual(forwarded_argv[idx + 1], "45.0")
+
 
 if __name__ == "__main__":
     unittest.main()

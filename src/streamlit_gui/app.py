@@ -666,6 +666,11 @@ def build_config_from_schema(schema: Dict[str, Any]) -> Dict[str, Any]:
         gpu_temp_guard_enabled_schema = training_schema["properties"]["gpu_temp_guard_enabled"]
         gpu_temp_pause_threshold_c_schema = training_schema["properties"]["gpu_temp_pause_threshold_c"]
         gpu_temp_resume_threshold_c_schema = training_schema["properties"]["gpu_temp_resume_threshold_c"]
+        gpu_temp_critical_threshold_c_schema = training_schema["properties"].get("gpu_temp_critical_threshold_c")
+        gpu_temp_poll_interval_schema = training_schema["properties"].get("gpu_temp_poll_interval_seconds")
+        gpu_temp_grace_schema = training_schema["properties"].get("gpu_temp_checkpoint_grace_seconds")
+        switch_on_thermal_schema = training_schema["properties"].get("switch_on_thermal")
+        resume_from_checkpoint_schema = training_schema["properties"].get("resume_from_checkpoint")
         with st.expander("GPU Settings", expanded=False):
             gpu_temp_guard_enabled = st.checkbox(
                 get_field_title(gpu_temp_guard_enabled_schema, "Enable GPU Temperature Guard"),
@@ -687,6 +692,51 @@ def build_config_from_schema(schema: Dict[str, Any]) -> Dict[str, Any]:
                 key="training.gpu_temp_resume_threshold_c",
                 help=get_field_description(gpu_temp_resume_threshold_c_schema),
             )
+            if gpu_temp_critical_threshold_c_schema is not None:
+                gpu_temp_critical_threshold_c = st.number_input(
+                    get_field_title(gpu_temp_critical_threshold_c_schema, "GPU Temp Critical Threshold (°C)"),
+                    value=0.0,
+                    min_value=0.0,
+                    key="training.gpu_temp_critical_threshold_c",
+                    help=get_field_description(gpu_temp_critical_threshold_c_schema),
+                )
+                training_config["gpu_temp_critical_threshold_c"] = (
+                    gpu_temp_critical_threshold_c if gpu_temp_critical_threshold_c > 0 else None
+                )
+            if gpu_temp_poll_interval_schema is not None:
+                gpu_temp_poll_interval_seconds = st.number_input(
+                    get_field_title(gpu_temp_poll_interval_schema, "GPU Temp Poll Interval (s)"),
+                    value=30.0,
+                    min_value=0.0,
+                    key="training.gpu_temp_poll_interval_seconds",
+                    help=get_field_description(gpu_temp_poll_interval_schema),
+                )
+                training_config["gpu_temp_poll_interval_seconds"] = gpu_temp_poll_interval_seconds
+            if gpu_temp_grace_schema is not None:
+                gpu_temp_checkpoint_grace_seconds = st.number_input(
+                    get_field_title(gpu_temp_grace_schema, "GPU Temp Checkpoint Grace (s)"),
+                    value=30.0,
+                    min_value=0.0,
+                    key="training.gpu_temp_checkpoint_grace_seconds",
+                    help=get_field_description(gpu_temp_grace_schema),
+                )
+                training_config["gpu_temp_checkpoint_grace_seconds"] = gpu_temp_checkpoint_grace_seconds
+            if switch_on_thermal_schema is not None:
+                switch_on_thermal = st.checkbox(
+                    get_field_title(switch_on_thermal_schema, "Switch on Thermal (continue on CPU at critical temp)"),
+                    value=False,
+                    key="training.switch_on_thermal",
+                    help=get_field_description(switch_on_thermal_schema),
+                )
+                training_config["switch_on_thermal"] = switch_on_thermal
+            if resume_from_checkpoint_schema is not None:
+                resume_from_checkpoint = st.text_input(
+                    get_field_title(resume_from_checkpoint_schema, "Resume From Checkpoint (auto or path)"),
+                    value="",
+                    key="training.resume_from_checkpoint",
+                    help=get_field_description(resume_from_checkpoint_schema),
+                )
+                training_config["resume_from_checkpoint"] = resume_from_checkpoint.strip() or None
 
             training_config["gpu_temp_guard_enabled"] = gpu_temp_guard_enabled
             training_config["gpu_temp_pause_threshold_c"] = gpu_temp_pause_threshold_c
